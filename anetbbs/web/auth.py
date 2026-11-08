@@ -598,7 +598,7 @@ def login():
 
         if user.auth_version != verified_auth_version:
             logout_user()
-            flash('Invalid username or password', 'danger')
+            flash(_t('auth.invalid_credentials', 'Invalid username or password'), 'danger')
             return redirect(url_for('auth.login'))
 
         login_user(user, remember=True)

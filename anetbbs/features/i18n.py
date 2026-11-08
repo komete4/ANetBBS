@@ -659,6 +659,7 @@ DEFAULT_TRANSLATIONS = {
         'profile.online': 'En línea',
         'profile.or_upload_avatar': 'O subir un avatar',
         'profile.password_changed': '¡Contraseña cambiada correctamente!',
+        'profile.password_changed_again': 'Tu contraseña ha vuelto a cambiar. Inicia sesión.',
         'profile.password_field.confirm_password': 'Confirmar la nueva contraseña',
         'profile.password_field.current_password': 'Contraseña actual',
         'profile.password_field.new_password': 'Nueva contraseña',

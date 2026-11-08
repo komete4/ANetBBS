@@ -38,6 +38,7 @@ def localized_app(tmp_path_factory):
         patch.setattr(cfg.TestingConfig, 'SECRET_KEY', 'spanish-integration-tests')
         patch.setattr(cfg.TestingConfig, 'NUV_ENABLED', False)
         patch.setattr(cfg.TestingConfig, 'REGISTRATION_INVITE_CODE', '')
+        patch.setattr(cfg.TestingConfig, 'PUBLIC_BASE_URL', 'http://localhost')
         for name in ('DATA_DIR', 'UPLOADS_DIR', 'AVATARS_DIR', 'NETWORK_JOIN_DIR',
                      'GAMES_DATA_DIR', 'ECHOMAIL_DATA_DIR', 'DOWNLOADS_DIR',
                      'FILE_BULLETINS_DIR', 'TDF_FONTS_DIR'):
@@ -100,9 +101,15 @@ def _language(client, language):
         session['language'] = language
 
 
+def _auth_identifier(client, user_id):
+    with client.application.app_context():
+        return db.session.get(User, user_id).get_id()
+
+
 def _authenticate(client, user_id):
+    identifier = _auth_identifier(client, user_id)
     with client.session_transaction() as session:
-        session['_user_id'] = str(user_id)
+        session['_user_id'] = identifier
         session['_fresh'] = True
 
 
@@ -267,7 +274,7 @@ def test_login_account_preference_wins_and_survives_logout(client, make_user, pr
     }, token_path='/auth/login', follow_redirects=True)
     assert _soup(response).html['lang'] == preferred
     with client.session_transaction() as session:
-        assert session['_user_id'] == str(user_id)
+        assert session['_user_id'] == _auth_identifier(client, user_id)
         assert session['language'] == preferred
     assert client.get_cookie('anetbbs_language').value == preferred
     # An authenticated account also wins over stale browser preferences.
@@ -296,7 +303,7 @@ def test_registration_inherits_anonymous_preference(localized_app, client, langu
         assert user.language == language
         user_id = user.id
     with client.session_transaction() as session:
-        assert session['_user_id'] == str(user_id)
+        assert session['_user_id'] == _auth_identifier(client, user_id)
         assert session['language'] == language
 
 
@@ -314,7 +321,7 @@ def test_email_verification_restores_account_language(localized_app, client, mak
     assert '¡Correo electrónico verificado!' in page.get_text(' ', strip=True)
     with client.session_transaction() as session:
         assert session['language'] == 'es'
-        assert session['_user_id'] == str(user_id)
+        assert session['_user_id'] == _auth_identifier(client, user_id)
 
 
 @pytest.mark.parametrize('language,new_password,updated', [
