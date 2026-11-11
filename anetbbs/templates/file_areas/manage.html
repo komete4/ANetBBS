@@ -21,6 +21,7 @@
 </div>
 
 {# ── Upload ── #}
+{% if config.get('FILE_UPLOADS_ENABLED', true) %}
 <div class="card mb-3">
     <div class="card-header"><i class="bi bi-cloud-upload"></i> Upload File (Sysop Direct)</div>
     <div class="card-body">
@@ -41,6 +42,7 @@
         </form>
     </div>
 </div>
+{% endif %}
 
 {# ── File list ── #}
 <div class="card">

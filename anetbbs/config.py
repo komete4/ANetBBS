@@ -254,6 +254,9 @@ class Config:
     SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'false').lower() == 'true'
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
+    REMEMBER_COOKIE_SECURE = SESSION_COOKIE_SECURE
+    REMEMBER_COOKIE_HTTPONLY = SESSION_COOKIE_HTTPONLY
+    REMEMBER_COOKIE_SAMESITE = SESSION_COOKIE_SAMESITE
     
     # Application
     BBS_NAME = os.environ.get('BBS_NAME', 'ANetBBS')
@@ -264,12 +267,19 @@ class Config:
     # Trusted external origin for password recovery, never inferred from
     # Host/X-Forwarded-Host. Blank uses the configured BBS_DOMAIN over HTTPS.
     PUBLIC_BASE_URL = os.environ.get('PUBLIC_BASE_URL', '')
+    PASSWORD_RECOVERY_ENABLED = os.environ.get('PASSWORD_RECOVERY_ENABLED', 'true').lower() == 'true'
+    WEB_TERMINAL_ENABLED = os.environ.get('WEB_TERMINAL_ENABLED', 'true').lower() == 'true'
+    EBOOKS_ENABLED = os.environ.get('EBOOKS_ENABLED', 'true').lower() == 'true'
+    RSS_ENABLED = os.environ.get('RSS_ENABLED', 'true').lower() == 'true'
     # Personal web-pages toggle. When true, the app serves the contents
     # of {DATA_DIR}/personal_pages/ at the BBS root URL — e.g. dropping
     # a `photography/` folder makes it visible at /photography/ with
     # auto-index.html resolution.
     PERSONAL_PAGES_ENABLED = os.environ.get(
         'PERSONAL_PAGES_ENABLED', 'false').lower() == 'true'
+    PERSONAL_PAGES_PUBLISHING_ENABLED = os.environ.get(
+        'PERSONAL_PAGES_PUBLISHING_ENABLED', 'true').lower() == 'true'
+    PERSONAL_PAGES_STATIC_ORIGIN = os.environ.get('PERSONAL_PAGES_STATIC_ORIGIN', '').strip()
     # Public "Watch It Live" page (anetbbs/web/watch.py) — a no-login
     # activity ticker meant to be shared/embedded off-site. Off by
     # default: it's a real, deliberate broadening of who's-online
@@ -297,6 +307,9 @@ class Config:
     # is_verified=False and have to wait for sysop approval before they
     # can log in. Like Mystic's NUV mode.
     NUV_ENABLED = os.environ.get('NUV_ENABLED', 'false').lower() == 'true'
+    # File library uploads across web, terminal and ordinary FTP accounts.
+    FILE_UPLOADS_ENABLED = os.environ.get(
+        'FILE_UPLOADS_ENABLED', 'true').lower() == 'true'
     # File-area upload moderation queue — when true, a non-admin's
     # upload is quarantined pending sysop approval instead of
     # publishing immediately (anetbbs/web/file_areas.py). Real gap
@@ -323,6 +336,8 @@ class Config:
     REGISTRATION_OPEN = os.environ.get(
         'REGISTRATION_OPEN', 'true').lower() == 'true'
     REGISTRATION_INVITE_CODE = os.environ.get('REGISTRATION_INVITE_CODE', '')
+    REGISTRATION_REQUIRE_VERIFIED_EMAIL = os.environ.get(
+        'REGISTRATION_REQUIRE_VERIFIED_EMAIL', 'false').lower() == 'true'
     # Who's Online IP address display (anetbbs/web/who.py) -- previously
     # a bare hardcoded "admins only" conditional with no config flag and
     # no regression test backing it (confirmed via git blame: it used to
@@ -473,7 +488,7 @@ class Config:
     SYSTAT_PORT = int(os.environ.get('SYSTAT_PORT', '11'))
     # Inter-BBS directory (sbbsimsg.lst from Vertrauen)
     SBBSIMSG_LIST_URL = 'ftp://vert.synchro.net/sbbsimsg.lst'
-    SBBSIMSG_AUTO_REFRESH = True
+    SBBSIMSG_AUTO_REFRESH = os.environ.get('SBBSIMSG_AUTO_REFRESH', 'true').lower() == 'true'
     SBBSIMSG_REFRESH_SECONDS = 86400   # daily
 
     # Pre-login "Matrix" splash -- a connection-options banner shown

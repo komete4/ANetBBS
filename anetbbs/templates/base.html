@@ -232,6 +232,8 @@
 
         .form-control::placeholder { color: var(--theme-text-muted); opacity: 0.7; }
 
+        .bbs-search-form { display: flex; min-width: 0; }
+
         .form-label {
             color: var(--theme-text);
             font-weight: 500;
@@ -277,16 +279,13 @@
         }
         /* ---- Mobile responsive tweaks (phone widths) ---- */
         @media (max-width: 768px) {
-            body > .bg-dark.border-bottom form[action="{{ url_for('main.search') }}"] {
-                display: grid !important;
+            .bbs-search-form {
+                display: grid;
                 grid-template-columns: minmax(0, 1fr) auto;
                 flex-basis: 100%;
                 gap: .5rem;
             }
-            body > .bg-dark.border-bottom input[type="search"] {
-                min-width: 0;
-                margin-inline-end: 0 !important;
-            }
+            .bbs-search-form input { min-width: 0; }
             .bbs-header h1 { font-size: 1.4rem; }
             .navbar-brand { font-size: 1rem; }
             /* Tables — let them scroll horizontally rather than wrap. */
@@ -460,12 +459,14 @@
                         </ul>
                     </li>
 
+                    {% if config.GAMES_ENABLED %}
                     <!-- Games -->
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('games.lobby') }}">
                             <i class="bi bi-controller"></i> {{ t('nav.games', 'Games') }}
                         </a>
                     </li>
+                    {% endif %}
                     {% endif %}
 
                     <!-- Files dropdown -->
@@ -612,7 +613,9 @@
             {% set cd_unread = current_user.received_messages | selectattr('read_at', 'none') | selectattr('is_deleted_recipient', 'equalto', False) | list | length %}
             {% if cd_unread > 0 %}<span class="badge bg-danger">{{ cd_unread }}</span>{% endif %}
         </a>
+        {% if config.GAMES_ENABLED %}
         <a href="{{ url_for('games.lobby') }}"><i class="bi bi-controller"></i>{{ t("nav.games", "Games") }}</a>
+        {% endif %}
         <a href="{{ url_for('profile.index') }}"><i class="bi bi-person-circle"></i>{{ current_user.username }}</a>
         {% else %}
         <a href="{{ url_for('main.tools_hub', section='community') }}"><i class="bi bi-people"></i>{{ t("nav.community", "Community") }}</a>
@@ -625,8 +628,8 @@
          keep their full width when many sections are present. -->
     <div class="bg-dark border-bottom" style="border-color:var(--theme-primary)!important;">
         <div class="container py-1 d-flex flex-wrap align-items-center gap-2">
-            <form class="d-flex flex-grow-1" method="get" action="{{ url_for('main.search') }}">
-                <input class="form-control form-control-sm me-2" type="search" name="q"
+            <form class="bbs-search-form flex-grow-1 gap-2" method="get" action="{{ url_for('main.search') }}">
+                <input class="form-control form-control-sm" type="search" name="q"
                        placeholder="{{ t("nav.search_placeholder", "Search posts, users, files…") }}" aria-label="{{ t("nav.search", "Search") }}">
                 <button class="btn btn-primary btn-sm" type="submit">
                     <i class="bi bi-search"></i> {{ t("nav.search", "Search") }}

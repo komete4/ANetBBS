@@ -22,7 +22,7 @@ import socket
 import ssl as ssl_module
 import threading
 
-from flask import Blueprint, render_template, request
+from flask import Blueprint, abort, current_app, render_template, request
 from flask_login import login_required, current_user
 from flask_socketio import emit
 
@@ -32,6 +32,12 @@ from ..core.net_safety import resolve_safe_destination as _resolve_safe_destinat
 logger = logging.getLogger(__name__)
 
 term_bp = Blueprint('web_terminal', __name__, url_prefix='/terminal')
+
+
+@term_bp.before_request
+def _require_enabled():
+    if not current_app.config['WEB_TERMINAL_ENABLED']:
+        abort(403)
 
 
 # Per-socketio-sid outbound terminal state

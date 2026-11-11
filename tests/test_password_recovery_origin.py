@@ -68,6 +68,22 @@ def test_email_uses_canonical_scheme_host_and_port(app):
     assert parsed.path.startswith('/auth/reset/')
 
 
+def test_disabled_recovery_hides_link_and_blocks_all_routes(app):
+    from anetbbs.models import PasswordResetToken
+
+    app.config['PASSWORD_RECOVERY_ENABLED'] = False
+    client = app.test_client()
+    base_url = 'https://bbs.gks.invalid:8443'
+    login = client.get('/auth/login', base_url=base_url)
+    assert login.status_code == 200
+    assert b'href="/auth/forgot"' not in login.data
+    for path in ('/auth/forgot', '/auth/forgot/verify', '/auth/reset/fictitious-token'):
+        for method in ('GET', 'POST'):
+            assert client.open(path, base_url=base_url, method=method).status_code == 403
+    with app.app_context():
+        assert PasswordResetToken.query.count() == 0
+
+
 @pytest.mark.parametrize('path', [
     '/auth/forgot', '/auth/forgot/verify', '/auth/reset/fictitious-token',
 ])
