@@ -1,5 +1,33 @@
 # ANetBBS -- Deployment Guide
 
+## Personal pages on a separate origin
+
+Keep `PERSONAL_PAGES_ENABLED=false` on the authenticated BBS. Provision a
+separate HTTPS hostname, keeping the BBS session and remember-me cookies scoped
+to the BBS host. For a loopback lab, the static origin can use HTTP on `127.0.0.1`
+when the BBS runs on `localhost`.
+
+1. Create `personal_pages_public` within the web service's persistent `DATA_DIR`.
+   The BBS web process needs write access. Use one BBS web process for publishing
+   so concurrent writes respect the per-account file limit.
+2. Configure a separate Nginx service with `personal-pages.nginx.conf` as its
+   server configuration and the `personal_pages_public` directory mounted
+   read-only at `/srv/personal-pages`. Give Nginx access only to that directory.
+   Route the HTTPS hostname to port `8080` through the deployment proxy.
+3. Set `PERSONAL_PAGES_STATIC_ORIGIN` to the static HTTPS origin and
+   `PERSONAL_PAGES_PUBLISHING_ENABLED=true` on the BBS. Restart the BBS web
+   service. A static origin that matches the BBS host is rejected.
+4. With a normal lab account, upload `index.html` and a CSS file. Verify the
+   published URL, HTML and CSS MIME types, and the `Content-Security-Policy`
+   header. Sign in with a second account and confirm its editor has its own
+   directory. Verify that the BBS origin rejects personal page URLs and that
+   the separate origin returns `404` for URLs outside the published files.
+   Restart the static service and confirm the files are still served.
+
+To take personal pages offline, set `PERSONAL_PAGES_PUBLISHING_ENABLED=false`,
+keep `PERSONAL_PAGES_ENABLED=false`, and disable the static service route.
+Keep the isolated data directory in the private backup for restoration.
+
 ## Quick Start (Ubuntu / Debian)
 
 Run the automated installer from the repository root:

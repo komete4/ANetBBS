@@ -12,10 +12,17 @@ When `PERSONAL_PAGES_ENABLED=true`:
 
 Hooked via a Flask 404 handler so it never shadows real BBS routes —
 only takes over when no other route matches.
+
+With `PERSONAL_PAGES_STATIC_ORIGIN` configured, the authenticated editor
+writes HTML and CSS to an independent tree for a static server. The BBS
+does not serve either tree in this mode.
 """
 import os
 import re
 from pathlib import Path
+from tempfile import NamedTemporaryFile
+from threading import Lock
+from urllib.parse import urlsplit
 
 from flask import (Blueprint, send_from_directory, abort, current_app,
                    render_template, redirect, url_for, request, flash)
@@ -29,11 +36,89 @@ pages_bp = Blueprint('personal_pages', __name__, url_prefix='/_pages')
 def _require_publishing():
     if not current_app.config.get('PERSONAL_PAGES_PUBLISHING_ENABLED', True):
         abort(404)
+    if current_app.config.get('PERSONAL_PAGES_STATIC_ORIGIN') and not _static_origin():
+        abort(503)
 
 
 # Files to try in order when the URL ends with a /
 INDEX_FILES = ('index.html', 'index.htm', 'default.html', 'default.htm',
                'home.html', 'home.htm')
+STATIC_FILENAME = re.compile(r'[A-Za-z0-9][A-Za-z0-9._-]{0,119}\.(?:html?|css)', re.I)
+STATIC_MAX_BYTES = 512 * 1024
+STATIC_MAX_FILES = 20
+_static_files_lock = Lock()
+
+
+def _static_origin():
+    value = current_app.config.get('PERSONAL_PAGES_STATIC_ORIGIN')
+    if not value:
+        return None
+    try:
+        origin = urlsplit(value)
+        port = origin.port
+        bbs_hosts = (
+            urlsplit(current_app.config.get('PUBLIC_BASE_URL') or '').hostname,
+            urlsplit('//' + (current_app.config.get('BBS_DOMAIN') or '')).hostname,
+            urlsplit('//' + request.host).hostname,
+        )
+    except ValueError:
+        return None
+    host = (origin.hostname or '').rstrip('.')
+    if not re.fullmatch(r'[a-z0-9-]+(?:\.[a-z0-9-]+)*', host):
+        return None
+    if origin.scheme != 'https' and not (origin.scheme == 'http' and host in ('localhost', '127.0.0.1')):
+        return None
+    if origin.username is not None or origin.password is not None or port == 0:
+        return None
+    if origin.path not in ('', '/') or origin.query or origin.fragment:
+        return None
+    if any(host == bbs_host.rstrip('.') for bbs_host in bbs_hosts if bbs_host):
+        return None
+    return f'{origin.scheme}://{host}' + (f':{port}' if port is not None else '')
+
+
+def _user_directory(static_origin):
+    if not static_origin:
+        return _root() / 'users' / current_user.username
+    data = Path(current_app.config.get('DATA_DIR', 'data')).resolve()
+    directory = data / 'personal_pages_public' / 'users' / str(int(current_user.id))
+    if directory.resolve() != directory:
+        abort(503)
+    return directory
+
+
+def _write_static_file(directory, uploaded):
+    filename = uploaded.filename
+    if not STATIC_FILENAME.fullmatch(filename):
+        flash('Use a simple filename ending in .html, .htm or .css.', 'danger')
+        return
+    content = uploaded.stream.read(STATIC_MAX_BYTES + 1)
+    if len(content) > STATIC_MAX_BYTES:
+        flash('Personal page files can be at most 512 KB.', 'danger')
+        return
+    try:
+        content.decode('utf-8')
+    except UnicodeDecodeError:
+        flash('Save the file as UTF-8 before uploading.', 'danger')
+        return
+    target = directory / filename
+    with _static_files_lock:
+        if target.is_symlink():
+            abort(404)
+        if not target.exists() and sum(p.is_file() for p in directory.iterdir()) >= STATIC_MAX_FILES:
+            flash('You can publish up to 20 personal page files.', 'danger')
+            return
+        temporary = None
+        try:
+            with NamedTemporaryFile(dir=directory, suffix='.upload', delete=False) as staged:
+                temporary = Path(staged.name)
+                staged.write(content)
+            temporary.chmod(0o644)
+            temporary.replace(target)
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
+    flash(f'Uploaded {filename}.', 'success')
 
 
 def _root():
@@ -75,7 +160,8 @@ def _try_serve(target):
 def serve_root_page(path):
     """Serve a path of the form '<dir>[/<rest>]' from personal_pages/.
     Returns a response or None if not handled."""
-    if not current_app.config.get('PERSONAL_PAGES_ENABLED'):
+    if (current_app.config.get('PERSONAL_PAGES_STATIC_ORIGIN')
+            or not current_app.config.get('PERSONAL_PAGES_ENABLED')):
         return None
     if not path:
         return None
@@ -140,31 +226,41 @@ def serve_root_page(path):
 @login_required
 def my_pages():
     """List + manage the current user's personal-page files."""
-    base = _root() / 'users' / current_user.username
+    static_origin = _static_origin()
+    base = _user_directory(static_origin)
     base.mkdir(parents=True, exist_ok=True)
     files = []
     for p in sorted(base.iterdir()):
+        if static_origin and (p.is_symlink() or not STATIC_FILENAME.fullmatch(p.name)):
+            continue
         if p.is_file():
             files.append({
                 'name': p.name,
                 'size': p.stat().st_size,
-                'is_index': p.name.lower() in INDEX_FILES,
+                'is_index': p.name == 'index.html' if static_origin else p.name.lower() in INDEX_FILES,
             })
     enabled = current_app.config.get('PERSONAL_PAGES_ENABLED', False)
+    static_url = f'{static_origin}/users/{int(current_user.id)}/' if static_origin else None
     return render_template('personal_pages/index.html',
                            files=files, enabled=enabled,
                            username=current_user.username,
-                           index_files=INDEX_FILES)
+                           index_files=INDEX_FILES, static_url=static_url)
 
 
 @pages_bp.route('/upload', methods=['POST'])
 @login_required
 def upload():
-    base = _root() / 'users' / current_user.username
+    static_origin = _static_origin()
+    base = _user_directory(static_origin)
     base.mkdir(parents=True, exist_ok=True)
+    if static_origin:
+        request.max_content_length = STATIC_MAX_BYTES + 32 * 1024
     f = request.files.get('file')
     if not f or not f.filename:
         flash('No file selected.', 'danger')
+        return redirect(url_for('personal_pages.my_pages'))
+    if static_origin:
+        _write_static_file(base, f)
         return redirect(url_for('personal_pages.my_pages'))
     safe_name = os.path.basename(f.filename)
     if not safe_name or safe_name.startswith('.'):
@@ -178,7 +274,10 @@ def upload():
 @pages_bp.route('/delete/<path:filename>', methods=['POST'])
 @login_required
 def delete(filename):
-    base = _root() / 'users' / current_user.username
+    static_origin = _static_origin()
+    base = _user_directory(static_origin)
+    if static_origin and (not STATIC_FILENAME.fullmatch(filename) or (base / filename).is_symlink()):
+        abort(404)
     target = _safe_resolve(base, filename)
     if target is None or not target.is_file():
         abort(404)

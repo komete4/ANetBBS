@@ -279,6 +279,7 @@ class Config:
         'PERSONAL_PAGES_ENABLED', 'false').lower() == 'true'
     PERSONAL_PAGES_PUBLISHING_ENABLED = os.environ.get(
         'PERSONAL_PAGES_PUBLISHING_ENABLED', 'true').lower() == 'true'
+    PERSONAL_PAGES_STATIC_ORIGIN = os.environ.get('PERSONAL_PAGES_STATIC_ORIGIN', '').strip()
     # Public "Watch It Live" page (anetbbs/web/watch.py) — a no-login
     # activity ticker meant to be shared/embedded off-site. Off by
     # default: it's a real, deliberate broadening of who's-online

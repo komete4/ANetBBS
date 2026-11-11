@@ -5,7 +5,12 @@
     <h1><i class="bi bi-globe2"></i> My Personal Pages</h1>
 </div>
 
-{% if not enabled %}
+{% if static_url %}
+<p class="small text-muted">
+    Your page is published at <a href="{{ static_url }}" target="_blank" rel="noopener noreferrer">{{ static_url }}</a>.
+    Start with <code>index.html</code> and link to your CSS with relative URLs.
+</p>
+{% elif not enabled %}
 <div class="alert alert-warning">
     <strong>Personal pages aren't enabled on this BBS.</strong>
     The sysop can turn them on by setting
@@ -26,7 +31,7 @@
       enctype="multipart/form-data" class="card p-3 mb-3">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="d-flex gap-2 align-items-center">
-        <input type="file" name="file" required class="form-control">
+        <input type="file" name="file" required class="form-control"{% if static_url %} accept=".html,.htm,.css"{% endif %}>
         <button class="btn btn-primary"><i class="bi bi-upload"></i> Upload</button>
     </div>
 </form>
@@ -37,12 +42,12 @@
     {% for f in files %}
     <tr>
         <td>
-            <a href="/~{{ username }}/{{ f.name }}" target="_blank">{{ f.name }}</a>
+            <a href="{{ static_url or '/~' ~ username ~ '/' }}{{ f.name|urlencode }}" target="_blank" rel="noopener noreferrer">{{ f.name }}</a>
             {% if f.is_index %}<span class="badge bg-success ms-1">index</span>{% endif %}
         </td>
         <td><small>{{ '%.1f'|format(f.size / 1024) }} KB</small></td>
         <td>
-            <form method="post" action="{{ url_for('personal_pages.delete', filename=f.name) }}" class="d-inline" onsubmit="return confirm('Delete {{ f.name }}?');">
+            <form method="post" action="{{ url_for('personal_pages.delete', filename=f.name) }}" class="d-inline" onsubmit="return confirm('Delete this file?');">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
             </form>
@@ -58,10 +63,15 @@
     <div class="card-header">Tips</div>
     <div class="card-body small">
         <ul class="mb-0">
+            {% if static_url %}
+            <li>Publish up to 20 UTF-8 HTML and CSS files, up to 512 KB each.</li>
+            <li>Scripts and forms are disabled.</li>
+            {% else %}
             <li>Index file lookup tries: {{ index_files|join(', ') }}</li>
             <li>Sysop can also drop folders directly in <code>data/personal_pages/&lt;dir&gt;/</code>
                 — they'll be served at <code>/&lt;dir&gt;/</code> top-level.</li>
             <li>Upload your own HTML, CSS, JS, images — full static-site freedom.</li>
+            {% endif %}
         </ul>
     </div>
 </div>
