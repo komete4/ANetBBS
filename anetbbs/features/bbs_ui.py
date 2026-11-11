@@ -2201,6 +2201,7 @@ class BBSMenuUI:
         while True:
             with app.app_context():
                 is_sysop = bool(self.session.user.get('is_admin'))
+                uploads_enabled = app.config.get('FILE_UPLOADS_ENABLED', True)
                 # Sysop sees ALL areas (active + inactive, public + sysop-only).
                 # Regular users only see active non-sysop areas.
                 user_level = int((self.session.user or {}).get('access_level', 10))
@@ -2239,7 +2240,8 @@ class BBSMenuUI:
                         cnt = up_cnt + tic_cnt
                     perm = (a.upload_permission or 'users').lower()
                     write_lvl = a.min_write_level if a.min_write_level is not None else a.min_access_level
-                    can_upload = ((perm == 'users' or (perm == 'sysop' and is_sysop))
+                    can_upload = (uploads_enabled
+                                  and (perm == 'users' or (perm == 'sysop' and is_sysop))
                                   and (is_sysop or user_level >= write_lvl))
                     inactive = not a.is_active
                     sysop_flag = a.is_sysop_only
@@ -2324,7 +2326,7 @@ class BBSMenuUI:
                 lb_rows.append({
                     'id': None, 'name': 'General / Top-level', 'tag': '',
                     'cnt': top_cnt, 'inactive': False, 'sysop_only': False,
-                    'can_upload': True, 'storage_path': '', 'is_top': True,
+                    'can_upload': uploads_enabled, 'storage_path': '', 'is_top': True,
                 })
             lb_rows.extend(row for _, row in _combined)
 
@@ -3007,6 +3009,10 @@ class BBSMenuUI:
         uploads_dir, but the web view for that area (file_areas.py's
         _scan_area()) only ever scans area.storage_path and has no DB
         fallback -- the file existed, just never where the web looked."""
+        app = _app()
+        if not app.config.get('FILE_UPLOADS_ENABLED', True):
+            await self.session.write("\r\n[File uploads are disabled.]\r\n")
+            return
         from anetbbs.models import db, FileUpload
         from .xfer import recv_file
         import uuid, mimetypes, shutil as _shutil
@@ -3054,7 +3060,6 @@ class BBSMenuUI:
         target_dir = storage_path if use_disk_area else uploads_dir
         os.makedirs(target_dir, exist_ok=True)
 
-        app = _app()
         uid = self.session.user.get('id')
         saved = []
 

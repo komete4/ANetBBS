@@ -19,7 +19,7 @@ import secrets
 import logging
 import json
 from datetime import datetime
-from flask import Flask, request, render_template
+from flask import Flask, abort, request, render_template
 from flask_login import LoginManager, current_user
 from flask_migrate import Migrate
 from flask_socketio import join_room
@@ -586,10 +586,10 @@ def create_app(config_name=None):
     from .web.files import files_bp
     from .web.echomail import echomail_bp
     from .web.echomail_admin import echomail_admin_bp
-    from .web.games import games_bp
+    from .web.games import games_bp, register_socketio_handlers as _register_game_handlers
     from .web.games_admin import games_admin_bp
     from .web.ebooks import ebooks_bp
-    from .web.meadowlark import meadowlark_bp
+    from .web.meadowlark import meadowlark_bp, register_socketio_handlers as _register_coop_handlers
     from .web.darkforces import darkforces_bp
     from .web.gallery import gallery_bp
     from .web.gallery_admin import gallery_admin_bp
@@ -674,11 +674,23 @@ def create_app(config_name=None):
     app.register_blueprint(qwk_hub_bp)
     csrf.exempt(qwk_hub_bp)   # QWK nodes use HTTP Basic Auth, not CSRF tokens
     app.register_blueprint(network_join_bp)  # real browser form -- keeps CSRF
-    app.register_blueprint(games_bp)
-    app.register_blueprint(games_admin_bp)
+    game_blueprints = (games_bp, games_admin_bp, meadowlark_bp, darkforces_bp,
+                       games_interbbs_admin_bp, door_networks_admin_bp,
+                       door_errors_bp, mud_admin_bp)
+    for game_blueprint in game_blueprints:
+        app.register_blueprint(game_blueprint)
+    if app.config['GAMES_ENABLED']:
+        _register_game_handlers(socketio)
+        _register_coop_handlers(socketio)
+    else:
+        game_blueprint_names = {blueprint.name for blueprint in game_blueprints}
+
+        @app.before_request
+        def _reject_disabled_games():
+            if request.blueprint in game_blueprint_names:
+                abort(403)
+
     app.register_blueprint(ebooks_bp)
-    app.register_blueprint(meadowlark_bp)
-    app.register_blueprint(darkforces_bp)
     app.register_blueprint(gallery_bp)
     app.register_blueprint(gallery_admin_bp)
     app.register_blueprint(rss_bp)
@@ -711,7 +723,8 @@ def create_app(config_name=None):
     app.register_blueprint(ansi_bp)
     app.register_blueprint(addons_bp)
     app.register_blueprint(term_bp)
-    _register_term_handlers(socketio)
+    if app.config['WEB_TERMINAL_ENABLED']:
+        _register_term_handlers(socketio)
     app.register_blueprint(stats_bp)
     app.register_blueprint(feeds_bp)
     app.register_blueprint(gemini_bp)
@@ -749,7 +762,6 @@ def create_app(config_name=None):
     # Security: viewer for the daily-scan JSON report. Admin-only.
     app.register_blueprint(security_bp)
     # Door-errors: parses logs/door-errors.log into readable entries.
-    app.register_blueprint(door_errors_bp)
     # Backups: list + restore + delete /tmp/anetbbs-backup-* snapshots.
     app.register_blueprint(backups_bp)
     app.register_blueprint(pages_bp)
@@ -764,10 +776,7 @@ def create_app(config_name=None):
     app.register_blueprint(file_bulletins_admin_bp)
     app.register_blueprint(wall_admin_bp)
     app.register_blueprint(lastcallers_admin_bp)
-    app.register_blueprint(games_interbbs_admin_bp)
     app.register_blueprint(fsxnet_admin_bp)
-    app.register_blueprint(door_networks_admin_bp)
-    app.register_blueprint(mud_admin_bp)
 
     # Public downloads — auto-listing of the sysop's release directory.
     # No DB rows; scans DOWNLOADS_DIR on each (cached) request.
@@ -886,7 +895,7 @@ def create_app(config_name=None):
 
     # Start background RSS poller (refreshes feeds on RSS_POLL_INTERVAL,
     # default 30 min). No-op in TESTING mode.
-    if not (app.config.get('TESTING', False) or _one_shot_cli):
+    if app.config['RSS_ENABLED'] and not (app.config.get('TESTING', False) or _one_shot_cli):
         try:
             from .rss.poller import start_poller as start_rss_poller
             start_rss_poller(app)
@@ -1252,6 +1261,7 @@ def _lightweight_migrate(app):
     # Authentication generation for existing installations; leave old rows
     # NULL so their numeric login cookies remain valid until password change.
     _ensure_column('users', 'auth_version', 'VARCHAR(64)')
+    _ensure_column('password_reset_tokens', 'auth_version', 'VARCHAR(64)')
 
     # Posts: pinning + locking
     _ensure_column('posts', 'is_pinned',

@@ -113,7 +113,7 @@
 
 {% set can_upload = (area.upload_permission == 'users') or
                     (area.upload_permission == 'sysop' and current_user.is_admin) %}
-{% if can_upload %}
+{% if can_upload and config.get('FILE_UPLOADS_ENABLED', true) %}
 <div class="card">
     <div class="card-header"><i class="bi bi-upload"></i> Upload File</div>
     <div class="card-body">

@@ -89,6 +89,8 @@ def list_files():
 @login_required
 def upload():
     """Upload a file"""
+    if not current_app.config.get('FILE_UPLOADS_ENABLED', True):
+        abort(404)
     form = UploadForm()
     # Build the file-area picker. (0, '— Top-level —') means no area scoping.
     areas = FileArea.query.filter_by(is_active=True).order_by(FileArea.name).all()

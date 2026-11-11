@@ -331,14 +331,12 @@ def scores():
 # SocketIO — namespace /game
 # ---------------------------------------------------------------------------
 
-@socketio.on('connect', namespace='/game')
 def game_connect():
     if not current_user.is_authenticated:
         return False
     logger.debug('Game socket connected: user=%s', current_user.username)
 
 
-@socketio.on('start_game', namespace='/game')
 def handle_start_game(data):
     """Start a door game session and join the SocketIO room."""
     if not current_user.is_authenticated:
@@ -557,7 +555,6 @@ def _session_owned_by_this_socket(session_id):
     return owned is not None and str(owned) == str(session_id)
 
 
-@socketio.on('game_input', namespace='/game')
 def handle_game_input(data):
     """Forward keystroke from browser to PTY."""
     if not current_user.is_authenticated:
@@ -569,7 +566,6 @@ def handle_game_input(data):
         send_input(session_id, user_input)
 
 
-@socketio.on('game_resize', namespace='/game')
 def handle_game_resize(data):
     """Handle terminal resize event."""
     if not current_user.is_authenticated:
@@ -582,7 +578,6 @@ def handle_game_resize(data):
         resize_terminal(session_id, rows, cols)
 
 
-@socketio.on('disconnect', namespace='/game')
 def game_disconnect():
     """Terminate the game session on WebSocket disconnect."""
     session_id = _socket_to_session.pop(request.sid, None)
@@ -595,6 +590,14 @@ def game_disconnect():
             logger.exception('Error terminating session %s on disconnect', session_id)
     else:
         logger.debug('Game socket disconnected: sid=%s (no session)', request.sid)
+
+
+def register_socketio_handlers(socketio):
+    socketio.on_event('connect', game_connect, namespace='/game')
+    socketio.on_event('start_game', handle_start_game, namespace='/game')
+    socketio.on_event('game_input', handle_game_input, namespace='/game')
+    socketio.on_event('game_resize', handle_game_resize, namespace='/game')
+    socketio.on_event('disconnect', game_disconnect, namespace='/game')
 
 
 # ---------------------------------------------------------------------------

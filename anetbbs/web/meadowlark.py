@@ -49,7 +49,6 @@ from flask_login import login_required, current_user
 from flask_socketio import join_room, leave_room, emit
 
 from ..models import db, MeadowlarkSave
-from ..web_app import socketio
 
 meadowlark_bp = Blueprint('meadowlark', __name__, url_prefix='/games/meadowlark')
 
@@ -168,18 +167,15 @@ def _leave_current_room(sid):
         emit('member_left', {'username': username}, room=code, namespace='/mlv-coop')
 
 
-@socketio.on('connect', namespace='/mlv-coop')
 def coop_connect():
     if not current_user.is_authenticated:
         return False
 
 
-@socketio.on('disconnect', namespace='/mlv-coop')
 def coop_disconnect():
     _leave_current_room(request.sid)
 
 
-@socketio.on('host_room', namespace='/mlv-coop')
 def coop_host_room(_data=None):
     if not current_user.is_authenticated:
         return
@@ -192,7 +188,6 @@ def coop_host_room(_data=None):
     emit('room_hosted', {'code': code})
 
 
-@socketio.on('join_room_req', namespace='/mlv-coop')
 def coop_join_room(data):
     if not current_user.is_authenticated:
         return
@@ -210,12 +205,10 @@ def coop_join_room(data):
     emit('member_joined', {'username': current_user.username}, room=code, include_self=False)
 
 
-@socketio.on('leave_room_req', namespace='/mlv-coop')
 def coop_leave_room(_data=None):
     _leave_current_room(request.sid)
 
 
-@socketio.on('state_sync', namespace='/mlv-coop')
 def coop_state_sync(data):
     """Full-state broadcast -- host only. Any non-host sender is ignored
     outright rather than trusted, since a stray/hostile state_sync from a
@@ -228,7 +221,6 @@ def coop_state_sync(data):
     emit('state_sync', {'state_json': data.get('state_json')}, room=code, include_self=False)
 
 
-@socketio.on('action', namespace='/mlv-coop')
 def coop_action(data):
     """Relay a build/bulldoze/tax-change action to the rest of the room.
     Any current member may send one (the host applies it locally the same
@@ -241,3 +233,13 @@ def coop_action(data):
     emit('action', {'type': data.get('type'), 'payload': data.get('payload'),
                      'username': room['members'][request.sid]},
          room=code, include_self=False)
+
+
+def register_socketio_handlers(socketio):
+    socketio.on_event('connect', coop_connect, namespace='/mlv-coop')
+    socketio.on_event('disconnect', coop_disconnect, namespace='/mlv-coop')
+    socketio.on_event('host_room', coop_host_room, namespace='/mlv-coop')
+    socketio.on_event('join_room_req', coop_join_room, namespace='/mlv-coop')
+    socketio.on_event('leave_room_req', coop_leave_room, namespace='/mlv-coop')
+    socketio.on_event('state_sync', coop_state_sync, namespace='/mlv-coop')
+    socketio.on_event('action', coop_action, namespace='/mlv-coop')

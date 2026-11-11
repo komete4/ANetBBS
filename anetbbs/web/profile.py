@@ -507,7 +507,8 @@ def change_password():
         if user.auth_version != changed_auth_version:
             from flask_login import logout_user
             logout_user()
-            flash('Your password changed again. Please log in.', 'warning')
+            flash(_t('profile.password_changed_again',
+                     'Your password changed again. Please log in.'), 'warning')
             return redirect(url_for('auth.login'))
         # Keep this browser authenticated under the new generation. Copies
         # of its old cookies, other browsers and terminal sessions expire.

@@ -47,7 +47,7 @@ from datetime import datetime
 from urllib.parse import urlparse
 
 import requests
-from flask import Blueprint, jsonify, request, Response, abort
+from flask import Blueprint, jsonify, request, Response, abort, current_app
 from flask_login import login_required, current_user
 
 from ..core.net_safety import resolve_safe_destination
@@ -56,6 +56,13 @@ from ..models import db, EbookCache, EbookBookmark, EbookReadingHistory
 logger = logging.getLogger(__name__)
 
 ebooks_bp = Blueprint('ebooks', __name__, url_prefix='/games/ebooks')
+
+
+@ebooks_bp.before_request
+def _require_enabled():
+    if not current_app.config['EBOOKS_ENABLED']:
+        abort(403)
+
 
 GUTENDEX_API = 'https://gutendex.com/books'
 _HTTP_TIMEOUT = 20
