@@ -302,11 +302,13 @@ def _password_recovery_origin():
 
 @auth_bp.before_request
 def _check_password_recovery_host():
-    """Reject alternate hosts only on the sensitive recovery endpoints."""
+    """Apply availability and trusted-host checks to password recovery."""
     if request.endpoint not in {
             'auth.forgot_password', 'auth.security_question_verify',
             'auth.reset_password'}:
         return
+    if not current_app.config['PASSWORD_RECOVERY_ENABLED']:
+        abort(403)
     try:
         origin = urlsplit(_password_recovery_origin())
     except ValueError as exc:

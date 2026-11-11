@@ -254,6 +254,9 @@ class Config:
     SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'false').lower() == 'true'
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
+    REMEMBER_COOKIE_SECURE = SESSION_COOKIE_SECURE
+    REMEMBER_COOKIE_HTTPONLY = SESSION_COOKIE_HTTPONLY
+    REMEMBER_COOKIE_SAMESITE = SESSION_COOKIE_SAMESITE
     
     # Application
     BBS_NAME = os.environ.get('BBS_NAME', 'ANetBBS')
@@ -264,6 +267,7 @@ class Config:
     # Trusted external origin for password recovery, never inferred from
     # Host/X-Forwarded-Host. Blank uses the configured BBS_DOMAIN over HTTPS.
     PUBLIC_BASE_URL = os.environ.get('PUBLIC_BASE_URL', '')
+    PASSWORD_RECOVERY_ENABLED = os.environ.get('PASSWORD_RECOVERY_ENABLED', 'true').lower() == 'true'
     # Personal web-pages toggle. When true, the app serves the contents
     # of {DATA_DIR}/personal_pages/ at the BBS root URL — e.g. dropping
     # a `photography/` folder makes it visible at /photography/ with
