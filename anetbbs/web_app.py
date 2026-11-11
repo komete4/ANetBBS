@@ -19,7 +19,7 @@ import secrets
 import logging
 import json
 from datetime import datetime
-from flask import Flask, request, render_template
+from flask import Flask, abort, request, render_template
 from flask_login import LoginManager, current_user
 from flask_migrate import Migrate
 from flask_socketio import join_room
@@ -586,10 +586,10 @@ def create_app(config_name=None):
     from .web.files import files_bp
     from .web.echomail import echomail_bp
     from .web.echomail_admin import echomail_admin_bp
-    from .web.games import games_bp
+    from .web.games import games_bp, register_socketio_handlers as _register_game_handlers
     from .web.games_admin import games_admin_bp
     from .web.ebooks import ebooks_bp
-    from .web.meadowlark import meadowlark_bp
+    from .web.meadowlark import meadowlark_bp, register_socketio_handlers as _register_coop_handlers
     from .web.darkforces import darkforces_bp
     from .web.gallery import gallery_bp
     from .web.gallery_admin import gallery_admin_bp
@@ -674,11 +674,23 @@ def create_app(config_name=None):
     app.register_blueprint(qwk_hub_bp)
     csrf.exempt(qwk_hub_bp)   # QWK nodes use HTTP Basic Auth, not CSRF tokens
     app.register_blueprint(network_join_bp)  # real browser form -- keeps CSRF
-    app.register_blueprint(games_bp)
-    app.register_blueprint(games_admin_bp)
+    game_blueprints = (games_bp, games_admin_bp, meadowlark_bp, darkforces_bp,
+                       games_interbbs_admin_bp, door_networks_admin_bp,
+                       door_errors_bp, mud_admin_bp)
+    for game_blueprint in game_blueprints:
+        app.register_blueprint(game_blueprint)
+    if app.config['GAMES_ENABLED']:
+        _register_game_handlers(socketio)
+        _register_coop_handlers(socketio)
+    else:
+        game_blueprint_names = {blueprint.name for blueprint in game_blueprints}
+
+        @app.before_request
+        def _reject_disabled_games():
+            if request.blueprint in game_blueprint_names:
+                abort(403)
+
     app.register_blueprint(ebooks_bp)
-    app.register_blueprint(meadowlark_bp)
-    app.register_blueprint(darkforces_bp)
     app.register_blueprint(gallery_bp)
     app.register_blueprint(gallery_admin_bp)
     app.register_blueprint(rss_bp)
@@ -750,7 +762,6 @@ def create_app(config_name=None):
     # Security: viewer for the daily-scan JSON report. Admin-only.
     app.register_blueprint(security_bp)
     # Door-errors: parses logs/door-errors.log into readable entries.
-    app.register_blueprint(door_errors_bp)
     # Backups: list + restore + delete /tmp/anetbbs-backup-* snapshots.
     app.register_blueprint(backups_bp)
     app.register_blueprint(pages_bp)
@@ -765,10 +776,7 @@ def create_app(config_name=None):
     app.register_blueprint(file_bulletins_admin_bp)
     app.register_blueprint(wall_admin_bp)
     app.register_blueprint(lastcallers_admin_bp)
-    app.register_blueprint(games_interbbs_admin_bp)
     app.register_blueprint(fsxnet_admin_bp)
-    app.register_blueprint(door_networks_admin_bp)
-    app.register_blueprint(mud_admin_bp)
 
     # Public downloads — auto-listing of the sysop's release directory.
     # No DB rows; scans DOWNLOADS_DIR on each (cached) request.
