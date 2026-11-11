@@ -268,6 +268,9 @@ class Config:
     # Host/X-Forwarded-Host. Blank uses the configured BBS_DOMAIN over HTTPS.
     PUBLIC_BASE_URL = os.environ.get('PUBLIC_BASE_URL', '')
     PASSWORD_RECOVERY_ENABLED = os.environ.get('PASSWORD_RECOVERY_ENABLED', 'true').lower() == 'true'
+    WEB_TERMINAL_ENABLED = os.environ.get('WEB_TERMINAL_ENABLED', 'true').lower() == 'true'
+    EBOOKS_ENABLED = os.environ.get('EBOOKS_ENABLED', 'true').lower() == 'true'
+    RSS_ENABLED = os.environ.get('RSS_ENABLED', 'true').lower() == 'true'
     # Personal web-pages toggle. When true, the app serves the contents
     # of {DATA_DIR}/personal_pages/ at the BBS root URL — e.g. dropping
     # a `photography/` folder makes it visible at /photography/ with
@@ -482,7 +485,7 @@ class Config:
     SYSTAT_PORT = int(os.environ.get('SYSTAT_PORT', '11'))
     # Inter-BBS directory (sbbsimsg.lst from Vertrauen)
     SBBSIMSG_LIST_URL = 'ftp://vert.synchro.net/sbbsimsg.lst'
-    SBBSIMSG_AUTO_REFRESH = True
+    SBBSIMSG_AUTO_REFRESH = os.environ.get('SBBSIMSG_AUTO_REFRESH', 'true').lower() == 'true'
     SBBSIMSG_REFRESH_SECONDS = 86400   # daily
 
     # Pre-login "Matrix" splash -- a connection-options banner shown

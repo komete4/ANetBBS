@@ -7,8 +7,10 @@ from flask_login import login_required
 
 from ..models import db, RssFeed, RssItem
 from .access_control import require_admin as _admin_required
+from .rss import require_rss_enabled
 
 rss_admin_bp = Blueprint('rss_admin', __name__, url_prefix='/admin/rss')
+rss_admin_bp.before_request(require_rss_enabled)
 
 
 @rss_admin_bp.route('/')

@@ -711,7 +711,8 @@ def create_app(config_name=None):
     app.register_blueprint(ansi_bp)
     app.register_blueprint(addons_bp)
     app.register_blueprint(term_bp)
-    _register_term_handlers(socketio)
+    if app.config['WEB_TERMINAL_ENABLED']:
+        _register_term_handlers(socketio)
     app.register_blueprint(stats_bp)
     app.register_blueprint(feeds_bp)
     app.register_blueprint(gemini_bp)
@@ -886,7 +887,7 @@ def create_app(config_name=None):
 
     # Start background RSS poller (refreshes feeds on RSS_POLL_INTERVAL,
     # default 30 min). No-op in TESTING mode.
-    if not (app.config.get('TESTING', False) or _one_shot_cli):
+    if app.config['RSS_ENABLED'] and not (app.config.get('TESTING', False) or _one_shot_cli):
         try:
             from .rss.poller import start_poller as start_rss_poller
             start_rss_poller(app)
