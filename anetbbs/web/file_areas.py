@@ -676,6 +676,8 @@ def thumbnail(area_id, filename):
 @login_required
 @rate_limit('file_area_upload', limit=20, window=300, key_fn=_user_or_ip)
 def upload(area_id):
+    if not current_app.config.get('FILE_UPLOADS_ENABLED', True):
+        abort(404)
     area = FileArea.query.get_or_404(area_id)
     if not _visible_to(current_user, area):
         abort(403)
@@ -1087,6 +1089,8 @@ def manage_desc(area_id):
 @login_required
 @rate_limit('file_area_upload', limit=20, window=300, key_fn=_user_or_ip)
 def manage_upload(area_id):
+    if not current_app.config.get('FILE_UPLOADS_ENABLED', True):
+        abort(404)
     if not getattr(current_user, 'is_admin', False):
         abort(403)
     area = FileArea.query.get_or_404(area_id)
@@ -1179,6 +1183,8 @@ def smart_upload():
     Auto-detect heuristic: if the filename starts with `<TAG>_` or contains
     `[TAG]`, we try to find a FileArea with that tag. Otherwise the user
     picks from a dropdown."""
+    if not current_app.config.get('FILE_UPLOADS_ENABLED', True):
+        abort(404)
     visible_areas = [a for a in
                      FileArea.query.filter(FileArea.is_active.is_(True)).all()
                      if _visible_to(current_user, a)]

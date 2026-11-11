@@ -274,7 +274,10 @@ class AnetbbsAuthorizer(DummyAuthorizer):
                 if not getattr(user, 'is_verified', True) and not user.is_admin:
                     raise AuthenticationFailed('Account awaiting verification/approval.')
                 home = self.admin_root if user.is_admin else self.user_root
-                perm = 'elradfmwM' if user.is_admin else 'elradfmw'
+                if not self.app.config.get('FILE_UPLOADS_ENABLED', True):
+                    perm = 'elr'
+                else:
+                    perm = 'elradfmwM' if user.is_admin else 'elradfmw'
                 if self.has_user(username):
                     self.remove_user(username)
                 self.add_user(username, password=password,

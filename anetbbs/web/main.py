@@ -180,6 +180,8 @@ def tools_hub(section):
     tools = cfg['tools']
     if not current_user.is_authenticated:
         tools = [t for t in tools if not t[5]]
+    if section == 'personal' and not current_app.config.get('PERSONAL_PAGES_PUBLISHING_ENABLED', True):
+        tools = [t for t in tools if t[0] != 'personal_pages.my_pages']
     cfg = dict(cfg, tools=tools)
     return render_template('main/tools_hub.html', section=section, cfg=cfg)
 

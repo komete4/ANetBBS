@@ -270,6 +270,8 @@ class Config:
     # auto-index.html resolution.
     PERSONAL_PAGES_ENABLED = os.environ.get(
         'PERSONAL_PAGES_ENABLED', 'false').lower() == 'true'
+    PERSONAL_PAGES_PUBLISHING_ENABLED = os.environ.get(
+        'PERSONAL_PAGES_PUBLISHING_ENABLED', 'true').lower() == 'true'
     # Public "Watch It Live" page (anetbbs/web/watch.py) — a no-login
     # activity ticker meant to be shared/embedded off-site. Off by
     # default: it's a real, deliberate broadening of who's-online
@@ -297,6 +299,9 @@ class Config:
     # is_verified=False and have to wait for sysop approval before they
     # can log in. Like Mystic's NUV mode.
     NUV_ENABLED = os.environ.get('NUV_ENABLED', 'false').lower() == 'true'
+    # File library uploads across web, terminal and ordinary FTP accounts.
+    FILE_UPLOADS_ENABLED = os.environ.get(
+        'FILE_UPLOADS_ENABLED', 'true').lower() == 'true'
     # File-area upload moderation queue — when true, a non-admin's
     # upload is quarantined pending sysop approval instead of
     # publishing immediately (anetbbs/web/file_areas.py). Real gap

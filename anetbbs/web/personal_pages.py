@@ -25,6 +25,12 @@ from flask_login import login_required, current_user
 pages_bp = Blueprint('personal_pages', __name__, url_prefix='/_pages')
 
 
+@pages_bp.before_request
+def _require_publishing():
+    if not current_app.config.get('PERSONAL_PAGES_PUBLISHING_ENABLED', True):
+        abort(404)
+
+
 # Files to try in order when the URL ends with a /
 INDEX_FILES = ('index.html', 'index.htm', 'default.html', 'default.htm',
                'home.html', 'home.htm')
