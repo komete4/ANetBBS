@@ -170,6 +170,11 @@ TOOLS_HUB_SECTIONS = {
     },
 }
 
+OPTIONAL_TOOLS = {
+    'rss.index': 'RSS_ENABLED',
+    'web_terminal.index': 'WEB_TERMINAL_ENABLED',
+}
+
 
 @main_bp.route('/tools/<section>')
 def tools_hub(section):
@@ -177,7 +182,8 @@ def tools_hub(section):
     cfg = TOOLS_HUB_SECTIONS.get(section)
     if not cfg:
         abort(404)
-    tools = cfg['tools']
+    tools = [tool for tool in cfg['tools']
+             if tool[0] not in OPTIONAL_TOOLS or current_app.config[OPTIONAL_TOOLS[tool[0]]]]
     if not current_user.is_authenticated:
         tools = [t for t in tools if not t[5]]
     if section == 'personal' and not current_app.config.get('PERSONAL_PAGES_PUBLISHING_ENABLED', True):

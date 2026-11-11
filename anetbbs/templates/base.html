@@ -459,12 +459,14 @@
                         </ul>
                     </li>
 
+                    {% if config.GAMES_ENABLED %}
                     <!-- Games -->
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('games.lobby') }}">
                             <i class="bi bi-controller"></i> {{ t('nav.games', 'Games') }}
                         </a>
                     </li>
+                    {% endif %}
                     {% endif %}
 
                     <!-- Files dropdown -->
@@ -611,7 +613,9 @@
             {% set cd_unread = current_user.received_messages | selectattr('read_at', 'none') | selectattr('is_deleted_recipient', 'equalto', False) | list | length %}
             {% if cd_unread > 0 %}<span class="badge bg-danger">{{ cd_unread }}</span>{% endif %}
         </a>
+        {% if config.GAMES_ENABLED %}
         <a href="{{ url_for('games.lobby') }}"><i class="bi bi-controller"></i>{{ t("nav.games", "Games") }}</a>
+        {% endif %}
         <a href="{{ url_for('profile.index') }}"><i class="bi bi-person-circle"></i>{{ current_user.username }}</a>
         {% else %}
         <a href="{{ url_for('main.tools_hub', section='community') }}"><i class="bi bi-people"></i>{{ t("nav.community", "Community") }}</a>

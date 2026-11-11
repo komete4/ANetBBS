@@ -7,7 +7,7 @@ def test_optional_service_gates(tmp_path, monkeypatch, enabled):
     from flask import url_for
 
     from anetbbs.config import TestingConfig
-    from anetbbs.models import db
+    from anetbbs.models import db, User
     from anetbbs.web_app import create_app, socketio
 
     monkeypatch.setattr(TestingConfig, 'SQLALCHEMY_DATABASE_URI', f'sqlite:///{tmp_path / "bbs.db"}')
@@ -33,6 +33,21 @@ def test_optional_service_gates(tmp_path, monkeypatch, enabled):
         for namespace in ('/term', '/game', '/mlv-coop'):
             assert (namespace in handlers) == enabled
         assert '/irc' in handlers
+
+        with app.app_context():
+            user = User(username='optional-service-user', email='optional@example.invalid')
+            user.set_password('synthetic-test-password')
+            db.session.add(user)
+            db.session.commit()
+        login = client.post('/auth/login', data={
+            'username': 'optional-service-user', 'password': 'synthetic-test-password',
+        })
+        assert login.status_code == 302
+        for page, href in (('/tour', '/games/'), ('/tools/content', '/rss/'),
+                           ('/tools/personal', '/terminal/')):
+            response = client.get(page)
+            assert response.status_code == 200, page
+            assert (f'href="{href}"'.encode() in response.data) == enabled, page
     finally:
         with app.app_context():
             db.session.remove()

@@ -55,6 +55,7 @@
     </div>
 </div>
 
+{% if config.GAMES_ENABLED %}
 <div class="card mb-3">
     <div class="card-header"><strong>4. Door games</strong> &mdash; like the old days</div>
     <div class="card-body">
@@ -67,9 +68,10 @@
         </div>
     </div>
 </div>
+{% endif %}
 
 <div class="card mb-3">
-    <div class="card-header"><strong>5. Profile</strong> &mdash; make yourself at home</div>
+    <div class="card-header"><strong>{{ 5 if config.GAMES_ENABLED else 4 }}. Profile</strong> &mdash; make yourself at home</div>
     <div class="card-body">
         Pick a theme, upload an avatar, write a tagline, set your AKAs.
         You can also publish a Gemini capsule that shows up at
@@ -92,7 +94,7 @@
 </div>
 
 <div class="card mb-3">
-    <div class="card-header"><strong>6. Old-school access</strong></div>
+    <div class="card-header"><strong>{{ 6 if config.GAMES_ENABLED else 5 }}. Old-school access</strong></div>
     <div class="card-body">
         Prefer a real terminal? Telnet, SSH, and rlogin are all available.
         See the <a href="{{ url_for('main.about') }}">About</a> page for
