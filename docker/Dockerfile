@@ -130,3 +130,13 @@ ENV PYTHONUNBUFFERED=1 \
 # (supervisord manages its own per-process user= drop, no gosu needed).
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["/usr/local/bin/entrypoint.sh", "python", "deploy/serve.py"]
+
+# K4's public web process uses only port 5000 and an existing volume owned
+# by uid 1000. It can start unprivileged, without gosu or any capability.
+FROM runtime AS k4-web
+RUN setcap -r "$(readlink -f "$(command -v python3)")"
+USER 1000:1000
+CMD ["python", "deploy/serve.py"]
+
+# Leave the shared image as the default target for the upstream Compose.
+FROM runtime AS standard
