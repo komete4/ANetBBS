@@ -11,6 +11,7 @@ import logging
 import shlex
 from .bbs_ui import BBSMenuUI, _app
 from ..core.tz import fmt_eastern
+from .i18n import terminal_label
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +78,7 @@ async def _act_door(ui, args):
         if g is None:
             g = Game.query.filter_by(slug=args).first()
         if not g:
-            await ui.session.write("\r\nGame not found.\r\n")
+            await ui.session.write('\r\n' + terminal_label(ui.session, 'terminal.screen.game_not_found', 'Game not found.') + '\r\n')
             return None
         # Real gap found in a security audit: this looks games up by
         # raw numeric id with no other filtering at all, unlike every
@@ -93,7 +94,7 @@ async def _act_door(ui, args):
         # itself; this is the general hygiene check for any hidden
         # game, present or future.
         if not g.is_active:
-            await ui.session.write("\r\nGame not found.\r\n")
+            await ui.session.write('\r\n' + terminal_label(ui.session, 'terminal.screen.game_not_found', 'Game not found.') + '\r\n')
             return None
         # Real gap found in a security audit: every other door-launch
         # path (GameManager._launch(), session.py's _launch_direct_door()
@@ -201,8 +202,8 @@ async def _require_sysop(ui) -> bool:
     picker. Same double-gate reasoning as _sysop_cfg_tool()'s existing
     SSH-only check."""
     if not ui.session.user.get('is_admin'):
-        await ui.session.write("\r\nSysop access required.\r\n")
-        await ui.session.read_line("Press Enter...")
+        await ui.session.write('\r\n' + terminal_label(ui.session, 'terminal.screen.sysop_access_required', 'Sysop access required.') + '\r\n')
+        await ui.session.read_line(terminal_label(ui.session, 'terminal.screen.press_enter_ellipsis', 'Press Enter...'))
         return False
     return True
 
@@ -425,7 +426,7 @@ async def _act_dialout(ui, args):
 async def _act_ansi(ui, args):
     """Show a sysop-defined ANSI screen by slot name, then return to caller."""
     if not args:
-        await ui.session.write("\r\nMenu config error: ansi action_args needed.\r\n")
+        await ui.session.write('\r\n' + terminal_label(ui.session, 'terminal.screen.menu_config_error_ansi_action_args_needed', 'Menu config error: ansi action_args needed.') + '\r\n')
         return None
     try:
         await ui.session._show_ansi_screen(args.strip(), force_pause=True)
@@ -507,11 +508,11 @@ async def _act_exec(ui, args):
     # it. This action type is sysop-only by design (see docstring); make
     # that non-optional regardless of the menu item's own min_access.
     if not (ui.session.user or {}).get('is_admin'):
-        await ui.session.write("\r\nAccess denied.\r\n")
+        await ui.session.write('\r\n' + terminal_label(ui.session, 'terminal.screen.access_denied', 'Access denied.') + '\r\n')
         return None
 
     if not args:
-        await ui.session.write("\r\nMenu config error: exec action_args required.\r\n")
+        await ui.session.write('\r\n' + terminal_label(ui.session, 'terminal.screen.menu_config_error_exec_action_args_required', 'Menu config error: exec action_args required.') + '\r\n')
         return None
     cmd = None
     cfg = {}
@@ -525,7 +526,7 @@ async def _act_exec(ui, args):
         cmd = args
         cfg = {'cmd': cmd}
     if not cmd:
-        await ui.session.write("\r\nMenu config error: no 'cmd' in exec action.\r\n")
+        await ui.session.write('\r\n' + terminal_label(ui.session, 'terminal.screen.menu_config_error_no_cmd_in_exec_action', "Menu config error: no 'cmd' in exec action.") + '\r\n')
         return None
 
     name = cfg.get('name') or 'External program'
@@ -713,12 +714,13 @@ async def _act_exec(ui, args):
 
 async def _act_page(ui, args):
     """Page the sysop — record + emit a real-time toast on web admin tabs."""
-    await ui.session.write(
-        '\r\nPage the sysop:\r\n'
-        '  Type a one-line message (or just Enter to cancel).\r\n')
-    msg = await ui.session.read_line('Message: ')
+    help_text = terminal_label(
+        ui.session, 'terminal.screen.sysop_page_help',
+        'Page the sysop:\r\n  Type a one-line message (or just Enter to cancel).')
+    await ui.session.write('\r\n' + help_text + '\r\n')
+    msg = await ui.session.read_line(terminal_label(ui.session, 'terminal.screen.message_prompt', 'Message:') + ' ')
     if not msg or not msg.strip():
-        await ui.session.write('\r\nCancelled.\r\n')
+        await ui.session.write('\r\n' + terminal_label(ui.session, 'terminal.screen.cancelled', 'Cancelled.') + '\r\n')
         return None
     try:
         from .sysop_paging import page_sysop
@@ -732,7 +734,7 @@ async def _act_page(ui, args):
             f'\r\nSysop has been paged. Reference #{page_id}.\r\n')
     else:
         await ui.session.write(
-            '\r\nCould not record your page (logged for review).\r\n')
+            '\r\n' + terminal_label(ui.session, 'terminal.screen.could_not_record_your_page_logged_for_review', 'Could not record your page (logged for review).') + '\r\n')
     return None
 
 
@@ -998,7 +1000,7 @@ async def run_menu(session, start='main'):
                 await ui.show_main()
                 return
             if menu.min_access > access:
-                await session.write("\r\nAccess denied.\r\n")
+                await session.write('\r\n' + terminal_label(session, 'terminal.screen.access_denied', 'Access denied.') + '\r\n')
                 return
             items = (BbsMenuItem.query
                      .filter_by(menu_id=menu.id, is_visible=True)
@@ -1274,7 +1276,7 @@ async def run_menu(session, start='main'):
                 raise
             logger.exception('Menu action %s(%r) failed', action_type, action_args)
             try:
-                await session.write("\r\nMenu action failed (see server log).\r\n")
+                await session.write('\r\n' + terminal_label(session, 'terminal.screen.menu_action_failed_see_server_log', 'Menu action failed (see server log).') + '\r\n')
             except CarrierLost:
                 raise
             except Exception:
@@ -1537,7 +1539,7 @@ async def _act_oneliners(ui, args):
         await sess.write(
             f"  \x1b[33m<{u}>\x1b[0m {strip_untrusted_escapes(txt)}\r\n")
     line = await sess.read_line(
-        "\r\nLeave a one-liner (Enter to skip): ")
+        '\r\n' + terminal_label(ui.session, 'terminal.screen.leave_a_one_liner_enter_to_skip_prompt', 'Leave a one-liner (Enter to skip):') + ' ')
     if line and line.strip():
         try:
             from ..models import OneLiner, db as _db
@@ -1547,7 +1549,7 @@ async def _act_oneliners(ui, args):
                     user_id=sess.user.get('id'),
                     text=line.strip()[:120]))
                 _db.session.commit()
-            await sess.write("\r\nThanks!\r\n")
+            await sess.write('\r\n' + terminal_label(ui.session, 'terminal.screen.thanks', 'Thanks!') + '\r\n')
         except Exception:
             pass
     return None

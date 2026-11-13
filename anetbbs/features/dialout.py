@@ -13,6 +13,7 @@ import logging
 import os
 
 from .ansi_ui import banner, footer, prompt as _prompt, FG, RESET, BOLD, write_menu_art
+from .i18n import terminal_label
 
 
 logger = logging.getLogger(__name__)
@@ -109,7 +110,7 @@ class DialoutMenu:
             destinations = self._load_directory()
             if not await write_menu_art(self.session, 'dialout'):
 
-                await self.session.write(banner('Dial Out - Visit Another BBS'))
+                await self.session.write(banner(terminal_label(self.session, 'terminal.screen.dial_out_visit_another_bbs', 'Dial Out - Visit Another BBS')))
                 for i, (name, host, port, proto) in enumerate(destinations, 1):
                     line = f"  [{i:2d}] {name:<22} {host}:{port}  ({proto})"
                     line = line.replace(
@@ -117,9 +118,10 @@ class DialoutMenu:
                         f"{FG['yel']}{BOLD}[{i:2d}]{RESET}{FG['grn']}", 1)
                     await self.session.write(f"{FG['grn']}{line}{RESET}\r\n")
                 await self.session.write(footer() + '\r\n')
-                await self.session.write(
-                    f"{FG['cyan']}  [C] Custom destination  [Q] Back{RESET}\r\n\r\n")
-            choice = (await self.session.read_line(_prompt('Pick a BBS: '))
+                options = terminal_label(
+                    self.session, 'terminal.dialout.options', '  [C] Custom destination  [Q] Back')
+                await self.session.write(f"{FG['cyan']}{options}{RESET}\r\n\r\n")
+            choice = (await self.session.read_line(_prompt(terminal_label(self.session, 'terminal.screen.pick_a_bbs_prompt', 'Pick a BBS:') + ' '))
                       or '').strip().upper()
             if not choice or choice == 'Q':
                 return
@@ -132,18 +134,18 @@ class DialoutMenu:
                     name, host, port, proto = destinations[idx]
                     await self._connect(name, host, port, proto)
             except ValueError:
-                await self.session.write(
-                    f"\r\n{FG['red']}Invalid choice.{RESET}\r\n")
+                error = terminal_label(self.session, 'terminal.dialout.invalid_choice', 'Invalid choice.')
+                await self.session.write(f"\r\n{FG['red']}{error}{RESET}\r\n")
 
     async def _custom_destination(self):
-        host = (await self.session.read_line('Hostname: ')).strip()
+        host = (await self.session.read_line(terminal_label(self.session, 'terminal.screen.hostname_prompt', 'Hostname:') + ' ')).strip()
         if not host:
             return
-        port_s = (await self.session.read_line('Port [23]: ')).strip()
+        port_s = (await self.session.read_line(terminal_label(self.session, 'terminal.screen.port_23_prompt', 'Port [23]:') + ' ')).strip()
         try:
             port = int(port_s) if port_s else 23
         except ValueError:
-            await self.session.write('\r\nInvalid port.\r\n')
+            await self.session.write('\r\n' + terminal_label(self.session, 'terminal.screen.invalid_port', 'Invalid port.') + '\r\n')
             return
         await self._connect(host, host, port, 'telnet')
 
@@ -189,13 +191,20 @@ class DialoutMenu:
         # a bug.
         if getattr(self.session, 'term_mode', None) == 'enhanced':
             web_url = self._enhanced_terminal_link(host, port)
+            limitation = terminal_label(
+                self.session, 'terminal.dialout.enhanced_limitation',
+                "Dial-out isn't available directly in the Enhanced Client")
+            explanation = terminal_label(
+                self.session, 'terminal.dialout.enhanced_explanation',
+                " -- it proxies raw terminal bytes the JSON protocol can't carry.")
+            link_label = terminal_label(
+                self.session, 'terminal.dialout.browser_terminal',
+                'Use the browser terminal instead:')
             await self.session.write(
-                f"\r\n{FG['red']}Dial-out isn't available directly in "
-                f"the Enhanced Client{RESET} -- it proxies raw "
-                "terminal bytes the JSON protocol can't carry.\r\n"
-                f"{FG['grn']}Use the browser terminal instead:{RESET} "
+                f"\r\n{FG['red']}{limitation}{RESET}{explanation}\r\n"
+                f"{FG['grn']}{link_label}{RESET} "
                 f"{web_url}\r\n")
-            await self.session.read_line('Press Enter...')
+            await self.session.read_line(terminal_label(self.session, 'terminal.screen.press_enter_ellipsis', 'Press Enter...'))
             return
         # Real gap found in a security/performance audit: unlike every
         # other outbound-connect path in this codebase (web_terminal.py,
@@ -213,20 +222,26 @@ class DialoutMenu:
         from ..core.net_safety import resolve_safe_destination
         _family, sockaddr, ssrf_err = resolve_safe_destination(host, port)
         if ssrf_err:
-            await self.session.write(
-                f"\r\n{FG['red']}Connect failed: {ssrf_err}{RESET}\r\n")
-            await self.session.read_line('Press Enter...')
+            error = terminal_label(
+                self.session, 'terminal.dialout.failed', 'Connect failed: {reason}',
+                reason=ssrf_err)
+            await self.session.write(f"\r\n{FG['red']}{error}{RESET}\r\n")
+            await self.session.read_line(terminal_label(self.session, 'terminal.screen.press_enter_ellipsis', 'Press Enter...'))
             return
-        await self.session.write(
-            f"\r\n{FG['cyan']}Connecting to {name} ({host}:{port}) - "
-            f"Press Ctrl+] then Q to disconnect.{RESET}\r\n\r\n")
+        connecting = terminal_label(
+            self.session, 'terminal.dialout.connecting',
+            'Connecting to {name} ({host}:{port}) - Press Ctrl+] then Q to disconnect.',
+            name=name, host=host, port=port)
+        await self.session.write(f"\r\n{FG['cyan']}{connecting}{RESET}\r\n\r\n")
         try:
             reader, writer = await asyncio.wait_for(
                 asyncio.open_connection(sockaddr[0], sockaddr[1]), timeout=15)
         except (OSError, asyncio.TimeoutError) as exc:
-            await self.session.write(
-                f"\r\n{FG['red']}Connect failed: {exc}{RESET}\r\n")
-            await self.session.read_line('Press Enter...')
+            error = terminal_label(
+                self.session, 'terminal.dialout.failed', 'Connect failed: {reason}',
+                reason=exc)
+            await self.session.write(f"\r\n{FG['red']}{error}{RESET}\r\n")
+            await self.session.read_line(terminal_label(self.session, 'terminal.screen.press_enter_ellipsis', 'Press Enter...'))
             return
         await self._proxy(reader, writer)
         try:

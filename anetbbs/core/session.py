@@ -3686,7 +3686,7 @@ class BBSSession:
                         '\r\n\x1b[1;32mNo new messages.\x1b[0m\r\n'
                         '\x1b[1mPress ENTER to continue...\x1b[0m')
                 else:
-                    await self.write('\r\nNo new messages.\r\n')
+                    await self.write('\r\n' + self._terminal_text('terminal.screen.no_new_messages', 'No new messages.') + '\r\n')
                 return
             if self.term_mode == 'petscii':
                 return

@@ -48,7 +48,10 @@ class SpanishTerminalMenuTests(unittest.TestCase):
         os.environ['FLASK_ENV'] = 'testing'
         from anetbbs.web_app import create_app
         from anetbbs.models import db, User
-        cls.app = create_app('testing')
+        with patch.object(cfg_mod.TestingConfig, 'REGISTRY_URL', ''), \
+             patch.object(cfg_mod.TestingConfig, 'MRC_NETWORK_STATS_ENABLED', False), \
+             patch.object(cfg_mod.TestingConfig, 'SBBSIMSG_AUTO_REFRESH', False):
+            cls.app = create_app('testing')
         with cls.app.app_context():
             user = User(username='spanishmenus', email='menus@example.com',
                         password_hash='x', access_level=10, is_admin=False,
@@ -196,6 +199,35 @@ class SpanishTerminalMenuTests(unittest.TestCase):
                     # Standard ANSI mode uses a 30-character column,
                     # including the six characters in "  [X] ".
                     self.assertLessEqual(len(text), 24)
+
+    def test_stock_petscii_games_menu_preserves_exit_key(self):
+        from anetbbs.features.petscii_ui import _run_default_petscii_menu
+
+        class Session:
+            petscii_width = 40
+            user = {'language': 'es'}
+
+            def __init__(self):
+                self.keys = iter(('7', 'Q', 'Q'))
+                self.transcript = []
+
+            async def clear_screen(self):
+                pass
+
+            async def write(self, text):
+                self.transcript.append(text)
+
+            async def read_line(self, prompt):
+                self.transcript.append(prompt)
+                return next(self.keys)
+
+        session = Session()
+        asyncio.run(_run_default_petscii_menu(session))
+        transcript = ''.join(session.transcript)
+        self.assertIn('Juegos', transcript)
+        self.assertIn('1. Adivina el número', transcript)
+        self.assertIn('Q. Volver', transcript)
+        self.assertIn('¡Hasta pronto!', transcript)
 
     def test_real_session_renders_accents_and_navigates_with_original_hotkeys(self):
         from anetbbs.core.session import BBSSession

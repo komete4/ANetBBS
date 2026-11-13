@@ -390,7 +390,7 @@ class BBSMenuUI:
         from .ansi_ui import banner, FG, RESET, BOLD, ui_width
 
         term = (await self.session.read_line(
-            "\r\nSearch messages for: ") or '').strip()
+            '\r\n' + terminal_label(self.session, 'terminal.screen.search_messages_for_prompt', 'Search messages for:') + ' ') or '').strip()
         if not term:
             return
 
@@ -557,7 +557,7 @@ class BBSMenuUI:
                     f"{FG['cyan']}{ts}{RESET}\r\n")
             await self.session.write('\r\n' + footer(_w) + '\r\n')
             choice = (await self.session.read_line(
-                _prompt('Pick bulletin (number / Q): ')) or '').strip()
+                _prompt(terminal_label(self.session, 'terminal.screen.pick_bulletin_number_q_prompt', 'Pick bulletin (number / Q):') + ' ')) or '').strip()
             if choice.upper() == 'Q' or not choice:
                 return
             try:
@@ -938,7 +938,7 @@ class BBSMenuUI:
 
         if not rows:
             await self.session.write('\x1b[2J\x1b[H')
-            await self.session.write(banner('Inter-BBS Instant Messages', ui_width(self.session)))
+            await self.session.write(banner(terminal_label(self.session, 'terminal.screen.inter_bbs_instant_messages', 'Inter-BBS Instant Messages'), ui_width(self.session)))
             await self.session.write(
                 f"  {FG['gry']}No InterBBS instant messages.{RESET}\r\n")
             await self.session.read_line(('\r\n' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
@@ -950,7 +950,7 @@ class BBSMenuUI:
             _prev_w = max(24, _w - 44)
 
             async def render_header():
-                await self.session.write(banner('Inter-BBS Instant Messages', _w))
+                await self.session.write(banner(terminal_label(self.session, 'terminal.screen.inter_bbs_instant_messages', 'Inter-BBS Instant Messages'), _w))
                 await self.session.write(
                     f"  {FG['cyan']}{BOLD}{'':2}{'From':<18}  {'When':<12}  "
                     f"{'Preview':<{_prev_w}}{RESET}\r\n"
@@ -1009,7 +1009,7 @@ class BBSMenuUI:
                         db.session.delete(im)
                         db.session.commit()
                 rows.pop(sel)
-                await self.session.write("\r\nDeleted.\r\n")
+                await self.session.write('\r\n' + terminal_label(self.session, 'terminal.screen.deleted', 'Deleted.') + '\r\n')
                 if not rows:
                     return
                 sel = min(sel, len(rows) - 1)
@@ -1065,10 +1065,10 @@ class BBSMenuUI:
                          'systat_port': e.systat_port or 11} for e in entries]
         if not all_rows:
             await self.session.write('\x1b[2J\x1b[H')
-            await self.session.write(banner('Pick a BBS', ui_width(self.session)))
+            await self.session.write(banner(terminal_label(self.session, 'terminal.screen.pick_a_bbs', 'Pick a BBS'), ui_width(self.session)))
             await self.session.write(
                 f"  {FG['gry']}No BBSes in the directory yet.{RESET}\r\n")
-            await self.session.read_line(f"  {FG['cyan']}Press Enter...{RESET}")
+            await self.session.read_line(f"  {FG['cyan']}{terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')}{RESET}")
             return 'MANUAL'
 
         search_term = None
@@ -1083,7 +1083,7 @@ class BBSMenuUI:
 
             if not rows:
                 await self.session.write('\x1b[2J\x1b[H')
-                await self.session.write(banner('Pick a BBS', ui_width(self.session)))
+                await self.session.write(banner(terminal_label(self.session, 'terminal.screen.pick_a_bbs', 'Pick a BBS'), ui_width(self.session)))
                 await self.session.write(
                     f"  {FG['gry']}No matches for \"{search_term}\".{RESET}\r\n\r\n")
                 ans = (await self.session.read_line(
@@ -1092,7 +1092,7 @@ class BBSMenuUI:
                 ) or '').strip().upper()
                 if ans == 'S':
                     search_term = (await self.session.read_line(
-                        "  Search name/hostname/sysop/location: "
+                        '  ' + terminal_label(self.session, 'terminal.screen.search_name_hostname_sysop_location_prompt', 'Search name/hostname/sysop/location:') + ' '
                     ) or '').strip() or None
                     continue
                 if ans == 'C':
@@ -1104,7 +1104,7 @@ class BBSMenuUI:
 
             async def render_header():
                 _w = ui_width(self.session)
-                await self.session.write(banner('Pick a BBS', _w))
+                await self.session.write(banner(terminal_label(self.session, 'terminal.screen.pick_a_bbs', 'Pick a BBS'), _w))
                 if search_term:
                     await self.session.write(
                         f"  {FG['gry']}Search: \"{search_term}\" "
@@ -1137,8 +1137,7 @@ class BBSMenuUI:
                 return rows[result[1]]
             elif result[0] == 'key' and result[1] == 'S':
                 search_term = (await self.session.read_line(
-                    "\r\n  Search name/hostname/sysop/location "
-                    "(blank=clear): ") or '').strip() or None
+                    '\r\n  ' + terminal_label(self.session, 'terminal.screen.search_name_hostname_sysop_location_blank_clear_prompt', 'Search name/hostname/sysop/location (blank=clear):') + ' ') or '').strip() or None
                 continue
             elif result[0] == 'key' and result[1] == 'C' and search_term:
                 search_term = None
@@ -1275,10 +1274,10 @@ class BBSMenuUI:
 
         if not all_rows:
             await self.session.write('\x1b[2J\x1b[H')
-            await self.session.write(banner('BBS Directory', ui_width(self.session)))
+            await self.session.write(banner(terminal_label(self.session, 'terminal.screen.bbs_directory', 'BBS Directory'), ui_width(self.session)))
             await self.session.write(
                 f"  {FG['gry']}No BBSes in the directory yet.{RESET}\r\n")
-            await self.session.read_line(f"  {FG['cyan']}Press Enter...{RESET}")
+            await self.session.read_line(f"  {FG['cyan']}{terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')}{RESET}")
             return
 
         # 'S' filters by name/hostname/sysop/location -- added per
@@ -1298,7 +1297,7 @@ class BBSMenuUI:
 
             if not rows:
                 await self.session.write('\x1b[2J\x1b[H')
-                await self.session.write(banner('BBS Directory', ui_width(self.session)))
+                await self.session.write(banner(terminal_label(self.session, 'terminal.screen.bbs_directory', 'BBS Directory'), ui_width(self.session)))
                 await self.session.write(
                     f"  {FG['gry']}No matches for \"{search_term}\".{RESET}\r\n\r\n")
                 ans = (await self.session.read_line(
@@ -1306,7 +1305,7 @@ class BBSMenuUI:
                     f"{FG['cyan']}Q{RESET}=Back: ") or '').strip().upper()
                 if ans == 'S':
                     search_term = (await self.session.read_line(
-                        "  Search name/hostname/sysop/location: "
+                        '  ' + terminal_label(self.session, 'terminal.screen.search_name_hostname_sysop_location_prompt', 'Search name/hostname/sysop/location:') + ' '
                     ) or '').strip() or None
                     continue
                 if ans == 'C':
@@ -1316,7 +1315,7 @@ class BBSMenuUI:
 
             async def render_header():
                 _w = ui_width(self.session)
-                await self.session.write(banner('BBS Directory', _w))
+                await self.session.write(banner(terminal_label(self.session, 'terminal.screen.bbs_directory', 'BBS Directory'), _w))
                 if search_term:
                     await self.session.write(
                         f"  {FG['gry']}Search: \"{search_term}\" "
@@ -1357,8 +1356,7 @@ class BBSMenuUI:
                 await self._show_bbs_directory_detail(rows[sel])
             elif result[0] == 'key' and result[1] == 'S':
                 search_term = (await self.session.read_line(
-                    "\r\n  Search name/hostname/sysop/location "
-                    "(blank=clear): ") or '').strip() or None
+                    '\r\n  ' + terminal_label(self.session, 'terminal.screen.search_name_hostname_sysop_location_blank_clear_prompt', 'Search name/hostname/sysop/location (blank=clear):') + ' ') or '').strip() or None
                 sel = 0
             elif result[0] == 'key' and result[1] == 'C' and search_term:
                 search_term = None
@@ -1412,13 +1410,13 @@ class BBSMenuUI:
             target_user, target_host = picked
             _w = ui_width(self.session)
             await self.session.write('\x1b[2J\x1b[H')
-            await self.session.write(banner('Send Inter-BBS Instant Message', _w))
+            await self.session.write(banner(terminal_label(self.session, 'terminal.screen.send_inter_bbs_instant_message', 'Send Inter-BBS Instant Message'), _w))
             await self.session.write(
                 f"  {FG['cyan']}To:{RESET} {target_user}@{target_host}\r\n")
         else:
             _w = ui_width(self.session)
             await self.session.write('\x1b[2J\x1b[H')
-            await self.session.write(banner('Send Inter-BBS Instant Message', _w))
+            await self.session.write(banner(terminal_label(self.session, 'terminal.screen.send_inter_bbs_instant_message', 'Send Inter-BBS Instant Message'), _w))
             dest = (await self.session.read_line(
                 f"  {FG['cyan']}Destination (user@host):{RESET} ") or '').strip()
             if '@' not in dest:
@@ -1492,7 +1490,7 @@ class BBSMenuUI:
             while True:
                 _w = ui_width(self.session)
                 await self.session.write('\x1b[2J\x1b[H')
-                await self.session.write(banner('Echomail Networks', _w))
+                await self.session.write(banner(terminal_label(self.session, 'terminal.screen.echomail_networks', 'Echomail Networks'), _w))
                 await self.session.write(
                     f"  {FG['gry']}No echomail areas configured yet -- apply "
                     f"for a network below to get started.{RESET}\r\n\r\n"
@@ -1514,7 +1512,7 @@ class BBSMenuUI:
             _net_w = max(24, _w - 22)
 
             async def render_header():
-                await self.session.write(banner('Echomail Networks', _w))
+                await self.session.write(banner(terminal_label(self.session, 'terminal.screen.echomail_networks', 'Echomail Networks'), _w))
                 await self.session.write(
                     f"  {FG['gry']}A = Apply for ANotherNetwork QWK node{RESET}\r\n"
                     f"  {FG['cyan']}{BOLD}{'#':>2}  {'Network':<{_net_w}} "
@@ -1589,7 +1587,7 @@ class BBSMenuUI:
             await self.session.write(
                 f"\r\n  {FG['gry']}No areas in this network.{RESET}\r\n")
             await self.session.read_line(
-                f"  {FG['cyan']}Press Enter...{RESET}")
+                f"  {FG['cyan']}{terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')}{RESET}")
             return
 
         COL_TAG  = 16
@@ -1705,7 +1703,7 @@ class BBSMenuUI:
 
         _w = ui_width(self.session)
         await self.session.write('\x1b[2J\x1b[H')
-        await self.session.write(banner('ANotherNetwork — QWK Node Application', _w))
+        await self.session.write(banner(terminal_label(self.session, 'terminal.screen.anothernetwork_qwk_node_application', 'ANotherNetwork — QWK Node Application'), _w))
         await self.session.write(
             f"\r\n"
             f"  {FG['wht']}ANotherNetwork (Zone 1200) connects BBS systems via QWK echomail.{RESET}\r\n"
@@ -1719,7 +1717,7 @@ class BBSMenuUI:
             f"\r\n"
         )
         go = (await self.session.read_line(
-            _prompt('Press Enter to continue or Q to cancel: ')
+            _prompt(terminal_label(self.session, 'terminal.screen.press_enter_to_continue_or_q_to_cancel_prompt', 'Press Enter to continue or Q to cancel:') + ' ')
         ) or '').strip().upper()
         if go == 'Q':
             return
@@ -1788,7 +1786,7 @@ class BBSMenuUI:
             f"\r\n"
         )
         confirm = (await self.session.read_line(
-            _prompt('Submit? (Y / N): ')
+            _prompt(terminal_label(self.session, 'terminal.screen.submit_y_n_prompt', 'Submit? (Y / N):') + ' ')
         ) or '').strip().upper()
         if confirm != 'Y':
             await self.session.write(
@@ -1956,7 +1954,7 @@ class BBSMenuUI:
 
         _w = ui_width(self.session)
         await self.session.write('\x1b[2J\x1b[H')
-        await self.session.write(banner('ANotherNetwork — Node Application Status', _w))
+        await self.session.write(banner(terminal_label(self.session, 'terminal.screen.anothernetwork_node_application_status', 'ANotherNetwork — Node Application Status'), _w))
         if stale_note:
             await self.session.write(f"\r\n  {FG['gry']}({stale_note}){RESET}\r\n")
 
@@ -2029,7 +2027,7 @@ class BBSMenuUI:
             await self.session.write(banner(tag, ui_width(self.session)))
             await self.session.write(
                 f"  {FG['gry']}(no messages in this area yet){RESET}\r\n")
-            await self.session.read_line(f"  {FG['cyan']}Press Enter...{RESET}")
+            await self.session.read_line(f"  {FG['cyan']}{terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')}{RESET}")
             return
 
         COL_FROM = 14
@@ -2109,7 +2107,7 @@ class BBSMenuUI:
                         await self.session.write(
                             f"\r\n  {FG['red']}{name_error}{RESET}\r\n")
                         await self.session.read_line(
-                            f"\r\n{FG['cyan']}Press Enter...{RESET}")
+                            f"\r\n{FG['cyan']}{terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')}{RESET}")
                         continue
                     if view_result == 'reply':
                         compose_to   = frm or 'All'
@@ -2186,7 +2184,7 @@ class BBSMenuUI:
                         await self.session.write(
                             f"\r\n  {FG['grn']}{BOLD}[OK] Message queued for next poll.{RESET}\r\n")
                         await self.session.read_line(
-                            f"\r\n{FG['cyan']}Press Enter...{RESET}")
+                            f"\r\n{FG['cyan']}{terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')}{RESET}")
 
     # ------------------------------------------------------------------
     # File library (list-only for now)
@@ -2333,7 +2331,7 @@ class BBSMenuUI:
 
             if not lb_rows:
                 await self.session.write('\x1b[2J\x1b[H')
-                await self.session.write(banner('File Library - Areas',
+                await self.session.write(banner(terminal_label(self.session, 'terminal.screen.file_library_areas', 'File Library - Areas'),
                                                  _ui_width(self.session)))
                 await self.session.write(
                     f"  {FG['gry']}(no file areas configured){RESET}\r\n")
@@ -2345,7 +2343,7 @@ class BBSMenuUI:
             _name_w = max(30, _w - 26)   # leave room for #, files count, flags
 
             async def render_header_files():
-                await self.session.write(banner('File Library - Areas', _w))
+                await self.session.write(banner(terminal_label(self.session, 'terminal.screen.file_library_areas', 'File Library - Areas'), _w))
                 await self.session.write(
                     f"  {FG['cyan']}{BOLD}"
                     f"{'#':>3}  {'Name':<{_name_w}} {'Files':>7}{RESET}\r\n"
@@ -2589,7 +2587,7 @@ class BBSMenuUI:
                         f"{FG['cyan']}Q{RESET}=Back: ") or '').strip().upper()
                     if ans == 'F':
                         search_term = (await self.session.read_line(
-                            "  Search filename/description: ") or '').strip() or None
+                            '  ' + terminal_label(self.session, 'terminal.screen.search_filename_description_prompt', 'Search filename/description:') + ' ') or '').strip() or None
                         continue
                     if ans == 'C':
                         search_term = None
@@ -2707,8 +2705,7 @@ class BBSMenuUI:
                         area_id, uploads_dir, protos, storage_path)
                 elif key == 'F':
                     search_term = (await self.session.read_line(
-                        "\r\n  Search filename/description "
-                        "(blank=clear): ") or '').strip() or None
+                        '\r\n  ' + terminal_label(self.session, 'terminal.screen.search_filename_description_blank_clear_prompt', 'Search filename/description (blank=clear):') + ' ') or '').strip() or None
                     sel = 0
                 elif key == 'C' and search_term:
                     search_term = None
@@ -2762,7 +2759,7 @@ class BBSMenuUI:
             await self.session.write(
                 f"\r\n  {FG['gry']}(no description available){RESET}\r\n")
 
-        await self.session.read_line(f"\r\n{FG['cyan']}Press Enter...{RESET}")
+        await self.session.read_line(f"\r\n{FG['cyan']}{terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')}{RESET}")
 
     async def _batch_download(self, files, web_base, protos):
         """Prompt for protocol once, then sequentially send multiple files."""
@@ -3034,11 +3031,11 @@ class BBSMenuUI:
         proto_map = {'Z': 'zmodem', 'Y': 'ymodem', 'X': 'xmodem'}
         protocol = proto_map.get(proto_choice)
         if not protocol or protocol not in protos:
-            await self.session.write("\r\nUnknown protocol.\r\n")
+            await self.session.write('\r\n' + terminal_label(self.session, 'terminal.screen.unknown_protocol', 'Unknown protocol.') + '\r\n')
             return
 
         desc = (await self.session.read_line(
-            "Description (optional, blank to skip): ") or '').strip()
+            terminal_label(self.session, 'terminal.screen.description_optional_blank_to_skip_prompt', 'Description (optional, blank to skip):') + ' ') or '').strip()
 
         await self.session.write(
             f"\r\nReady for {protocol.upper()} receive.\r\n"
@@ -3711,10 +3708,10 @@ class BBSMenuUI:
             if not feed_rows:
                 await self.session.write('\x1b[2J\x1b[H')
                 _w0 = ui_width(self.session)
-                await self.session.write(banner('RSS Reader', _w0))
+                await self.session.write(banner(terminal_label(self.session, 'terminal.screen.rss_reader', 'RSS Reader'), _w0))
                 await self.session.write(
                     f"  {FG['gry']}No feeds configured. Add one at /admin/rss/.{RESET}\r\n")
-                await self.session.read_line(f"  {FG['cyan']}Press Enter...{RESET}")
+                await self.session.read_line(f"  {FG['cyan']}{terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')}{RESET}")
                 return
 
             # Feed name column expands with terminal width.
@@ -3725,7 +3722,7 @@ class BBSMenuUI:
             async def render_header_rss():
                 _w = ui_width(self.session)
                 _cw = max(32, _w - 38)
-                await self.session.write(banner('RSS Reader', _w))
+                await self.session.write(banner(terminal_label(self.session, 'terminal.screen.rss_reader', 'RSS Reader'), _w))
                 await self.session.write(
                     f"  {FG['cyan']}{BOLD}"
                     f"{'#':>2}  {'Feed':<{_cw}}  {'Category':<10}  "
@@ -3876,7 +3873,7 @@ class BBSMenuUI:
                     await self.session.write(banner(feed_name[:36], ui_width(self.session)))
                     await self.session.write(
                         f"  {FG['gry']}No items yet. Poller runs every ~30 min.{RESET}\r\n")
-                    await self.session.read_line(f"  {FG['cyan']}Press Enter...{RESET}")
+                    await self.session.read_line(f"  {FG['cyan']}{terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')}{RESET}")
                     return
                 read_ids = set()
                 if uid and all_items:
@@ -4183,10 +4180,10 @@ class BBSMenuUI:
                 all_items = q.limit(300).all()
                 if not all_items:
                     await self.session.write('\x1b[2J\x1b[H')
-                    await self.session.write(banner('RSS River', ui_width(self.session)))
+                    await self.session.write(banner(terminal_label(self.session, 'terminal.screen.rss_river', 'RSS River'), ui_width(self.session)))
                     await self.session.write(
                         f"  {FG['gry']}No items across any feed yet.{RESET}\r\n")
-                    await self.session.read_line(f"  {FG['cyan']}Press Enter...{RESET}")
+                    await self.session.read_line(f"  {FG['cyan']}{terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')}{RESET}")
                     return
                 read_ids = set()
                 if uid and all_items:
@@ -4203,7 +4200,7 @@ class BBSMenuUI:
             async def render_header_river():
                 _w = ui_width(self.session)
                 _title_w = max(46, _w - 30)
-                await self.session.write(banner('RSS River — All Feeds', _w))
+                await self.session.write(banner(terminal_label(self.session, 'terminal.screen.rss_river_all_feeds', 'RSS River — All Feeds'), _w))
                 await self.session.write(
                     f"  {FG['cyan']}{BOLD}"
                     f"{'':>4}{'Date':>5}  {'Feed':<14}  {'Title':<{_title_w}}{RESET}\r\n"
@@ -4274,7 +4271,7 @@ class BBSMenuUI:
         while True:
             _w = ui_width(self.session)
             menu = (
-                '\x1b[2J\x1b[H' + banner('Ebook Reader', _w) +
+                '\x1b[2J\x1b[H' + banner(terminal_label(self.session, 'terminal.screen.ebook_reader', 'Ebook Reader'), _w) +
                 f"\r\n  {FG['cyan']}C{RESET}. Classics\r\n"
                 f"  {FG['cyan']}S{RESET}. Search\r\n"
                 f"  {FG['cyan']}H{RESET}. Continue Reading\r\n"
@@ -4314,7 +4311,7 @@ class BBSMenuUI:
             await self.session.write('\x1b[2J\x1b[H')
             await self.session.write(banner(title, ui_width(self.session)))
             await self.session.write(f"  {FG['gry']}{empty_msg}{RESET}\r\n")
-            await self.session.read_line(f"  {FG['cyan']}Press Enter...{RESET}")
+            await self.session.read_line(f"  {FG['cyan']}{terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')}{RESET}")
             return None
 
         async def render_header():
@@ -4360,10 +4357,10 @@ class BBSMenuUI:
     async def _ebook_search(self):
         from anetbbs.web.ebooks import search_books
         query = (await self.session.read_line(
-            '\r\n  Search Project Gutenberg (title/author): ') or '').strip()
+            '\r\n  ' + terminal_label(self.session, 'terminal.screen.search_project_gutenberg_title_author_prompt', 'Search Project Gutenberg (title/author):') + ' ') or '').strip()
         if not query:
             return
-        await self.session.write('\r\n  Searching...\r\n')
+        await self.session.write('\r\n  ' + terminal_label(self.session, 'terminal.screen.searching_ellipsis', 'Searching...') + '\r\n')
         try:
             with _app().app_context():
                 rows = search_books(query)
@@ -4409,14 +4406,14 @@ class BBSMenuUI:
 
             if not rows:
                 await self.session.write('\x1b[2J\x1b[H')
-                await self.session.write(banner('Bookmarks', ui_width(self.session)))
+                await self.session.write(banner(terminal_label(self.session, 'terminal.screen.bookmarks', 'Bookmarks'), ui_width(self.session)))
                 await self.session.write(f"  {FG['gry']}No bookmarks yet.{RESET}\r\n")
-                await self.session.read_line(f"  {FG['cyan']}Press Enter...{RESET}")
+                await self.session.read_line(f"  {FG['cyan']}{terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')}{RESET}")
                 return
 
             async def render_header():
                 _w = ui_width(self.session)
-                await self.session.write(banner('Bookmarks', _w))
+                await self.session.write(banner(terminal_label(self.session, 'terminal.screen.bookmarks', 'Bookmarks'), _w))
                 await self.session.write(
                     f"  {FG['cyan']}{BOLD}{'#':>2}  {'Name':<24}  {'Book':<40}{RESET}\r\n"
                     f"  {FG['gry']}{'─' * max(72, _w - 4)}{RESET}\r\n")
@@ -4453,7 +4450,7 @@ class BBSMenuUI:
         from .ansi_ui import banner, FG, RESET, ui_width
 
         async def render_header():
-            await self.session.write(banner('Chapters', ui_width(self.session)))
+            await self.session.write(banner(terminal_label(self.session, 'terminal.screen.chapters', 'Chapters'), ui_width(self.session)))
 
         def render_row(idx, row, selected):
             t = BBSMenuUI._sanitize_cp437(row['title'])[:70]
@@ -4497,7 +4494,7 @@ class BBSMenuUI:
                 title=(title or '')[:300], author=(author or '')[:300],
                 name=name[:100], position=position, created_at=datetime.utcnow()))
             db.session.commit()
-        await self.session.write("  Bookmark added.\r\n")
+        await self.session.write('  ' + terminal_label(self.session, 'terminal.screen.bookmark_added', 'Bookmark added.') + '\r\n')
 
     async def _ebook_download(self, title, content):
         import tempfile
@@ -4506,8 +4503,7 @@ class BBSMenuUI:
         protocols = available_protocols()
         if not protocols:
             await self.session.write(
-                "\r\n  No file-transfer protocol available on this server "
-                "(sysop needs to install lrzsz).\r\n")
+                '\r\n  ' + terminal_label(self.session, 'terminal.screen.no_file_transfer_protocol_available_on_this_server_sysop_needs_to_install_lrzsz', 'No file-transfer protocol available on this server (sysop needs to install lrzsz).') + '\r\n')
             await self.session.read_line(('  ' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
             return
         safe_title = BBSMenuUI._sanitize_cp437(
@@ -4727,7 +4723,7 @@ async def _maybe_prompt_tagline(ui):
     from .ansi_ui import banner, FG, RESET, ui_width
 
     async def render_header():
-        await ui.session.write(banner('Pick a Tagline', ui_width(ui.session)))
+        await ui.session.write(banner(terminal_label(ui.session, 'terminal.screen.pick_a_tagline', 'Pick a Tagline'), ui_width(ui.session)))
 
     def render_row(idx, row, selected):
         # _rss_lightbar's SEL wrapper (reverse+bold) rendered the
@@ -4882,7 +4878,7 @@ async def _send_pm(self):
     from .ansi_ui import banner, FG, RESET, BOLD, ui_width
     _w = ui_width(self.session)
     await self.session.write('\x1b[2J\x1b[H')
-    await self.session.write(banner('Send Private Message', _w))
+    await self.session.write(banner(terminal_label(self.session, 'terminal.screen.send_private_message', 'Send Private Message'), _w))
     to_username = (await self.session.read_line(
         f"  {FG['cyan']}To (username):{RESET} ") or '').strip()
     if not to_username:
@@ -4949,11 +4945,11 @@ async def _compose_echomail(self):
     if not net_rows:
         _w0 = ui_width(self.session)
         await self.session.write('\x1b[2J\x1b[H')
-        await self.session.write(banner('Compose Echomail', _w0))
+        await self.session.write(banner(terminal_label(self.session, 'terminal.screen.compose_echomail', 'Compose Echomail'), _w0))
         await self.session.write(
             f"  {FG['gry']}No echomail areas configured.{RESET}\r\n")
         await self.session.write('\r\n' + footer(_w0) + '\r\n')
-        await self.session.read_line(f"  {FG['cyan']}Press Enter...{RESET}")
+        await self.session.read_line(f"  {FG['cyan']}{terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')}{RESET}")
         return
 
     selected_area = None
@@ -4962,7 +4958,7 @@ async def _compose_echomail(self):
         _w = ui_width(self.session)
         _net_w = max(30, _w - 22)
         await self.session.write('\x1b[2J\x1b[H')
-        await self.session.write(banner('Compose Echomail — Choose Network', _w))
+        await self.session.write(banner(terminal_label(self.session, 'terminal.screen.compose_echomail_choose_network', 'Compose Echomail — Choose Network'), _w))
         await self.session.write(
             f"  {FG['cyan']}{BOLD}{'#':>2}  {'Network':<{_net_w}} {'Type':<6} {'Areas':>5}{RESET}\r\n"
             f"  {FG['gry']}{'─' * max(50, _w - 4)}{RESET}\r\n")
@@ -4975,7 +4971,7 @@ async def _compose_echomail(self):
                 f"{FG['grn']}{cnt:5d}{RESET}\r\n")
         await self.session.write('\r\n' + footer(_w) + '\r\n')
         net_choice = (await self.session.read_line(
-            _prompt('Choose network (number / Q): ')) or '').strip().upper()
+            _prompt(terminal_label(self.session, 'terminal.screen.choose_network_number_q_prompt', 'Choose network (number / Q):') + ' ')) or '').strip().upper()
         if net_choice == 'Q' or not net_choice:
             return
         try:
@@ -5012,7 +5008,7 @@ async def _compose_echomail(self):
             await self.session.write(banner(f'Compose — {net_name}', ui_width(self.session)))
             await self.session.write(
                 f"  {FG['gry']}No areas in this network.{RESET}\r\n")
-            await self.session.read_line(f"  {FG['cyan']}Press Enter...{RESET}")
+            await self.session.read_line(f"  {FG['cyan']}{terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')}{RESET}")
             continue
 
         COL_TAG = 18
@@ -5079,7 +5075,7 @@ async def _compose_echomail(self):
         await self.session.write('\x1b[2J\x1b[H')
         await self.session.write(banner(f'Compose — {area_tag}', _w))
         await self.session.write(f"\r\n  {FG['red']}{name_error}{RESET}\r\n")
-        await self.session.read_line(f"\r\n{FG['cyan']}Press Enter...{RESET}")
+        await self.session.read_line(f"\r\n{FG['cyan']}{terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')}{RESET}")
         return
 
     # ── Step 3: compose the message ──────────────────────────────────
@@ -5095,7 +5091,7 @@ async def _compose_echomail(self):
     if not subject:
         await self.session.write(
             f"  {FG['gry']}No subject — cancelled.{RESET}\r\n")
-        await self.session.read_line(f"\r\n{FG['cyan']}Press Enter...{RESET}")
+        await self.session.read_line(f"\r\n{FG['cyan']}{terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')}{RESET}")
         return
 
     from .anedit import launch_anedit
@@ -5103,7 +5099,7 @@ async def _compose_echomail(self):
                                tagline_picker=lambda: _maybe_prompt_tagline(self))
     if body is None:
         await self.session.write(f"\r\n  {FG['gry']}Aborted.{RESET}\r\n")
-        await self.session.read_line(f"\r\n{FG['cyan']}Press Enter...{RESET}")
+        await self.session.read_line(f"\r\n{FG['cyan']}{terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')}{RESET}")
         return
 
     with _app().app_context():
@@ -5178,7 +5174,7 @@ async def _compose_echomail(self):
     await self.session.write(
         f"\r\n  {FG['grn']}{BOLD}Message queued (#{saved_id}).{RESET}"
         f"  {FG['gry']}Goes out on next poll.{RESET}\r\n")
-    await self.session.read_line(f"\r\n{FG['cyan']}Press Enter...{RESET}")
+    await self.session.read_line(f"\r\n{FG['cyan']}{terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')}{RESET}")
 
 BBSMenuUI.compose_echomail = _compose_echomail
 
@@ -5319,7 +5315,7 @@ async def _edit_profile_field(self, kind, attr, label):
         # illustrative examples) -- light validation only, matching the
         # field's current unenforced state on the web side too.
         new = (await self.session.read_line(
-            "\r\nLanguage code (2 lowercase letters, e.g. en/es/fr): ") or '').strip().lower()
+            '\r\n' + terminal_label(self.session, 'terminal.screen.language_code_2_lowercase_letters_e_g_en_es_fr_prompt', 'Language code (2 lowercase letters, e.g. en/es/fr):') + ' ') or '').strip().lower()
         if new:
             if len(new) == 2 and new.isalpha():
                 with _app().app_context():
@@ -5384,7 +5380,7 @@ async def _edit_profile(self):
             return
 
         async def render_header():
-            await self.session.write(banner('Edit Profile', ui_width(self.session)))
+            await self.session.write(banner(terminal_label(self.session, 'terminal.screen.edit_profile', 'Edit Profile'), ui_width(self.session)))
 
         def render_row(idx, row, selected):
             from .ansi_ui import FG, RESET
@@ -5408,22 +5404,22 @@ BBSMenuUI.edit_profile = _edit_profile
 async def _change_password(self):
     from anetbbs.models import db, User
     from werkzeug.security import check_password_hash
-    cur = await self.session.read_password("\r\nCurrent password: ")
-    new1 = await self.session.read_password("New password: ")
-    new2 = await self.session.read_password("Confirm new: ")
+    cur = await self.session.read_password('\r\n' + terminal_label(self.session, 'terminal.screen.current_password_prompt', 'Current password:') + ' ')
+    new1 = await self.session.read_password(terminal_label(self.session, 'terminal.screen.new_password_prompt', 'New password:') + ' ')
+    new2 = await self.session.read_password(terminal_label(self.session, 'terminal.screen.confirm_new_prompt', 'Confirm new:') + ' ')
     if not new1 or new1 != new2:
-        await self.session.write("\r\nPasswords don't match (or empty). Cancelled.\r\n")
+        await self.session.write('\r\n' + terminal_label(self.session, 'terminal.screen.passwords_don_t_match_or_empty_cancelled', "Passwords don't match (or empty). Cancelled.") + '\r\n')
         await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
         return
     with _app().app_context():
         u = User.query.get(self.session.user['id'])
         if not u or not check_password_hash(u.password_hash, cur or ''):
-            await self.session.write("\r\nCurrent password incorrect.\r\n")
+            await self.session.write('\r\n' + terminal_label(self.session, 'terminal.screen.current_password_incorrect', 'Current password incorrect.') + '\r\n')
             await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             return
         u.set_password(new1)
         db.session.commit()
-    await self.session.write("\r\nPassword changed.\r\n")
+    await self.session.write('\r\n' + terminal_label(self.session, 'terminal.screen.password_changed', 'Password changed.') + '\r\n')
     await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 BBSMenuUI.change_password = _change_password
 
@@ -5646,7 +5642,7 @@ async def _stock_sysop_menu(self):
     stay web-only.
     """
     if not self.session.user.get('is_admin'):
-        await self.session.write("\r\nSysop access required.\r\n")
+        await self.session.write('\r\n' + terminal_label(self.session, 'terminal.screen.sysop_access_required', 'Sysop access required.') + '\r\n')
         await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
         return
     from .ansi_ui import banner, FG, RESET, BOLD, ui_width
@@ -5686,7 +5682,7 @@ async def _stock_sysop_menu(self):
         categories.append(('D', 'ANetDRAW', self.sysop_anetdraw))
 
     async def render_header():
-        await self.session.write(banner('Sysop Tools', ui_width(self.session)))
+        await self.session.write(banner(terminal_label(self.session, 'terminal.screen.sysop_tools', 'Sysop Tools'), ui_width(self.session)))
 
     def render_row(idx, row, selected):
         hk, label, _fn = row
@@ -5731,8 +5727,7 @@ async def _sysop_cfg_tool(self):
     """
     if not _session_is_ssh(self.session):
         await self.session.write(
-            "\r\nThe config tool is only available over SSH (not telnet), "
-            "for security.\r\n")
+            '\r\n' + terminal_label(self.session, 'terminal.screen.the_config_tool_is_only_available_over_ssh_not_telnet_for_security', 'The config tool is only available over SSH (not telnet), for security.') + '\r\n')
         await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
         return
 
@@ -5827,7 +5822,7 @@ async def _sysop_users(self):
         _w = ui_width(self.session)
         if not await write_menu_art(self.session, 'sysop_users'):
             await self.session.write('\x1b[2J\x1b[H')
-            await self.session.write(banner('Manage Users', _w))
+            await self.session.write(banner(terminal_label(self.session, 'terminal.screen.manage_users', 'Manage Users'), _w))
         await self.session.write(
             f"  {FG['cyan']}{BOLD}{'ID':<4}{'Username':<18}{'Active':<8}"
             f"{'Admin':<8}{'Last login':<14}Logins{RESET}\r\n"
@@ -5842,7 +5837,7 @@ async def _sysop_users(self):
                 f"{FG['dim']}{lastl:<14}{RESET}"
                 f"{FG['cyan']}{n}{RESET}\r\n")
         await self.session.write('\r\n' + footer(_w) + '\r\n')
-        choice = (await self.session.read_line(_p('User ID to edit (or Q): ')) or '').strip()
+        choice = (await self.session.read_line(_p(terminal_label(self.session, 'terminal.screen.user_id_to_edit_or_q_prompt', 'User ID to edit (or Q):') + ' ')) or '').strip()
         if choice.upper() == 'Q' or not choice:
             return
         try:
@@ -5918,7 +5913,7 @@ async def _sysop_edit_user(self, uid):
                     await self.session.write(
                         f"\r\n{FG['grn']}Admin toggled to {u.is_admin}.{RESET}\r\n")
             elif choice == 'P':
-                new = await self.session.read_line("New password: ")
+                new = await self.session.read_line(terminal_label(self.session, 'terminal.screen.new_password_prompt', 'New password:') + ' ')
                 if new:
                     u.set_password(new)
                     await self.session.write(f"\r\n{FG['grn']}Password updated.{RESET}\r\n")
@@ -5951,7 +5946,7 @@ async def _sysop_boards(self):
         _desc_w = max(60, _w - 12)
         if not await write_menu_art(self.session, 'sysop_boards'):
             await self.session.write('\x1b[2J\x1b[H')
-            await self.session.write(banner('Manage Boards', _w))
+            await self.session.write(banner(terminal_label(self.session, 'terminal.screen.manage_boards', 'Manage Boards'), _w))
         for bid, name, desc, active, count in b_list:
             mark = f"{FG['grn']}*{RESET}" if active else f"{FG['red']}X{RESET}"
             await self.session.write(
@@ -5961,7 +5956,7 @@ async def _sysop_boards(self):
             if desc:
                 await self.session.write(f"          {FG['dim']}{desc[:_desc_w]}{RESET}\r\n")
         await self.session.write('\r\n')
-        await self.session.write(menu_item('N', 'New board', _w) + '\r\n')
+        await self.session.write(menu_item('N', terminal_label(self.session, 'terminal.screen.new_board', 'New board'), _w) + '\r\n')
         await self.session.write(menu_item('M', terminal_label(self.session, 'terminal.ui.bulletins', 'Bulletins'), _w) + '\r\n')
         await self.session.write(menu_item('Q', terminal_label(self.session, 'terminal.ui.back', 'Back'), _w) + '\r\n')
         await self.session.write(f"  {FG['dim']}Or enter a board ID to edit{RESET}\r\n")
@@ -5974,10 +5969,10 @@ async def _sysop_boards(self):
             await self.sysop_bulletins()
             continue
         if u == 'N':
-            name = (await self.session.read_line("Board name: ") or '').strip()
+            name = (await self.session.read_line(terminal_label(self.session, 'terminal.screen.board_name_prompt', 'Board name:') + ' ') or '').strip()
             if not name:
                 continue
-            desc = (await self.session.read_line("Description: ") or '').strip()
+            desc = (await self.session.read_line(terminal_label(self.session, 'terminal.screen.description_prompt', 'Description:') + ' ') or '').strip()
             with _app().app_context():
                 db.session.add(Board(name=name[:100], description=desc, is_active=True))
                 db.session.commit()
@@ -6003,7 +5998,7 @@ async def _sysop_boards(self):
                 b.is_active = not b.is_active
                 await self.session.write(f"\r\n{FG['grn']}Active toggled.{RESET}\r\n")
             elif sub == 'R':
-                new = (await self.session.read_line("New name: ") or '').strip()
+                new = (await self.session.read_line(terminal_label(self.session, 'terminal.screen.new_name_prompt', 'New name:') + ' ') or '').strip()
                 if new:
                     b.name = new[:100]
                     await self.session.write(f"\r\n{FG['grn']}Renamed.{RESET}\r\n")
@@ -6293,7 +6288,7 @@ async def _sysop_echomail(self):
     ]
 
     async def render_header():
-        await self.session.write(banner('Echomail / Hub', ui_width(self.session)))
+        await self.session.write(banner(terminal_label(self.session, 'terminal.screen.echomail_hub', 'Echomail / Hub'), ui_width(self.session)))
 
     def render_row(idx, row, selected):
         label, _fn = row
@@ -6497,7 +6492,7 @@ async def _sysop_file_queue(self):
 
     async def _reject(ui, row):
         eid = row[0]
-        reason = (await ui.session.read_line("\r\nReject reason: ") or '').strip()
+        reason = (await ui.session.read_line('\r\n' + terminal_label(ui.session, 'terminal.screen.reject_reason_prompt', 'Reject reason:') + ' ') or '').strip()
         with _app().app_context():
             entry = FileQueueEntry.query.get(eid)
             if not entry or entry.status != 'pending':
@@ -6620,7 +6615,7 @@ async def _sysop_events(self):
 
         async def render_header():
             from .ansi_ui import banner, ui_width
-            await ui.session.write(banner('Pick a Handler', ui_width(ui.session)))
+            await ui.session.write(banner(terminal_label(ui.session, 'terminal.screen.pick_a_handler', 'Pick a Handler'), ui_width(ui.session)))
 
         def render_row2(idx, row, selected):
             k, label, desc = row
@@ -6961,7 +6956,7 @@ async def _sysop_webhooks(self):
             await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             return
         secret = (await ui.session.read_line(
-            "Bearer secret (blank = keep current): ") or '').strip() or cur_secret
+            terminal_label(ui.session, 'terminal.screen.bearer_secret_blank_keep_current_prompt', 'Bearer secret (blank = keep current):') + ' ') or '').strip() or cur_secret
         with _app().app_context():
             if wid:
                 w = Webhook.query.get(wid)
@@ -6990,7 +6985,7 @@ async def _sysop_broadcast_compose(self):
     from .ansi_ui import banner, FG, RESET, ui_width
     _w = ui_width(self.session)
     await self.session.write('\x1b[2J\x1b[H')
-    await self.session.write(banner('Sysop Broadcast', _w))
+    await self.session.write(banner(terminal_label(self.session, 'terminal.screen.sysop_broadcast', 'Sysop Broadcast'), _w))
     text = (await self.session.read_line(
         f"  {FG['cyan']}One-line broadcast:{RESET} ") or '').strip()
     if not text:
@@ -7062,7 +7057,7 @@ async def _sysop_motd(self):
                 db.session.commit()
 
     async def _new(ui, row):
-        text = (await ui.session.read_line("New MOTD text: ") or '').strip()
+        text = (await ui.session.read_line(terminal_label(ui.session, 'terminal.screen.new_motd_text_prompt', 'New MOTD text:') + ' ') or '').strip()
         if not text:
             return
         with _app().app_context():
@@ -7114,7 +7109,7 @@ async def _sysop_pages(self):
             await ui.session.write(f"\r\n{FG['red']}No user to reply to.{RESET}\r\n")
             await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             return
-        text = (await ui.session.read_line("Reply: ") or '').strip()
+        text = (await ui.session.read_line(terminal_label(ui.session, 'terminal.screen.reply_prompt', 'Reply:') + ' ') or '').strip()
         if not text:
             return
         from .sysop_paging import push_message
@@ -7269,7 +7264,7 @@ async def _sysop_registry(self):
     ]
 
     async def render_header():
-        await self.session.write(banner('Registry / Peers', ui_width(self.session)))
+        await self.session.write(banner(terminal_label(self.session, 'terminal.screen.registry_peers', 'Registry / Peers'), ui_width(self.session)))
 
     def render_row(idx, row, selected):
         label, _fn = row
@@ -7376,7 +7371,7 @@ async def _sysop_status(self):
     _w = ui_width(self.session)
     if not await write_menu_art(self.session, 'sysop_status'):
         await self.session.write('\x1b[2J\x1b[H')
-        await self.session.write(banner('Server Status', _w))
+        await self.session.write(banner(terminal_label(self.session, 'terminal.screen.server_status', 'Server Status'), _w))
     for k, v in stats.items():
         await self.session.write(
             f"  {FG['cyan']}{k:<18}{RESET} "
@@ -7432,7 +7427,7 @@ async def _sysop_node_monitor(self):
     async def _do_kick(ui, row):
         slot, uid, uname, *_ = row
         reason = (await ui.session.read_line(
-            "\r\nKick reason [Disconnected by sysop]: ") or '').strip()
+            '\r\n' + terminal_label(ui.session, 'terminal.screen.kick_reason_disconnected_by_sysop_prompt', 'Kick reason [Disconnected by sysop]:') + ' ') or '').strip()
         reason = (reason or 'Disconnected by sysop')[:200]
         with _app().app_context():
             live = NodeActivity.query.filter_by(slot=slot).first()
@@ -7591,7 +7586,7 @@ async def _show_main_v2(self):
             logger.exception('Main menu action %r failed', choice)
             try:
                 await self.session.write(
-                    "\r\nMenu action failed (see server log).\r\n")
+                    '\r\n' + terminal_label(self.session, 'terminal.screen.menu_action_failed_see_server_log', 'Menu action failed (see server log).') + '\r\n')
             except Exception:
                 pass
 BBSMenuUI.show_main = _show_main_v2

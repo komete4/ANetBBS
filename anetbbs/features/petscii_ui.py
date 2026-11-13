@@ -35,6 +35,7 @@ from datetime import datetime, timedelta
 from ..core.tz import fmt_eastern
 
 from . import petscii_theme
+from .i18n import terminal_label
 
 # Leaves room for a 2-line header + a prompt line on a real 25-row C64
 # screen, regardless of whether the session is 40 or 80 columns wide
@@ -101,7 +102,7 @@ async def _paginate(session, lines, header_title=None):
     if not lines:
         if header_title is not None:
             await _header(session, header_title)
-        await session.write('(nothing here)\r\n')
+        await session.write(terminal_label(session, 'terminal.petscii.empty', '(nothing here)') + '\r\n')
         return True
     page = 0
     while True:
@@ -112,10 +113,10 @@ async def _paginate(session, lines, header_title=None):
             await session.write(line + '\r\n')
         if start + PAGE_LINES >= len(lines):
             return True
-        prompt = '-- More -- ENTER=continue'
+        prompt = terminal_label(session, 'terminal.petscii.page_more', '-- More -- ENTER=continue')
         if page > 0:
-            prompt += ', B=prev'
-        prompt += ', Q=stop: '
+            prompt += terminal_label(session, 'terminal.petscii.page_previous', ', B=prev')
+        prompt += terminal_label(session, 'terminal.petscii.page_stop', ', Q=stop: ')
         resp = (await session.read_line(prompt) or '').strip().upper()
         if resp == 'Q':
             return False
@@ -210,9 +211,7 @@ async def _compose_body(session):
     the message are fine (just extra empty lines), unlike a scheme where
     a blank line itself ends input -- that would make it impossible to
     leave a blank line between paragraphs."""
-    await session.write(
-        "Type your message below.\r\n"
-        "On its own line: /send to finish, /abort to cancel.\r\n\r\n")
+    await session.write(terminal_label(session, 'terminal.petscii.compose_help', 'Type your message below.\r\nOn its own line: /send to finish, /abort to cancel.') + '\r\n\r\n')
     lines = []
     while True:
         line = await session.read_line('')
@@ -266,16 +265,16 @@ async def _paginated_pick(session, title, rows, render_row, prompt_label):
         page_rows = rows[start:start + PAGE_LINES]
         await _header(session, title)
         if not rows:
-            await session.write('(nothing here)\r\n')
+            await session.write(terminal_label(session, 'terminal.petscii.empty', '(nothing here)') + '\r\n')
         for offset, row in enumerate(page_rows):
             await session.write(render_row(start + offset + 1, row) + '\r\n')
         has_more = start + PAGE_LINES < len(rows)
         prompt_text = f'#={prompt_label}'
         if has_more:
-            prompt_text += ', M=more'
+            prompt_text += terminal_label(session, 'terminal.petscii.page_more_option', ', M=more')
         if page > 0:
-            prompt_text += ', B=prev'
-        prompt_text += ', Q=back'
+            prompt_text += terminal_label(session, 'terminal.petscii.page_previous', ', B=prev')
+        prompt_text += terminal_label(session, 'terminal.petscii.page_back', ', Q=back')
         # Real report: a long prompt_label (e.g. file browsing's
         # 'download, E=extended info') combined with M=more/B=prev could
         # exceed 40 columns, hard-wrapping mid-word ("Q=back" -> "Q=b" /
@@ -334,15 +333,23 @@ async def _run_default_petscii_menu(session):
     """The hardcoded Phase 1 menu -- also the fallback for sysops who
     haven't built a custom PetsciiMenu tree."""
     _items = [
-        ('1', 'Message Boards'), ('2', 'Echomail'), ('3', 'Private Messages'),
-        ('4', 'File Areas'), ('5', "Who's Online"), ('6', 'Your Profile'),
-        ('7', 'Games'), ('8', 'MRC Chat'), ('Q', 'Logoff'),
+        ('1', 'message_boards', 'Message Boards'),
+        ('2', 'echomail', 'Echomail'),
+        ('3', 'private_messages', 'Private Messages'),
+        ('4', 'file_areas', 'File Areas'),
+        ('5', 'who_s_online', "Who's Online"),
+        ('6', 'your_profile', 'Your Profile'),
+        ('7', 'games', 'Games'),
+        ('8', 'mrc_chat', 'MRC Chat'),
+        ('Q', 'logoff', 'Logoff'),
     ]
     while True:
-        await _header(session, 'ANetBBS Main Menu')
-        for hotkey, label in _items:
+        await _header(session, terminal_label(
+            session, 'terminal.petscii.title', 'ANetBBS Main Menu'))
+        for hotkey, key, source in _items:
+            label = terminal_label(session, f'terminal.petscii.{key}', source)
             await session.write(petscii_theme.menu_line(hotkey, label) + '\r\n')
-        choice = (await session.read_line('\r\nChoice: ') or '').strip().upper()
+        choice = (await session.read_line('\r\n' + terminal_label(session, 'terminal.screen.choice_prompt', 'Choice:') + ' ') or '').strip().upper()
         if choice == '1':
             await _boards_menu(session)
         elif choice == '2':
@@ -360,7 +367,7 @@ async def _run_default_petscii_menu(session):
         elif choice == '8':
             await _mrc_chat(session)
         elif choice == 'Q':
-            await session.write('\r\nGoodbye!\r\n')
+            await session.write('\r\n' + terminal_label(session, 'terminal.screen.goodbye', 'Goodbye!') + '\r\n')
             return
 
 
@@ -430,12 +437,12 @@ async def _run_custom_petscii_menu(session, start_name):
                 current = action_args
             continue
         if action_type == 'logoff':
-            await session.write('\r\nGoodbye!\r\n')
+            await session.write('\r\n' + terminal_label(session, 'terminal.screen.goodbye', 'Goodbye!') + '\r\n')
             return
         handler = _CUSTOM_MENU_ACTIONS.get(action_type)
         if handler is None:
-            await session.write('\r\nThat option is not available.\r\n')
-            await session.read_line('Press ENTER...')
+            await session.write('\r\n' + terminal_label(session, 'terminal.screen.that_option_is_not_available', 'That option is not available.') + '\r\n')
+            await session.read_line(terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
             continue
         await handler(session)
 
@@ -453,15 +460,15 @@ async def _boards_menu(session):
             rows = [(b.id, b.name) for b in boards]
 
         if not rows:
-            await _header(session, 'Message Boards')
-            await session.write('No boards available.\r\n')
-            await session.read_line('\r\nPress ENTER...')
+            await _header(session, terminal_label(session, 'terminal.petscii.message_boards', 'Message Boards'))
+            await session.write(terminal_label(session, 'terminal.screen.no_boards_available', 'No boards available.') + '\r\n')
+            await session.read_line('\r\n' + terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
             return
 
         name_w = max(10, _width(session) - 7)
         pick = await _paginated_pick(
-            session, 'Message Boards', rows,
-            lambda i, row: f'{i:>3}. {_truncate_words(row[1], name_w)}', 'select')
+            session, terminal_label(session, 'terminal.petscii.message_boards', 'Message Boards'), rows,
+            lambda i, row: f'{i:>3}. {_truncate_words(row[1], name_w)}', terminal_label(session, 'terminal.petscii.pick_select', 'select'))
         if pick == 'Q':
             return
         if isinstance(pick, int):
@@ -490,15 +497,15 @@ async def _board_threads(session, board_id, board_name):
             return f'{i:>3}. {_truncate_words(_safe_field(subj), subj_w):<{subj_w}} ({nrep})'
 
         pick = await _paginated_pick(session, f'Board: {board_name}', rows,
-                                     _render, 'read, N=new post')
+                                     _render, terminal_label(session, 'terminal.petscii.pick_read_post', 'read, N=new post'))
         if pick == 'Q':
             return
         if pick == 'N':
             if can_write:
                 await _board_post(session, board_id)
             else:
-                await session.write("\r\nYou don't have permission to post here.\r\n")
-                await session.read_line('Press ENTER...')
+                await session.write('\r\n' + terminal_label(session, 'terminal.screen.you_don_t_have_permission_to_post_here', "You don't have permission to post here.") + '\r\n')
+                await session.read_line(terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
             continue
         if isinstance(pick, int):
             await _thread_read(session, rows[pick - 1][0], board_id, board_name)
@@ -524,7 +531,7 @@ async def _thread_read(session, post_id, board_id, board_name):
 
     if not await _paginate(session, lines, f'Board: {board_name}'):
         return
-    choice = (await session.read_line('\r\nR=reply, Q=back: ') or '').strip().upper()
+    choice = (await session.read_line('\r\n' + terminal_label(session, 'terminal.screen.r_reply_q_back_prompt', 'R=reply, Q=back:') + ' ') or '').strip().upper()
     if choice == 'R':
         await _board_post(session, board_id, parent_id=post_id, default_subject=subject)
 
@@ -544,14 +551,14 @@ async def _board_post(session, board_id, parent_id=None, default_subject=''):
         if board is None:
             return
         if level < (board.min_write_level or 0):
-            await session.write("\r\nYou don't have permission to post here.\r\n")
-            await session.read_line('Press ENTER...')
+            await session.write('\r\n' + terminal_label(session, 'terminal.screen.you_don_t_have_permission_to_post_here', "You don't have permission to post here.") + '\r\n')
+            await session.read_line(terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
             return
         if parent_id is not None:
             root = Post.query.get(parent_id)
             if root is not None and root.is_locked and level < 100:
-                await session.write('\r\nThis thread is locked.\r\n')
-                await session.read_line('Press ENTER...')
+                await session.write('\r\n' + terminal_label(session, 'terminal.screen.this_thread_is_locked', 'This thread is locked.') + '\r\n')
+                await session.read_line(terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
                 return
 
     await _header(session, 'New Post' if parent_id is None else 'Reply')
@@ -559,13 +566,13 @@ async def _board_post(session, board_id, parent_id=None, default_subject=''):
     prompt = f'Subject{f" [{default_subj}]" if default_subj else ""}: '
     subject = (await session.read_line(prompt) or '').strip() or default_subj
     if not subject:
-        await session.write('No subject -- cancelled.\r\n')
-        await session.read_line('Press ENTER...')
+        await session.write(terminal_label(session, 'terminal.screen.no_subject_cancelled', 'No subject -- cancelled.') + '\r\n')
+        await session.read_line(terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
         return
     body = await _compose_body(session)
     if body is None:
-        await session.write('Cancelled.\r\n')
-        await session.read_line('Press ENTER...')
+        await session.write(terminal_label(session, 'terminal.screen.cancelled', 'Cancelled.') + '\r\n')
+        await session.read_line(terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
         return
     with _app_ctx():
         from ..models import db, Post
@@ -582,8 +589,8 @@ async def _board_post(session, board_id, parent_id=None, default_subject=''):
                     parent_id=parent_id, subject=subject[:200], content=body)
         db.session.add(post)
         db.session.commit()
-    await session.write('\r\nPosted.\r\n')
-    await session.read_line('Press ENTER...')
+    await session.write('\r\n' + terminal_label(session, 'terminal.screen.posted', 'Posted.') + '\r\n')
+    await session.read_line(terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
 
 
 # ─── Echomail ───────────────────────────────────────────────────────────
@@ -608,16 +615,16 @@ async def _echomail_menu(session):
             rows = sorted(((n.id, n.name) for n in nets), key=lambda r: r[1])
 
         if not rows:
-            await _header(session, 'Echomail Networks')
-            await session.write('No echomail areas available.\r\n')
-            await session.read_line('\r\nPress ENTER...')
+            await _header(session, terminal_label(session, 'terminal.screen.echomail_networks', 'Echomail Networks'))
+            await session.write(terminal_label(session, 'terminal.screen.no_echomail_areas_available', 'No echomail areas available.') + '\r\n')
+            await session.read_line('\r\n' + terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
             return
 
         w = _width(session)
         name_w = max(10, w - 8)
         pick = await _paginated_pick(
             session, 'Echomail Networks', rows,
-            lambda i, row: f'{i:>3}. {_truncate_words(row[1], name_w)}', 'select')
+            lambda i, row: f'{i:>3}. {_truncate_words(row[1], name_w)}', terminal_label(session, 'terminal.petscii.pick_select', 'select'))
         if pick == 'Q':
             return
         if isinstance(pick, int):
@@ -639,15 +646,15 @@ async def _echomail_areas_menu(session, network_id, network_name):
         title = f'Areas: {network_name}'
         if not rows:
             await _header(session, title)
-            await session.write('No areas available.\r\n')
-            await session.read_line('\r\nPress ENTER...')
+            await session.write(terminal_label(session, 'terminal.screen.no_areas_available', 'No areas available.') + '\r\n')
+            await session.read_line('\r\n' + terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
             return
 
         w = _width(session)
         name_w = max(10, w - 8)
         pick = await _paginated_pick(
             session, title, rows,
-            lambda i, row: f'{i:>3}. {_truncate_words(row[1], name_w)}', 'select')
+            lambda i, row: f'{i:>3}. {_truncate_words(row[1], name_w)}', terminal_label(session, 'terminal.petscii.pick_select', 'select'))
         if pick == 'Q':
             return
         if isinstance(pick, int):
@@ -679,7 +686,7 @@ async def _echo_messages(session, area_id, area_name):
             return f'{i:>3}. {subj_display:<{subj_w}} {_safe_field(frm)[:frm_w]}'
 
         pick = await _paginated_pick(session, f'Area: {area_name}', rows,
-                                     _render, 'read, N=new')
+                                     _render, terminal_label(session, 'terminal.petscii.pick_read_new', 'read, N=new'))
         if pick == 'Q':
             return
         if pick == 'N':
@@ -704,7 +711,7 @@ async def _echo_message_read(session, msg_id, area_id, area_name):
 
     if not await _paginate(session, lines, f'Area: {area_name}'):
         return
-    choice = (await session.read_line('\r\nR=reply, Q=back: ') or '').strip().upper()
+    choice = (await session.read_line('\r\n' + terminal_label(session, 'terminal.screen.r_reply_q_back_prompt', 'R=reply, Q=back:') + ' ') or '').strip().upper()
     if choice == 'R':
         await _echo_compose(session, area_id, area_name,
                             reply_to_name=from_name, reply_subject=subject)
@@ -720,7 +727,7 @@ async def _echo_compose(session, area_id, area_name, reply_to_name=None, reply_s
     if name_error:
         await _header(session, f'New message: {area_name}'[:_width(session)])
         await session.write(name_error + '\r\n')
-        await session.read_line('Press ENTER...')
+        await session.read_line(terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
         return
 
     await _header(session, f'New message: {area_name}'[:_width(session)])
@@ -730,13 +737,13 @@ async def _echo_compose(session, area_id, area_name, reply_to_name=None, reply_s
     prompt = f'Subject{f" [{default_subj}]" if default_subj else ""}: '
     subject = (await session.read_line(prompt) or '').strip() or default_subj
     if not subject:
-        await session.write('No subject -- cancelled.\r\n')
-        await session.read_line('Press ENTER...')
+        await session.write(terminal_label(session, 'terminal.screen.no_subject_cancelled', 'No subject -- cancelled.') + '\r\n')
+        await session.read_line(terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
         return
     body = await _compose_body(session)
     if body is None:
-        await session.write('Cancelled.\r\n')
-        await session.read_line('Press ENTER...')
+        await session.write(terminal_label(session, 'terminal.screen.cancelled', 'Cancelled.') + '\r\n')
+        await session.read_line(terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
         return
 
     with _app_ctx():
@@ -782,8 +789,8 @@ async def _echo_compose(session, area_id, area_name, reply_to_name=None, reply_s
         session._log_activity(
             'echomail_reply' if reply_to_name else 'echomail_post',
             f'{area_name}: {subject[:100]}')
-    await session.write('\r\nMessage posted.\r\n')
-    await session.read_line('Press ENTER...')
+    await session.write('\r\n' + terminal_label(session, 'terminal.screen.message_posted', 'Message posted.') + '\r\n')
+    await session.read_line(terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
 
 
 # ─── Private messages ───────────────────────────────────────────────────
@@ -814,8 +821,8 @@ async def _pm_menu(session):
             return (f'{mark}{i:>3}. {_truncate_words(_safe_field(subj), subj_w):<{subj_w}} '
                     f'{sender[:sender_w]}')
 
-        pick = await _paginated_pick(session, 'Private Messages', rows,
-                                     _render, 'read, N=new')
+        pick = await _paginated_pick(session, terminal_label(session, 'terminal.petscii.private_messages', 'Private Messages'), rows,
+                                     _render, terminal_label(session, 'terminal.petscii.pick_read_new', 'read, N=new'))
         if pick == 'Q':
             return
         if pick == 'N':
@@ -843,32 +850,32 @@ async def _pm_read(session, msg_id):
             msg.read_at = datetime.utcnow()
             db.session.commit()
 
-    if not await _paginate(session, lines, 'Private Message'):
+    if not await _paginate(session, lines, terminal_label(session, 'terminal.petscii.private_message', 'Private Message')):
         return
-    choice = (await session.read_line('\r\nR=reply, Q=back: ') or '').strip().upper()
+    choice = (await session.read_line('\r\n' + terminal_label(session, 'terminal.screen.r_reply_q_back_prompt', 'R=reply, Q=back:') + ' ') or '').strip().upper()
     if choice == 'R':
         await _pm_compose(session, reply_to_username=sender_name, reply_subject=subject)
 
 
 async def _pm_compose(session, reply_to_username=None, reply_subject=None):
-    await _header(session, 'New Private Message')
+    await _header(session, terminal_label(session, 'terminal.petscii.new_private_message', 'New Private Message'))
     prompt = f'To{f" [{reply_to_username}]" if reply_to_username else ""}: '
     to_username = (await session.read_line(prompt) or '').strip() or (reply_to_username or '')
     if not to_username:
-        await session.write('No recipient -- cancelled.\r\n')
-        await session.read_line('Press ENTER...')
+        await session.write(terminal_label(session, 'terminal.screen.no_recipient_cancelled', 'No recipient -- cancelled.') + '\r\n')
+        await session.read_line(terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
         return
     default_subj = f'Re: {reply_subject}' if reply_subject else ''
     subj_prompt = f'Subject{f" [{default_subj}]" if default_subj else ""}: '
     subject = (await session.read_line(subj_prompt) or '').strip() or default_subj
     if not subject:
-        await session.write('No subject -- cancelled.\r\n')
-        await session.read_line('Press ENTER...')
+        await session.write(terminal_label(session, 'terminal.screen.no_subject_cancelled', 'No subject -- cancelled.') + '\r\n')
+        await session.read_line(terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
         return
     body = await _compose_body(session)
     if body is None:
-        await session.write('Cancelled.\r\n')
-        await session.read_line('Press ENTER...')
+        await session.write(terminal_label(session, 'terminal.screen.cancelled', 'Cancelled.') + '\r\n')
+        await session.read_line(terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
         return
 
     my_id = _user_id(session)
@@ -879,7 +886,7 @@ async def _pm_compose(session, reply_to_username=None, reply_subject=None):
         recipient = User.query.filter(func.lower(User.username) == to_username.lower()).first()
         if recipient is None:
             await session.write(f'\r\nNo such user: {to_username}\r\n')
-            await session.read_line('Press ENTER...')
+            await session.read_line(terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
             return
         pm = PrivateMessage(sender_id=my_id, recipient_id=recipient.id,
                             subject=subject[:200], body=body)
@@ -895,8 +902,8 @@ async def _pm_compose(session, reply_to_username=None, reply_subject=None):
         # logged a UserActivity row -- see the identical fix in
         # bbs_ui.py's _send_pm(). Never logs the body, same as there.
         session._log_activity('pm_sent', f'To {to_username}: {subject[:100]}')
-    await session.write('\r\nSent.\r\n')
-    await session.read_line('Press ENTER...')
+    await session.write('\r\n' + terminal_label(session, 'terminal.screen.sent', 'Sent.') + '\r\n')
+    await session.read_line(terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
 
 
 # ─── File areas (browse only, Phase 1) ──────────────────────────────────
@@ -946,15 +953,15 @@ async def _files_menu(session):
             rows = [row for _, row in _combined]
 
         if not rows:
-            await _header(session, 'File Areas')
-            await session.write('No file areas available.\r\n')
-            await session.read_line('\r\nPress ENTER...')
+            await _header(session, terminal_label(session, 'terminal.petscii.file_areas', 'File Areas'))
+            await session.write(terminal_label(session, 'terminal.screen.no_file_areas_available', 'No file areas available.') + '\r\n')
+            await session.read_line('\r\n' + terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
             return
 
         name_w = max(10, _width(session) - 7)
         pick = await _paginated_pick(
-            session, 'File Areas', rows,
-            lambda i, row: f'{i:>3}. {_truncate_words(row[1], name_w)}', 'select')
+            session, terminal_label(session, 'terminal.petscii.file_areas', 'File Areas'), rows,
+            lambda i, row: f'{i:>3}. {_truncate_words(row[1], name_w)}', terminal_label(session, 'terminal.petscii.pick_select', 'select'))
         if pick == 'Q':
             return
         if isinstance(pick, int):
@@ -977,7 +984,7 @@ async def _files_category_browse(session, cat_label, cat_areas):
         name_w = max(10, _width(session) - 7)
         pick = await _paginated_pick(
             session, f'Area: {cat_label}', rows,
-            lambda i, row: f'{i:>3}. {_truncate_words(row[1], name_w)}', 'select')
+            lambda i, row: f'{i:>3}. {_truncate_words(row[1], name_w)}', terminal_label(session, 'terminal.petscii.pick_select', 'select'))
         if pick == 'Q':
             return
         if isinstance(pick, int):
@@ -1017,8 +1024,8 @@ async def _files_browse(session, area_id, area_name):
         title = f'Files: {area_name}'[:_width(session)]
         if not rows:
             await _header(session, title)
-            await session.write('No files available.\r\n')
-            await session.read_line('\r\nPress ENTER...')
+            await session.write(terminal_label(session, 'terminal.screen.no_files_available', 'No files available.') + '\r\n')
+            await session.read_line('\r\n' + terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
             return
 
         w = _width(session)
@@ -1033,7 +1040,8 @@ async def _files_browse(session, area_id, area_name):
             return f'{i:>3}. {name[:name_w]:<{name_w}} {size_kb:>6}K'
 
         pick = await _paginated_pick(session, title, rows, _render,
-                                     'download, E=extended info')
+                                     terminal_label(session, 'terminal.petscii.pick_download',
+                                                    'download, E=extended info'))
         if pick == 'Q':
             return
         if pick == 'E':
@@ -1054,7 +1062,7 @@ async def _files_show_description(session, row):
     lines = [f'{name}', f'Size: {size_kb}K', '']
     lines.extend(_wrap_body(desc, w - 2) if desc else ['(no description)'])
     await _paginate(session, lines, f'File Info: {name}'[:w])
-    await session.read_line('\r\nPress ENTER...')
+    await session.read_line('\r\n' + terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
 
 
 async def _write_wrapped(session, text):
@@ -1077,7 +1085,7 @@ async def _files_download(session, row):
     name, size, _desc, path = row
     if not path or not os.path.isfile(path):
         await _write_wrapped(session, f'{name}: file not found on server disk.')
-        await session.read_line('Press ENTER...')
+        await session.read_line(terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
         return
 
     from .xfer import available_protocols, send_file
@@ -1085,7 +1093,7 @@ async def _files_download(session, row):
         await _write_wrapped(
             session, 'XMODEM is not available on this server (sysop must '
                     'install lrzsz).')
-        await session.read_line('Press ENTER...')
+        await session.read_line(terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
         return
 
     # Daily download quota (FR: Firehawke, 2026-07-24) -- see
@@ -1097,7 +1105,7 @@ async def _files_download(session, row):
         quota_ok, quota_msg = check_quota(session.user, quota_size)
     if not quota_ok:
         await _write_wrapped(session, quota_msg)
-        await session.read_line('Press ENTER...')
+        await session.read_line(terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
         return
 
     await _write_wrapped(
@@ -1115,7 +1123,7 @@ async def _files_download(session, row):
     await _write_wrapped(
         session, f'{name}: transfer complete.' if ok else
         f'{name}: transfer failed or was cancelled.')
-    await session.read_line('Press ENTER...')
+    await session.read_line(terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
 
 
 # ─── Who's online ───────────────────────────────────────────────────────
@@ -1131,15 +1139,15 @@ async def _whos_online(session):
             u = User.query.get(s.user_id)
             rows.append((u.username if u else '?', s.page or ''))
 
-    await _header(session, "Who's Online")
+    await _header(session, terminal_label(session, 'terminal.petscii.who_s_online', "Who's Online"))
     w = _width(session)
     if not rows:
-        await session.write('Nobody else is online right now.\r\n')
+        await session.write(terminal_label(session, 'terminal.screen.nobody_else_is_online_right_now', 'Nobody else is online right now.') + '\r\n')
     else:
         name_w = max(8, w - 20)
         for uname, page in rows:
             await session.write(f'  {uname[:name_w]:<{name_w}} {_safe_field(page)}\r\n')
-    await session.read_line('\r\nPress ENTER...')
+    await session.read_line('\r\n' + terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
 
 
 # ─── Profile ────────────────────────────────────────────────────────────
@@ -1164,9 +1172,9 @@ async def _profile(session):
             ]
             lines.extend(_wrap_body(u.bio or '(none)', _width(session)))
 
-        if not await _paginate(session, lines, 'Your Profile'):
+        if not await _paginate(session, lines, terminal_label(session, 'terminal.petscii.your_profile', 'Your Profile')):
             return
-        choice = (await session.read_line('\r\nE=edit, Q=back: ') or '').strip().upper()
+        choice = (await session.read_line('\r\n' + terminal_label(session, 'terminal.screen.e_edit_q_back_prompt', 'E=edit, Q=back:') + ' ') or '').strip().upper()
         if choice == 'E':
             await _profile_edit(session)
             continue
@@ -1196,13 +1204,13 @@ async def _profile_edit(session):
             current = {k: (getattr(u, attr, '') or '-')
                       for k, (attr, _label, _maxlen) in _PROFILE_EDIT_FIELDS.items()}
 
-        await _header(session, 'Edit Profile')
+        await _header(session, terminal_label(session, 'terminal.screen.edit_profile', 'Edit Profile'))
         w = _width(session)
         for k, (_attr, label, _maxlen) in _PROFILE_EDIT_FIELDS.items():
             val_w = max(4, w - len(label) - 6)
             await session.write(f'  {k}. {label}: {current[k][:val_w]}\r\n')
-        await session.write('  Q. Done\r\n')
-        choice = (await session.read_line('\r\nChoice: ') or '').strip().upper()
+        await session.write('  ' + terminal_label(session, 'terminal.screen.q_done', 'Q. Done') + '\r\n')
+        choice = (await session.read_line('\r\n' + terminal_label(session, 'terminal.screen.choice_prompt', 'Choice:') + ' ') or '').strip().upper()
         if choice == 'Q' or not choice:
             return
         field = _PROFILE_EDIT_FIELDS.get(choice)
@@ -1217,7 +1225,7 @@ async def _profile_edit(session):
                 return
             setattr(u2, attr, new_val[:maxlen] or None)
             db.session.commit()
-        await session.write('Saved.\r\n')
+        await session.write(terminal_label(session, 'terminal.screen.saved', 'Saved.') + '\r\n')
 
 
 # ─── Games ───────────────────────────────────────────────────────────────
@@ -1226,9 +1234,9 @@ async def _games_menu(session):
     """Only Number Guessing -- see module docstring for why door games
     and other doors aren't offered here."""
     while True:
-        await _header(session, 'Games')
-        await session.write('  1. Number Guessing\r\n  Q. Back\r\n')
-        choice = (await session.read_line('\r\nChoice: ') or '').strip().upper()
+        await _header(session, terminal_label(session, 'terminal.petscii.games', 'Games'))
+        await session.write(terminal_label(session, 'terminal.petscii.game_options', '  1. Number Guessing\r\n  Q. Back\r\n'))
+        choice = (await session.read_line('\r\n' + terminal_label(session, 'terminal.screen.choice_prompt', 'Choice:') + ' ') or '').strip().upper()
         if choice == 'Q' or not choice:
             return
         if choice == '1':

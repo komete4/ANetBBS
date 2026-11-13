@@ -13,6 +13,7 @@ import asyncio
 import logging
 from datetime import datetime
 from ..core.tz import fmt_eastern
+from .i18n import terminal_label
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +167,7 @@ async def run_chat_session(session):
     """
     entry = getattr(session, '_node_entry', None)
     if entry is None:
-        await session.write("\r\nNo multinode slot - chat unavailable.\r\n")
+        await session.write('\r\n' + terminal_label(session, 'terminal.screen.no_multinode_slot_chat_unavailable', 'No multinode slot - chat unavailable.') + '\r\n')
         return
     entry.listening = True
 
@@ -233,7 +234,7 @@ async def run_chat_session(session):
                         await session.write(
                             f"\r\nNode {target} not online.\r\n")
                 else:
-                    await session.write("Usage: /w <slot> <message>\r\n")
+                    await session.write(terminal_label(session, 'terminal.screen.usage_w_slot_message', 'Usage: /w <slot> <message>') + '\r\n')
                 continue
             broadcast(session.user.get('username', '?'), line, kind='msg',
                       sender_slot=entry.slot)
