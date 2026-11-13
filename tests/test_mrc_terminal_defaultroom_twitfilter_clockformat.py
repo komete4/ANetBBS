@@ -152,6 +152,19 @@ class WelcomeAndChangesCommandTests(unittest.TestCase):
         self.assertIn('/quit               salir de MRC (alias /q)', transcript)
         self.assertEqual(chat.sent, [])
 
+    def test_spanish_command_usage_preserves_mrc_syntax(self):
+        chat = _make_chat()
+        chat.session.user['language'] = 'es'
+        for command in ('/msg', '/set', '/set clockformat', '/set invalid'):
+            self.assertTrue(_run(chat._handle_slash(command)))
+        transcript = ''.join(chat.session.written)
+        self.assertIn('Uso: /msg usuario texto', transcript)
+        self.assertIn('/set <opción> <valor>', transcript)
+        self.assertIn('Usa {handle} para el alias', transcript)
+        self.assertIn('Uso: /set clockformat 12|24', transcript)
+        self.assertIn('Opción de /set desconocida', transcript)
+        self.assertEqual(chat.sent, [])
+
     def test_welcome_command_handled(self):
         chat = _make_chat()
         handled = _run(chat._handle_slash('/welcome'))

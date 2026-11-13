@@ -2894,6 +2894,9 @@ class MRCChat(BaseChatSystem):
 
     # ── Slash commands ───────────────────────────────────────────────────────
 
+    def _command_text(self, key, default, **values):
+        return terminal_label(self.session, f'terminal.mrc.command.{key}', default, **values)
+
     async def _handle_slash(self, line: str) -> bool:
         parts = line.split(' ', 1)
         cmd  = parts[0].lower().lstrip('/')
@@ -2979,7 +2982,7 @@ class MRCChat(BaseChatSystem):
         if cmd in ('msg', 't', 'tell', 'dm', 'pm', 'whisper', 'w'):
             parts2 = rest.split(' ', 1)
             if len(parts2) < 2 or not parts2[0]:
-                await self._emit(f'Usage: /{cmd} user text')
+                await self._emit(self._command_text('dm_usage', 'Usage: /{cmd} user text', cmd=cmd))
                 return True
             target, body = parts2
             await self._send_dm(target, body)
@@ -2987,7 +2990,7 @@ class MRCChat(BaseChatSystem):
 
         if cmd == 'r':
             if not rest:
-                await self._emit('Usage: /r <text>  (reply to last DM)')
+                await self._emit(self._command_text('reply_usage', 'Usage: /r <text>  (reply to last DM)'))
                 return True
             if not self._last_dm_from:
                 await self._emit('\x1b[33m' + terminal_label(self.session, 'terminal.daily.mrc_empty_dm', 'No DM to reply to yet.') + '\x1b[0m')
@@ -2997,14 +3000,14 @@ class MRCChat(BaseChatSystem):
 
         if cmd in ('dlchatlog', 'dlchat', 'transcript'):
             if not self._scrollback:
-                await self._emit('\x1b[33mNothing to download yet.\x1b[0m')
+                await self._emit(self._command_text('nothing_to_download', '\x1b[33mNothing to download yet.\x1b[0m'))
                 return True
             await self._download_chat_log()
             return True
 
         if cmd == 'me':
             if not rest:
-                await self._emit('Usage: /me <action>')
+                await self._emit(self._command_text('me_usage', 'Usage: /me <action>'))
                 return True
             # The bridge replaces this "* " marker with its own
             # fixed-color wrapper ("|15* |13{nick} ...|07"), which it
@@ -3022,11 +3025,11 @@ class MRCChat(BaseChatSystem):
 
         if cmd in ('broadcast', 'b'):
             if not rest:
-                await self._emit('Usage: /broadcast text  (sysop only)')
+                await self._emit(self._command_text('broadcast_usage', 'Usage: /broadcast text  (sysop only)'))
                 return True
             if self._broadcast_shield:
                 await self._emit(
-                    '\x1b[33mBroadcast shield is on -- /shield off to send one.\x1b[0m')
+                    self._command_text('shield_on', '\x1b[33mBroadcast shield is on -- /shield off to send one.\x1b[0m'))
                 return True
             # cap accounts for the literal "BROADCAST " prefix the bridge
             # sends verbatim as part of Field7 -- same silent-truncation
@@ -3061,7 +3064,7 @@ class MRCChat(BaseChatSystem):
             if sub in ('add', 'del', 'remove') and arg:
                 target = arg.strip().lower()
                 if target.upper() in ('SERVER', 'CLIENT', 'NOTME'):
-                    await self._emit('\x1b[33mCannot twit a reserved name.\x1b[0m')
+                    await self._emit(self._command_text('reserved_name', '\x1b[33mCannot twit a reserved name.\x1b[0m'))
                     return True
                 new_list = set(self._twit_list)
                 if sub == 'add':
@@ -3072,7 +3075,7 @@ class MRCChat(BaseChatSystem):
                     'type': 'set_prefs', 'twit_list': sorted(new_list)})
                 return True
 
-            await self._emit('Usage: /twit add|del|list|clear [user]')
+            await self._emit(self._command_text('twit_usage', 'Usage: /twit add|del|list|clear [user]'))
             return True
 
         if cmd == 'shield':
@@ -3108,22 +3111,21 @@ class MRCChat(BaseChatSystem):
             if field in ('', 'help'):
                 for ln in (
                     '',
-                    '\x1b[1m/set <field> <value>\x1b[0m   (also: /set list)',
-                    '  prefix <text>       nick prefix decoration (max 16 chars)',
-                    '  suffix <text>       nick suffix decoration (max 32 chars)',
-                    '  color <00-15>       nick color (pipe code)',
-                    '  entermsg <text>     shown on chat entry; {handle} placeholder',
-                    '  leavemsg <text>     shown on chat leave; {handle} placeholder',
-                    '  quitmsg <text>      appended to your leave message on /quit',
-                    '  ticker <on|off>     scrolling ticker/banner (saved)',
-                    '  clockformat <12|24> clock/timestamp hour format (saved)',
-                    '  tz <zone|offset>    timestamp timezone: EST/CDT/PST/UTC/etc, or -5, +5:30',
-                    '  twitfilter <on|off> master twit-list enforcement (saved)',
-                    '  defaultroom <room>  room to auto-join on your next connect (saved)',
+                    self._command_text('set_help', '\x1b[1m/set <field> <value>\x1b[0m   (also: /set list)'),
+                    self._command_text('set_prefix', '  prefix <text>       nick prefix decoration (max 16 chars)'),
+                    self._command_text('set_suffix', '  suffix <text>       nick suffix decoration (max 32 chars)'),
+                    self._command_text('set_color', '  color <00-15>       nick color (pipe code)'),
+                    self._command_text('set_enter', '  entermsg <text>     shown on chat entry; {handle} placeholder'),
+                    self._command_text('set_leave', '  leavemsg <text>     shown on chat leave; {handle} placeholder'),
+                    self._command_text('set_quit', '  quitmsg <text>      appended to your leave message on /quit'),
+                    self._command_text('set_ticker', '  ticker <on|off>     scrolling ticker/banner (saved)'),
+                    self._command_text('set_clock', '  clockformat <12|24> clock/timestamp hour format (saved)'),
+                    self._command_text('set_tz', '  tz <zone|offset>    timestamp timezone: EST/CDT/PST/UTC/etc, or -5, +5:30'),
+                    self._command_text('set_filter', '  twitfilter <on|off> master twit-list enforcement (saved)'),
+                    self._command_text('set_room', '  defaultroom <room>  room to auto-join on your next connect (saved)'),
                     '  palette <name>      chrome color scheme (saved): '
                         + ', '.join(sorted(_TERM_PALETTES)),
-                    '  pin <user>|off      sticky DM -- plain messages go to <user> '
-                        'until turned off (NOT saved)',
+                    self._command_text('set_pin', '  pin <user>|off      sticky DM -- plain messages go to <user> until turned off (NOT saved)'),
                     '',
                 ):
                     await self._emit(ln)
@@ -3151,7 +3153,7 @@ class MRCChat(BaseChatSystem):
 
             if field in ('prefix', 'suffix'):
                 if not value:
-                    await self._emit(f'Usage: /set {field} <text>')
+                    await self._emit(self._command_text('style_usage', 'Usage: /set {field} <text>', field=field))
                     return True
                 # Suffix matches umrc-client's 32-char chatterNameSuffix;
                 # prefix stays at 16 (see the bridge's
@@ -3162,7 +3164,7 @@ class MRCChat(BaseChatSystem):
 
             if field == 'color':
                 if not value.isdigit() or not (0 <= int(value) <= 15):
-                    await self._emit('Usage: /set color 00-15')
+                    await self._emit(self._command_text('color_usage', 'Usage: /set color 00-15'))
                     return True
                 cc = value.zfill(2)
                 await self._send_json(self._style_payload(
@@ -3178,7 +3180,7 @@ class MRCChat(BaseChatSystem):
 
             if field == 'ticker':
                 if value.lower() not in ('on', 'off'):
-                    await self._emit('Usage: /set ticker on|off')
+                    await self._emit(self._command_text('ticker_usage', 'Usage: /set ticker on|off'))
                     return True
                 await self._send_json({
                     'type': 'set_prefs', 'ticker_enabled': value.lower() == 'on'})
@@ -3186,7 +3188,7 @@ class MRCChat(BaseChatSystem):
 
             if field == 'clockformat':
                 if value not in ('12', '24'):
-                    await self._emit('Usage: /set clockformat 12|24')
+                    await self._emit(self._command_text('clock_usage', 'Usage: /set clockformat 12|24'))
                     return True
                 await self._send_json({'type': 'set_prefs', 'clock_format': value})
                 return True
@@ -3195,14 +3197,14 @@ class MRCChat(BaseChatSystem):
                 offset = _parse_tz_offset(value)
                 if offset is None:
                     await self._emit(
-                        'Usage: /set tz <zone|offset>  e.g. EST, CDT, PST, UTC, or -5, +5:30')
+                        self._command_text('tz_usage', 'Usage: /set tz <zone|offset>  e.g. EST, CDT, PST, UTC, or -5, +5:30'))
                     return True
                 await self._send_json({'type': 'set_prefs', 'tz_offset': offset})
                 return True
 
             if field == 'twitfilter':
                 if value.lower() not in ('on', 'off'):
-                    await self._emit('Usage: /set twitfilter on|off')
+                    await self._emit(self._command_text('twitfilter_usage', 'Usage: /set twitfilter on|off'))
                     return True
                 await self._send_json({
                     'type': 'set_prefs', 'twit_filter_enabled': value.lower() == 'on'})
@@ -3210,7 +3212,7 @@ class MRCChat(BaseChatSystem):
 
             if field == 'defaultroom':
                 if not value:
-                    await self._emit('Usage: /set defaultroom <room>  (takes effect on your next connect)')
+                    await self._emit(self._command_text('defaultroom_usage', 'Usage: /set defaultroom <room>  (takes effect on your next connect)'))
                     return True
                 new_default = value.strip().lstrip('#').lower()
                 await self._send_json({'type': 'set_prefs', 'default_room': new_default})
@@ -3220,7 +3222,7 @@ class MRCChat(BaseChatSystem):
                 name = value.lower()
                 if not name:
                     names = ', '.join(sorted(_TERM_PALETTES))
-                    await self._emit(f'Usage: /set palette <name>  ({names})')
+                    await self._emit(self._command_text('palette_usage', 'Usage: /set palette <name>  ({names})', names=names))
                     await self._emit(
                         '\x1b[2m(original/minimal/bitchx/2leet4u/least are '
                         "inspired by StackFault's Mystic MRC themes, "
@@ -3264,11 +3266,11 @@ class MRCChat(BaseChatSystem):
                 if not value:
                     cur = f'-> {self._pin_target}' if self._pin_target else 'off'
                     await self._emit(
-                        f'Usage: /set pin <user>  (or: /set pin off)  -- currently: {cur}')
+                        self._command_text('pin_usage', 'Usage: /set pin <user>  (or: /set pin off)  -- currently: {cur}', cur=cur))
                     return True
                 if value.lower() == 'off':
                     if not self._pin_target:
-                        await self._emit('\x1b[33mPin DM is already off.\x1b[0m')
+                        await self._emit(self._command_text('pin_already_off', '\x1b[33mPin DM is already off.\x1b[0m'))
                         return True
                     old = self._pin_target
                     self._pin_target = ''
@@ -3287,7 +3289,7 @@ class MRCChat(BaseChatSystem):
                 await self._draw_status_line()
                 return True
 
-            await self._emit(f'\x1b[33mUnknown /set field:\x1b[0m {field}. Try /set help.')
+            await self._emit(self._command_text('unknown_field', '\x1b[33mUnknown /set field:\x1b[0m {field}. Try /set help.', field=field))
             return True
 
         if cmd == 'join':
@@ -3380,7 +3382,7 @@ class MRCChat(BaseChatSystem):
         if cmd == 'status':
             if not rest:
                 await self._emit(
-                    'Usage: /status <param> [value]   e.g. /status AFK gone fishing')
+                    self._command_text('status_usage', 'Usage: /status <param> [value]   e.g. /status AFK gone fishing'))
                 return True
             await self._send_json({'type': 'server_cmd', 'command': f'STATUS {rest}'})
             return True
@@ -3394,7 +3396,7 @@ class MRCChat(BaseChatSystem):
 
         if cmd == 'roompass':
             if not rest:
-                await self._emit('Usage: /roompass <password>')
+                await self._emit(self._command_text('roompass_usage', 'Usage: /roompass <password>'))
                 return True
             await self._send_json({
                 'type': 'server_cmd', 'command': f'ROOMPASS {rest}'})
@@ -3410,8 +3412,7 @@ class MRCChat(BaseChatSystem):
         if cmd == 'termsize':
             if not rest:
                 await self._emit(
-                    f'Usage: /termsize w,h  '
-                    f'(currently {self._term_columns},{self._term_lines})')
+                    self._command_text('termsize_usage', 'Usage: /termsize w,h  (currently {columns},{lines})', columns=self._term_columns, lines=self._term_lines))
                 return True
             await self._send_json({
                 'type': 'server_cmd', 'command': f'TERMSIZE {rest}'})
@@ -3428,7 +3429,7 @@ class MRCChat(BaseChatSystem):
                         password = await self.session.read_line(terminal_label(self.session, 'terminal.daily.mrc_password', 'MRC password: '))
                 else:
                     await self._emit(
-                        '\x1b[33m(password will echo - type it and press Enter)\x1b[0m')
+                        self._command_text('password_echo', '\x1b[33m(password will echo - type it and press Enter)\x1b[0m'))
                     password = await self.session.read_line(terminal_label(self.session, 'terminal.daily.mrc_password', 'MRC password: '))
                 password = (password or '').strip()
             if not password:
@@ -3436,12 +3437,12 @@ class MRCChat(BaseChatSystem):
                 return True
             await self._send_json({
                 'type': 'server_cmd', 'command': f'IDENTIFY {password}'})
-            await self._emit('\x1b[1;36m(identify sent)\x1b[0m')
+            await self._emit(self._command_text('identify_sent', '\x1b[1;36m(identify sent)\x1b[0m'))
             return True
 
         if cmd == 'register':
             if not rest:
-                await self._emit('Usage: /register <password> [email]')
+                await self._emit(self._command_text('register_usage', 'Usage: /register <password> [email]'))
                 return True
             parts = rest.split(None, 1)
             pw    = parts[0][:20]
@@ -3452,7 +3453,7 @@ class MRCChat(BaseChatSystem):
 
         if cmd == 'update':
             if not rest:
-                await self._emit('Usage: /update <param> <value>')
+                await self._emit(self._command_text('update_usage', 'Usage: /update <param> <value>'))
                 return True
             await self._send_json({
                 'type': 'server_cmd', 'command': f'UPDATE {rest}'})
@@ -3468,7 +3469,7 @@ class MRCChat(BaseChatSystem):
             parts2 = rest.split(None, 1)
             if len(parts2) < 2:
                 await self._emit(
-                    'Usage: /ctcp <target> <cmd>   (VERSION/TIME/PING/CLIENTINFO)')
+                    self._command_text('ctcp_usage', 'Usage: /ctcp <target> <cmd>   (VERSION/TIME/PING/CLIENTINFO)'))
                 return True
             await self._send_json({
                 'type': 'server_cmd',
@@ -3518,13 +3519,13 @@ class MRCChat(BaseChatSystem):
         if cmd == 'welcome':
             await self._emit('')
             await self._emit(
-                f'\x1b[32mYou are {self._handle} in #{self._room}.\x1b[0m')
+                self._command_text('welcome_room', '\x1b[32mYou are {handle} in #{room}.\x1b[0m', handle=self._handle, room=self._room))
             await self._emit(
-                '\x1b[33mTip:\x1b[0m use [<] [>] arrow keys to change outgoing text color.')
+                self._command_text('tip_color', '\x1b[33mTip:\x1b[0m use [<] [>] arrow keys to change outgoing text color.'))
             await self._emit(
-                '\x1b[33mTip:\x1b[0m /identify <pass> if your handle is registered (MRC Trust).')
+                self._command_text('tip_identify', '\x1b[33mTip:\x1b[0m /identify <pass> if your handle is registered (MRC Trust).'))
             await self._emit(
-                '\x1b[33mTip:\x1b[0m /helpserver lists every command; /set help lists preferences.')
+                self._command_text('tip_help', '\x1b[33mTip:\x1b[0m /helpserver lists every command; /set help lists preferences.'))
             if not self._twit_filter_enabled:
                 twit_state = 'off'
             elif self._twit_list:
@@ -3534,8 +3535,7 @@ class MRCChat(BaseChatSystem):
             shield_state = 'on' if self._broadcast_shield else 'off'
             sound_state  = 'on' if self._use_sound else 'off'
             await self._emit(
-                f'\x1b[2mTwit filter: {twit_state}   Broadcast shield: {shield_state}   '
-                f'Sound: {sound_state}   Terminal: {self._chat_width} cols\x1b[0m')
+                self._command_text('welcome_status', '\x1b[2mTwit filter: {twit}   Broadcast shield: {shield}   Sound: {sound}   Terminal: {width} cols\x1b[0m', twit=twit_state, shield=shield_state, sound=sound_state, width=self._chat_width))
             return True
 
         if cmd == 'changes':
@@ -3594,5 +3594,5 @@ class MRCChat(BaseChatSystem):
             return True
 
         await self._emit(
-            f'\x1b[33mUnknown command:\x1b[0m /{cmd}. Try /helpserver.')
+            self._command_text('unknown_command', '\x1b[33mUnknown command:\x1b[0m /{cmd}. Try /helpserver.', cmd=cmd))
         return True
