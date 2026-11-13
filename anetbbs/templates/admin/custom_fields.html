@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Profile Fields - Admin{% endblock %}
+{% block title %}{{ t('admin.daily.fields_title', 'Profile Fields - Admin') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
@@ -14,7 +14,7 @@
         <table class="table mb-0">
             <thead>
                 <tr>
-                    <th>Field</th>
+                    <th>{{ t('admin.daily.field', 'Field') }}</th>
                     <th>{{ t('ui.status', 'Status') }}</th>
                     <th></th>
                 </tr>
@@ -59,8 +59,8 @@
         <table class="table mb-0">
             <thead>
                 <tr>
-                    <th>Order</th>
-                    <th>Name (slug)</th>
+                    <th>{{ t('admin.daily.order', 'Order') }}</th>
+                    <th>{{ t('admin.daily.field_slug', 'Name (slug)') }}</th>
                     <th>{{ t('ui.label', 'Label') }}</th>
                     <th>{{ t('ui.type', 'Type') }}</th>
                     <th>{{ t('ui.required', 'Required') }}</th>
@@ -111,17 +111,17 @@
         </table>
         {% else %}
         <div class="p-4 text-muted text-center">
-            No custom fields defined yet. <a href="{{ url_for('admin.add_custom_field') }}">Add one</a>.
+            {{ t('admin.daily.empty_fields', 'No custom fields defined yet.') }} <a href="{{ url_for('admin.add_custom_field') }}">{{ t('admin.daily.add_field', 'Add one') }}</a>.
         </div>
         {% endif %}
     </div>
 </div>
 
 <div class="mt-3 text-muted small">
-    <strong>Types:</strong> <code>text</code> — single-line text &nbsp;|&nbsp;
+    <strong>{{ t('admin.daily.field_types', 'Types:') }}</strong> <code>text</code> — single-line text &nbsp;|&nbsp;
     <code>textarea</code> — multi-line text &nbsp;|&nbsp;
     <code>url</code> — URL with link &nbsp;|&nbsp;
     <code>number</code> — numeric value &nbsp;|&nbsp;
-    <code>select</code> — dropdown (define choices below)
+    <code>select</code> {{ t('admin.daily.type_select', '— dropdown (define choices below)') }}
 </div>
 {% endblock %}

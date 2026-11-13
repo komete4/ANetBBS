@@ -6,6 +6,7 @@ and configuration live in a temporary directory; no checked-in DB is reused.
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from itertools import count
+import json
 from pathlib import Path
 import sys
 
@@ -962,3 +963,59 @@ def test_wiki_edit_requirements_and_preview_use_spanish(
     preview_script = next(script for script in response.find_all('script')
                           if 'async function loadPreview()' in script.get_text())
     assert 'No se pudo mostrar la vista previa:' in preview_script.get_text()
+
+
+@pytest.mark.parametrize('language, inactive, bans, locked, online', [
+    ('es', 'Último acceso', 'Intervalo (minutos)', 'Cuenta bloqueada.', 'No hay nadie en línea.'),
+    ('en', 'Last login', 'Time window (minutes)', 'User locked.', 'Nobody online.'),
+])
+def test_daily_admin_labels_and_lock_feedback(
+        client, make_user, monkeypatch, language, inactive, bans, locked, online):
+    from anetbbs.models import WordFilter
+    from anetbbs.web import control
+
+    monkeypatch.setattr(control, 'KNOWN_UNITS', control.KNOWN_UNITS[:1])
+    monkeypatch.setattr(control, '_unit_state', lambda unit: {
+        'ActiveState': 'active', 'SubState': 'running', 'ActiveEnterTimestamp': '',
+        'MainPID': '42', 'LoadState': 'loaded',
+    })
+    monkeypatch.setattr(control, '_probe_tcp', lambda port: True)
+    monkeypatch.setattr(control, '_probe_udp', lambda port: False)
+    monkeypatch.setattr(control, '_change_state', lambda unit, action: (True, '', ''))
+    admin_id, _, _ = make_user(language, is_admin=True)
+    target_id, target_name, _ = make_user(language)
+    _authenticate(client, admin_id)
+    assert inactive in _soup(client.get('/admin/inactive-users')).get_text(' ', strip=True)
+    assert bans in _soup(client.get('/admin/ip-bans')).get_text(' ', strip=True)
+
+    path = '/admin/users'
+    response = _post(client, f'{path}/{target_id}/lock', {},
+                     token_path=path, follow_redirects=True)
+    assert locked in _soup(response).get_text(' ', strip=True)
+    with client.application.app_context():
+        assert db.session.get(User, target_id).is_locked
+
+    filter_path = '/admin/word-filter'
+    _post(client, filter_path, {'action': 'add', 'pattern': target_name},
+          token_path=filter_path)
+    filters = _soup(client.get(filter_path))
+    row = next(row for row in filters.select('tbody tr') if target_name in row.get_text())
+    remove = row.select_one('form:has(input[value="delete"])')
+    response = _post(client, filter_path, {
+        'action': remove.select_one('input[name=action]')['value'],
+        'w_id': remove.select_one('input[name=w_id]')['value'],
+    }, token_path=filter_path)
+    assert response.status_code == 302
+    with client.application.app_context():
+        assert WordFilter.query.filter_by(pattern=target_name).first() is None
+
+    services = _soup(client.get('/admin/control/'))
+    scripts = [tag.get_text() for tag in services.find_all('script')]
+    assert any(json.dumps(online) in code for code in scripts)
+    restart = services.select_one('form[action$="/anetbbs-web/restart"] button')
+    assert restart['data-confirm'] == (
+        '¿Reiniciar anetbbs-web?' if language == 'es' else 'Restart anetbbs-web?')
+    response = _post(client, '/admin/control/service/anetbbs-web/restart', {},
+                     token_path='/admin/control/', follow_redirects=True)
+    status = 'Reinicio de anetbbs-web: correcto' if language == 'es' else 'restart anetbbs-web: OK'
+    assert status in _soup(response).get_text(' ', strip=True)

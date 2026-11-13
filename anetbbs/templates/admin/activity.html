@@ -15,7 +15,7 @@
     <div class="col-md-4">
         <label class="form-label">{{ t('admin.ui.activity_type', 'Activity Type') }}</label>
         <select name="type" class="form-select">
-            <option value="">— all —</option>
+            <option value="">{{ t('admin.daily.all_filter', '— all —') }}</option>
             {% for t in distinct_types %}
                 <option value="{{ t }}" {% if t == current_type %}selected{% endif %}>{{ t }}</option>
             {% endfor %}
@@ -58,7 +58,7 @@
                     <td>{{ a.details or '' }}</td>
                 </tr>
             {% else %}
-                <tr><td colspan="6" class="text-muted text-center p-3">No matching activity.</td></tr>
+                <tr><td colspan="6" class="text-muted text-center p-3">{{ t('admin.daily.activity_empty', 'No matching activity.') }}</td></tr>
             {% endfor %}
             </tbody>
         </table>

@@ -5,7 +5,7 @@
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-bell-fill"></i> {{ t('ui.heading.sysop_pages', 'Sysop Pages') }}</h1>
-    <p>Users requesting your attention from telnet/SSH/rlogin sessions.</p>
+    <p>{{ t('admin.daily.paging_help', 'Users requesting your attention from telnet/SSH/rlogin sessions.') }}</p>
 </div>
 
 <div class="card">
@@ -31,12 +31,12 @@
                     <td>{{ p.message }}</td>
                     <td>
                         {% if p.answered %}
-                            <span class="badge bg-success">answered</span>
+                            <span class="badge bg-success">{{ t('admin.daily.answered', 'answered') }}</span>
                             {% if p.answered_at %}
                                 <small class="text-muted">{{ p.answered_at|eastern('%H:%M') }}</small>
                             {% endif %}
                         {% else %}
-                            <span class="badge bg-warning text-dark">pending</span>
+                            <span class="badge bg-warning text-dark">{{ t('admin.daily.pending_lower', 'pending') }}</span>
                         {% endif %}
                     </td>
                     <td>
@@ -44,18 +44,18 @@
                         <form method="post" action="{{ url_for('admin.reply_page', page_id=p.id) }}" class="d-flex gap-1">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="text" name="reply" class="form-control form-control-sm"
-                                   placeholder="Quick reply..." style="min-width:180px;">
+                                   placeholder="{{ t('admin.daily.quick_reply', 'Quick reply...') }}" style="min-width:180px;">
                             <button class="btn btn-sm btn-primary">{{ t('ui.reply', 'Reply') }}</button>
                         </form>
                         <form method="post" action="{{ url_for('admin.answer_page', page_id=p.id) }}" class="mt-1">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button class="btn btn-sm btn-link p-0">mark answered</button>
+                            <button class="btn btn-sm btn-link p-0">{{ t('admin.daily.mark_answered', 'mark answered') }}</button>
                         </form>
                         {% endif %}
                     </td>
                 </tr>
             {% else %}
-                <tr><td colspan="6" class="text-muted text-center p-3">No sysop pages yet.</td></tr>
+                <tr><td colspan="6" class="text-muted text-center p-3">{{ t('admin.daily.empty_pages', 'No sysop pages yet.') }}</td></tr>
             {% endfor %}
             </tbody>
         </table>

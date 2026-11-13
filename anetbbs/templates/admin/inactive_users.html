@@ -3,7 +3,7 @@
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-person-dash"></i> {{ t('ui.heading.inactive_users', 'Inactive Users') }}</h1>
-    <p class="small text-muted">Users with no login in the last {{ days }} day(s).</p>
+    <p class="small text-muted">{{ t('admin.daily.inactive_since', 'Users with no login in the last {days} day(s).', days=days) }}</p>
 </div>
 
 <form method="get" class="d-flex gap-2 mb-3 align-items-end">
@@ -19,7 +19,7 @@
     <table class="table table-sm">
         <thead><tr>
             <th><input type="checkbox" onclick="document.querySelectorAll('input[name=user_id]').forEach(c=>c.checked=this.checked)"></th>
-            <th>{{ t('ui.user', 'User') }}</th><th>{{ t('ui.email', 'Email') }}</th><th>Last login</th><th>Logins</th>
+            <th>{{ t('ui.user', 'User') }}</th><th>{{ t('ui.email', 'Email') }}</th><th>{{ t('admin.daily.last_login', 'Last login') }}</th><th>{{ t('admin.daily.logins', 'Logins') }}</th>
         </tr></thead>
         <tbody>
         {% for u in rows %}
@@ -27,27 +27,27 @@
             <td><input type="checkbox" name="user_id" value="{{ u.id }}"></td>
             <td><a href="{{ url_for('admin.manage_user', user_id=u.id) }}">{{ u.username }}</a></td>
             <td><small>{{ u.email }}</small></td>
-            <td><small>{{ u.last_login|eastern('%Y-%m-%d', 'never') }}</small></td>
+            <td><small>{{ u.last_login|eastern('%Y-%m-%d', t('admin.daily.never', 'never')) }}</small></td>
             <td>{{ u.login_count or 0 }}</td>
         </tr>
         {% else %}
-        <tr><td colspan="5" class="text-muted">Nobody matching.</td></tr>
+        <tr><td colspan="5" class="text-muted">{{ t('admin.daily.inactive_empty', 'Nobody matching.') }}</td></tr>
         {% endfor %}
         </tbody>
     </table>
 
     <div class="card p-3 mb-2">
-        <h5 class="mb-2">Send a "we miss you" PM to checked users</h5>
-        <input name="subject" class="form-control mb-2" placeholder="{{ t('ui.subject', 'Subject') }}" value="We miss you!">
-        <textarea name="body" class="form-control mb-2" rows="3" placeholder="Body of the PM..."></textarea>
+        <h5 class="mb-2">{{ t('admin.daily.reengage', 'Send a "we miss you" PM to checked users') }}</h5>
+        <input name="subject" class="form-control mb-2" placeholder="{{ t('ui.subject', 'Subject') }}" value="{{ t('admin.daily.reengage_subject', 'We miss you!') }}">
+        <textarea name="body" class="form-control mb-2" rows="3" placeholder="{{ t('admin.daily.reengage_body', 'Body of the PM...') }}"></textarea>
         <div>
-            <button name="action" value="pm" class="btn btn-primary"><i class="bi bi-envelope"></i> Send PM</button>
+            <button name="action" value="pm" class="btn btn-primary"><i class="bi bi-envelope"></i> {{ t('admin.daily.send_pm', 'Send PM') }}</button>
             <button name="action" value="deactivate" class="btn btn-warning"
-                    onclick="return confirm('Deactivate (soft-disable) checked users?');">
-                <i class="bi bi-power"></i> Deactivate
+                    onclick="return confirm(this.dataset.confirm);" data-confirm="{{ t('admin.daily.confirm_deactivate', 'Deactivate (soft-disable) checked users?') }}">
+                <i class="bi bi-power"></i> {{ t('admin.daily.deactivate', 'Deactivate') }}
             </button>
             <button name="action" value="delete" class="btn btn-danger"
-                    onclick="return confirm('Permanently DELETE checked users?');">
+                    onclick="return confirm(this.dataset.confirm);" data-confirm="{{ t('admin.daily.confirm_delete_users', 'Permanently DELETE checked users?') }}">
                 <i class="bi bi-trash"></i> {{ t('ui.delete', 'Delete') }}
             </button>
         </div>

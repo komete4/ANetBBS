@@ -5,7 +5,7 @@
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-megaphone-fill"></i> {{ t('ui.heading.sysop_broadcast', 'Sysop Broadcast') }}</h1>
-    <p>Push a one-line announcement to all online users (web in real time, telnet on next menu loop).</p>
+    <p>{{ t('admin.daily.broadcast_help', 'Push a one-line announcement to all online users (web in real time, telnet on next menu loop).') }}</p>
 </div>
 
 <form method="post" class="card mb-3">
@@ -17,7 +17,7 @@
                 <input type="text" name="text" class="form-control" required maxlength="280">
             </div>
             <div class="col-md-2">
-                <label class="form-label">TTL (minutes)</label>
+                <label class="form-label">{{ t('admin.daily.ttl_minutes', 'TTL (minutes)') }}</label>
                 <input type="number" name="ttl_minutes" class="form-control" min="0" placeholder="permanent">
             </div>
             <div class="col-md-1 d-flex align-items-end">
@@ -30,7 +30,7 @@
 </form>
 
 <div class="card">
-    <div class="card-header">Recent Broadcasts</div>
+    <div class="card-header">{{ t('admin.daily.recent_broadcasts', 'Recent Broadcasts') }}</div>
     <div class="card-body p-0">
     {% if recent %}
         <table class="table table-sm mb-0">
@@ -46,7 +46,7 @@
             {% endfor %}
             </tbody>
         </table>
-    {% else %}<div class="p-3 text-muted">No broadcasts yet.</div>{% endif %}
+    {% else %}<div class="p-3 text-muted">{{ t('admin.daily.empty_broadcasts', 'No broadcasts yet.') }}</div>{% endif %}
     </div>
 </div>
 {% endblock %}

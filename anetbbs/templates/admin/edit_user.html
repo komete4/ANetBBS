@@ -4,7 +4,7 @@
 <div class="bbs-header">
     <h1><i class="bi bi-person-gear"></i> {{ t('admin.edit_user.edit_user_label', 'Edit user —') }} {{ user.username }}</h1>
     <p class="small text-muted">
-        {{ t('admin.edit_user.created', 'Created') }} {{ user.created_at|eastern('%Y-%m-%d') }} {{ t('admin.edit_user.last_login', '· Last login') }} {{ user.last_login|eastern('%Y-%m-%d %H:%M', 'never') }} ·
+        {{ t('admin.edit_user.created', 'Created') }} {{ user.created_at|eastern('%Y-%m-%d') }} {{ t('admin.edit_user.last_login', '· Last login') }} {{ user.last_login|eastern('%Y-%m-%d %H:%M', t('admin.daily.never', 'never')) }} ·
         {{ user.login_count or 0 }} {{ t('admin.edit_user.logins', 'logins') }}
     </p>
 </div>

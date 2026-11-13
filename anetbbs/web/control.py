@@ -43,6 +43,7 @@ from flask import (Blueprint, render_template, redirect, url_for, flash,
                    abort, jsonify, request, current_app, Response)
 from flask_login import login_required, current_user
 
+from ..features.i18n import translate
 from ..models import User, UserSession
 
 try:
@@ -510,20 +511,24 @@ def _change_state(unit, action):
 def service_action(unit, action):
     _require_admin()
     if unit not in {s['unit'] for s in KNOWN_UNITS}:
-        flash(f'Unknown unit: {unit}', 'danger')
+        flash(translate('admin.daily.unknown_unit', 'Unknown unit: {unit}', unit=unit), 'danger')
         return redirect(url_for('control.index'))
     if action not in VALID_ACTIONS:
-        flash(f'Unknown action: {action}', 'danger')
+        flash(translate('admin.daily.unknown_action', 'Unknown action: {action}', action=action), 'danger')
         return redirect(url_for('control.index'))
     ok, out, err = _change_state(unit, action)
+    action_label = translate(f'admin.daily.action.{action}', action)
     if ok:
-        flash(f'{action} {unit}: OK', 'success')
+        flash(translate('admin.daily.action_ok', '{action} {unit}: OK',
+                        action=action_label, unit=unit), 'success')
     else:
         # Surface the underlying error so the sysop can fix it without
         # digging through logs. Common systemd ones: "a password is
         # required" (NOPASSWD rule missing), "command not allowed"
         # (sudoers path doesn't match the resolved systemctl binary).
-        flash(f'{action} {unit} failed: {err or out or "no output"}',
+        flash(translate('admin.daily.action_failed', '{action} {unit} failed: {error}',
+                        action=action_label, unit=unit,
+                        error=err or out or translate('admin.daily.no_output', 'no output')),
               'danger')
     return redirect(url_for('control.index'))
 

@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Notes — {{ target.username }}{% endblock %}
+{% block title %}{{ t('admin.daily.notes', 'Notes —') }} {{ target.username }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-journal-text"></i> Sysop Notes — {{ target.username }}</h1>
-    <p>Private notes visible only to admins.</p>
+    <h1><i class="bi bi-journal-text"></i> {{ t('admin.daily.sysop_notes', 'Sysop Notes —') }} {{ target.username }}</h1>
+    <p>{{ t('admin.daily.private_notes', 'Private notes visible only to admins.') }}</p>
 </div>
 
 <form method="post" class="card mb-3">
@@ -15,7 +15,7 @@
         <label class="form-label">{{ t('admin.ui.add_a_note', 'Add a note') }}</label>
         <textarea name="note" rows="3" class="form-control" required></textarea>
         <button class="btn btn-primary mt-2"><i class="bi bi-plus"></i> {{ t('ui.add', 'Add') }}</button>
-        <a href="{{ url_for('admin.edit_user', user_id=target.id) }}" class="btn btn-link">← Back to user</a>
+        <a href="{{ url_for('admin.edit_user', user_id=target.id) }}" class="btn btn-link">{{ t('admin.daily.back_user', '← Back to user') }}</a>
     </div>
 </form>
 
@@ -33,12 +33,12 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="action" value="delete">
                 <input type="hidden" name="note_id" value="{{ n.id }}">
-                <button class="btn btn-link btn-sm text-danger p-0">delete</button>
+                <button class="btn btn-link btn-sm text-danger p-0">{{ t('admin.daily.delete_lower', 'delete') }}</button>
             </form>
         </div>
         {% endfor %}
     {% else %}
-        <div class="p-3 text-muted">No notes yet.</div>
+        <div class="p-3 text-muted">{{ t('admin.daily.empty_notes', 'No notes yet.') }}</div>
     {% endif %}
     </div>
 </div>

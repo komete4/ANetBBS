@@ -5,7 +5,7 @@
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-slash-circle"></i> {{ t('ui.heading.mrc_chat_bans', 'MRC Chat Bans') }}</h1>
-    <p>Kick/ban users from chat rooms with optional expiry.</p>
+    <p>{{ t('admin.daily.chat_bans_help', 'Kick/ban users from chat rooms with optional expiry.') }}</p>
 </div>
 
 <div class="card mb-3">
@@ -21,7 +21,7 @@
                 </select>
             </div>
             <div class="col-md-3">
-                <label class="form-label">Room (blank = all rooms)</label>
+                <label class="form-label">{{ t('admin.daily.room_optional', 'Room (blank = all rooms)') }}</label>
                 <input type="text" name="room" class="form-control">
             </div>
             <div class="col-md-2">
@@ -33,7 +33,7 @@
                 <input type="text" name="reason" class="form-control">
             </div>
             <div class="col-md-1">
-                <button class="btn btn-danger w-100">Ban</button>
+                <button class="btn btn-danger w-100">{{ t('admin.daily.ban', 'Ban') }}</button>
             </div>
         </form>
     </div>
@@ -45,16 +45,16 @@
     {% if bans %}
         <table class="table table-sm mb-0">
             <thead><tr>
-                <th>{{ t('ui.user', 'User') }}</th><th>Room</th><th>{{ t('ui.reason', 'Reason') }}</th><th>{{ t('ui.expires', 'Expires') }}</th>
-                <th>Issued by</th><th>{{ t('ui.when', 'When') }}</th><th></th>
+                <th>{{ t('ui.user', 'User') }}</th><th>{{ t('admin.daily.room', 'Room') }}</th><th>{{ t('ui.reason', 'Reason') }}</th><th>{{ t('ui.expires', 'Expires') }}</th>
+                <th>{{ t('admin.daily.issued_by', 'Issued by') }}</th><th>{{ t('ui.when', 'When') }}</th><th></th>
             </tr></thead>
             <tbody>
             {% for b in bans %}
                 <tr {% if not b.is_active %}class="text-muted"{% endif %}>
                     <td>{{ b.user.username if b.user else '?' }}</td>
-                    <td>{{ b.room or 'ALL' }}</td>
+                    <td>{{ b.room or t('admin.daily.rooms_all', 'ALL') }}</td>
                     <td>{{ b.reason or '' }}</td>
-                    <td>{{ b.expires_at|eastern('%Y-%m-%d %H:%M', 'never') }}</td>
+                    <td>{{ b.expires_at|eastern('%Y-%m-%d %H:%M', t('admin.daily.never', 'never')) }}</td>
                     <td>{{ b.issued_by.username if b.issued_by else '' }}</td>
                     <td>{{ b.created_at|eastern('%Y-%m-%d %H:%M') }}</td>
                     <td>
@@ -62,7 +62,7 @@
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="action" value="remove">
                             <input type="hidden" name="ban_id" value="{{ b.id }}">
-                            <button class="btn btn-link btn-sm p-0">lift</button>
+                            <button class="btn btn-link btn-sm p-0">{{ t('admin.daily.lift_ban_lower', 'lift') }}</button>
                         </form>
                     </td>
                 </tr>
@@ -70,7 +70,7 @@
             </tbody>
         </table>
     {% else %}
-        <div class="p-3 text-muted">No chat bans.</div>
+        <div class="p-3 text-muted">{{ t('admin.daily.empty_chat_bans', 'No chat bans.') }}</div>
     {% endif %}
     </div>
 </div>

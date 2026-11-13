@@ -10,7 +10,7 @@
 <div class="row justify-content-center">
     <div class="col-md-6">
         <div class="card">
-            <div class="card-header">{{ action }} Field</div>
+            <div class="card-header">{{ action }} {{ t('admin.daily.field', 'Field') }}</div>
             <div class="card-body">
                 <form method="post">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -19,9 +19,9 @@
                     <div class="mb-3">
                         {{ form.name.label(class="form-label") }}
                         {{ form.name(class="form-control", placeholder="e.g. location, website, real_name") }}
-                        <small class="text-muted">Lowercase letters, numbers, underscores only. Cannot be changed after creation.</small>
+                        <small class="text-muted">{{ t('admin.daily.slug_hint', 'Lowercase letters, numbers, underscores only. Cannot be changed after creation.') }}</small>
                         {% if action == 'Edit' and field %}
-                            <div class="mt-1"><code>{{ field.name }}</code> <span class="text-muted small">(fixed)</span></div>
+                            <div class="mt-1"><code>{{ field.name }}</code> <span class="text-muted small">{{ t('admin.daily.fixed', '(fixed)') }}</span></div>
                         {% endif %}
                         {% for error in form.name.errors %}
                             <div class="text-danger">{{ error }}</div>
@@ -31,7 +31,7 @@
                     <div class="mb-3">
                         {{ form.label.label(class="form-label") }}
                         {{ form.label(class="form-control", placeholder="e.g. Location, Website, Real Name") }}
-                        <small class="text-muted">Shown to users on their profile page.</small>
+                        <small class="text-muted">{{ t('admin.daily.shown_profile', 'Shown to users on their profile page.') }}</small>
                         {% for error in form.label.errors %}
                             <div class="text-danger">{{ error }}</div>
                         {% endfor %}
@@ -55,7 +55,7 @@
                     <div class="mb-3">
                         {{ form.sort_order.label(class="form-label") }}
                         {{ form.sort_order(class="form-control", style="width:100px") }}
-                        <small class="text-muted">Lower numbers appear first.</small>
+                        <small class="text-muted">{{ t('admin.daily.sort_hint', 'Lower numbers appear first.') }}</small>
                     </div>
 
                     <div class="mb-3 form-check">
@@ -66,7 +66,7 @@
                     <div class="mb-4 form-check">
                         {{ form.show_in_profile(class="form-check-input") }}
                         {{ form.show_in_profile.label(class="form-check-label") }}
-                        <div class="form-text text-muted">When enabled, this field appears on public user profiles.</div>
+                        <div class="form-text text-muted">{{ t('admin.daily.public_field', 'When enabled, this field appears on public user profiles.') }}</div>
                     </div>
 
                     <div class="d-flex gap-2">

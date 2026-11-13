@@ -9,9 +9,9 @@
 
 <div class="text-end mb-3 d-flex gap-2 justify-content-end">
     <form method="post" action="{{ url_for('admin.purge_expired_bulletins') }}"
-          onsubmit="return confirm('Permanently delete all expired bulletins?');">
+          onsubmit="return confirm(this.dataset.confirm);" data-confirm="{{ t('admin.daily.confirm_purge', 'Permanently delete all expired bulletins?') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="btn btn-outline-danger"><i class="bi bi-archive"></i> Purge Expired</button>
+        <button class="btn btn-outline-danger"><i class="bi bi-archive"></i> {{ t('admin.daily.purge_expired', 'Purge Expired') }}</button>
     </form>
     <a href="{{ url_for('admin.add_bulletin') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> {{ t('ui.add_bulletin', 'Add Bulletin') }}</a>
 </div>
@@ -23,7 +23,7 @@
                 <tr>
                     <th>{{ t('ui.title', 'Title') }}</th>
                     <th>{{ t('ui.author', 'Author') }}</th>
-                    <th>Pinned</th>
+                    <th>{{ t('admin.daily.pinned', 'Pinned') }}</th>
                     <th>{{ t('ui.created', 'Created') }}</th>
                     <th>{{ t('ui.expires', 'Expires') }}</th>
                     <th>{{ t('ui.actions', 'Actions') }}</th>

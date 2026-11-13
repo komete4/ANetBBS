@@ -626,8 +626,13 @@ def toggle_ban(user_id):
     user.is_active = not user.is_active
     db.session.commit()
 
-    status = 'unbanned' if user.is_active else 'banned'
-    flash(f'User {user.username} has been {status}.', 'success')
+    if user.is_active:
+        message = translate('admin.daily.user_unbanned', 'User {username} has been unbanned.',
+                            username=user.username)
+    else:
+        message = translate('admin.daily.user_banned', 'User {username} has been banned.',
+                            username=user.username)
+    flash(message, 'success')
     return redirect(url_for('admin.users'))
 
 
@@ -665,10 +670,10 @@ def bulk_users():
         if deleted:
             flash(translate('admin.notice.deleted_user_s', 'Deleted {deleted} user(s).', deleted=deleted), 'success')
         if blocked:
-            flash(f'Could not delete {len(blocked)} user(s) with related '
-                 f'records (games played, messages, etc.): '
-                 f'{", ".join(blocked)}. Use Ban/Deactivate instead.',
-                 'danger')
+            flash(translate(
+                'admin.daily.bulk_delete_blocked',
+                'Could not delete {count} user(s) with related records (games played, messages, etc.): {users}. Use Ban/Deactivate instead.',
+                count=len(blocked), users=', '.join(blocked)), 'danger')
     elif action == 'ban':
         for user in users:
             user.is_active = False
@@ -938,8 +943,8 @@ def toggle_pin(bulletin_id):
     message = Message.query.get_or_404(bulletin_id)
     message.is_pinned = not message.is_pinned
     db.session.commit()
-    status = 'pinned' if message.is_pinned else 'unpinned'
-    flash(f'Bulletin {status}.', 'success')
+    flash(translate('admin.daily.bulletin_pinned', 'Bulletin pinned.') if message.is_pinned
+          else translate('admin.daily.bulletin_unpinned', 'Bulletin unpinned.'), 'success')
     return redirect(url_for('admin.bulletins'))
 
 
@@ -1589,7 +1594,9 @@ def chat_bans():
                 user_id=target.id, room=room, reason=reason or None,
                 issued_by_id=current_user.id, expires_at=expires))
             db.session.commit()
-            flash(f'Banned {target.username} from {room or "all rooms"}.', 'success')
+            flash(translate('admin.daily.chat_banned', 'Banned {username} from {room}.',
+                            username=target.username,
+                            room=room or translate('admin.daily.all_rooms', 'all rooms')), 'success')
         elif action == 'remove':
             ban_id = request.form.get('ban_id', type=int)
             b = ChatBan.query.get(ban_id)
@@ -2488,7 +2495,8 @@ def purge_expired_bulletins():
     for r in rows:
         db.session.delete(r)
     db.session.commit()
-    flash(f'Purged {n} expired bulletin(s).', 'success')
+    flash(translate('admin.daily.purged_bulletins', 'Purged {count} expired bulletin(s).',
+                    count=n), 'success')
     return redirect(url_for('admin.bulletins'))
 
 
@@ -2774,7 +2782,8 @@ def inactive_users():
         if action == 'pm':
             from ..models import PrivateMessage
             body = (request.form.get('body') or '').strip()
-            subject = (request.form.get('subject') or 'We miss you!').strip()
+            subject = (request.form.get('subject')
+                       or translate('admin.daily.reengage_subject', 'We miss you!')).strip()
             if not body:
                 flash(translate('admin.notice.body_required', 'Body required.'), 'danger')
                 return redirect(url_for('admin.inactive_users', days=days))
@@ -2860,7 +2869,8 @@ def lock_user(user_id):
         return redirect(url_for('admin.users'))
     user.is_locked = not bool(user.is_locked)
     db.session.commit()
-    flash('User ' + ('locked.' if user.is_locked else 'unlocked.'), 'success')
+    flash(translate('admin.daily.user_locked', 'User locked.') if user.is_locked
+          else translate('admin.daily.user_unlocked', 'User unlocked.'), 'success')
     return redirect(url_for('admin.users'))
 
 
@@ -3003,7 +3013,8 @@ def reply_page(page_id):
     p.answered = True
     p.answered_at = datetime.utcnow()
     db.session.commit()
-    flash(f'Reply queued for {p.user.username if p.user else "user"}.', 'success')
+    flash(translate('admin.daily.reply_queued', 'Reply queued for {username}.',
+                    username=p.user.username if p.user else translate('ui.user', 'user')), 'success')
     return redirect(url_for('admin.pages'))
 
 

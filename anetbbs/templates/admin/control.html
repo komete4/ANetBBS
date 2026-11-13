@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Sysop Service Control Center{% endblock %}
+{% block title %}{{ t('admin.daily.service_title', 'Sysop Service Control Center') }}{% endblock %}
 
 {% block head %}
 {{ super() if super }}
@@ -166,25 +166,24 @@
         <div>
             <h1><i class="bi bi-sliders"></i> {{ t('ui.heading.service_control_center', 'Service Control Center') }}</h1>
             <div class="text-light-emphasis small" style="opacity:.85;">
-                Live state of every ANetBBS service and listener — restart,
-                tail logs, kick nodes, watch who's online.
+                {{ t('admin.daily.service_intro', "Live state of every ANetBBS service and listener — restart, tail logs, kick nodes, watch who's online.") }}
             </div>
         </div>
         <div class="scc-counts">
             <div class="scc-count">
                 <strong id="scc-summary-running">{{ summary.running }}/{{ summary.total }}</strong>
-                <span>Services up</span>
+                <span>{{ t('admin.daily.services_up', 'Services up') }}</span>
             </div>
             <div class="scc-count">
                 <strong id="scc-summary-listeners">{{ summary.listener_problems }}</strong>
-                <span>Listener problems</span>
+                <span>{{ t('admin.daily.listener_problems', 'Listener problems') }}</span>
             </div>
             <div class="scc-count">
                 <strong id="scc-summary-conns">—</strong>
                 <span>{{ t('admin.ui.active_connections', 'Active connections') }}</span>
             </div>
             <div class="scc-count">
-                <strong id="scc-updated">just now</strong>
+                <strong id="scc-updated">{{ t('admin.daily.updated_now', 'just now') }}</strong>
                 <span>{{ t('admin.ui.auto_refresh_2s', 'Auto-refresh: 2s') }}</span>
             </div>
         </div>
@@ -206,7 +205,7 @@
         <div class="scc-chart-host"><canvas id="scc-cpu-chart"></canvas></div>
     </div>
     <div class="scc-chart-card">
-        <h6><span><i class="bi bi-memory"></i> Memory (MB)</span>
+        <h6><span><i class="bi bi-memory"></i> {{ t('admin.daily.memory', 'Memory (MB)') }}</span>
             <span id="scc-mem-total" class="text-muted small">—</span></h6>
         <div class="scc-chart-host"><canvas id="scc-mem-chart"></canvas></div>
     </div>
@@ -214,10 +213,7 @@
 
 <div id="scc-no-psutil" class="scc-na-banner" style="display:none;">
     <i class="bi bi-info-circle"></i>
-    <strong>Live graphs unavailable</strong> — <code>psutil</code> isn't
-    installed in the gunicorn venv. Run <code>sudo bash update.sh</code>
-    on this host (the v1.0a2.26+ tarball adds it to requirements.txt) or
-    install manually:
+    <strong>{{ t('admin.daily.graphs_unavailable', 'Live graphs unavailable') }}</strong> — {{ t('admin.daily.psutil_help', "{package} isn't installed in the gunicorn venv. Run {command} on this host (the v1.0a2.26+ tarball adds it to requirements.txt) or install manually:", package='psutil', command='sudo bash update.sh') }}
     <code>venv/bin/pip install psutil&gt;=5.9.0 && systemctl restart anetbbs-web</code>.
 </div>
 
@@ -227,7 +223,7 @@
     <div class="scc-card" data-unit="{{ s.unit }}">
         <div class="d-flex justify-content-between align-items-start">
             <div>
-                <h5><i class="bi {{ s.icon }}"></i> {{ s.label }}</h5>
+                <h5><i class="bi {{ s.icon }}"></i> {{ t('admin.daily.service.' ~ s.unit ~ '.label', s.label) }}</h5>
                 <div class="scc-unit">{{ s.unit }}.service</div>
             </div>
             <span class="scc-pill {{ 'up' if s.is_running else ('down' if s.active in ['failed','inactive'] else 'partial') }}"
@@ -236,18 +232,18 @@
                 <span data-role="state-text">{{ s.active }}{% if s.sub %}/{{ s.sub }}{% endif %}</span>
             </span>
         </div>
-        <p class="scc-desc">{{ s.desc }}</p>
+        <p class="scc-desc">{{ t('admin.daily.service.' ~ s.unit ~ '.description', s.desc) }}</p>
         <div class="scc-meta">
             PID <code data-role="pid">{{ s.pid if s.pid != '0' else '—' }}</code>
             {% if s.since %}
-            · since <span data-role="since">{{ s.since[:19] }}</span>
+            · {{ t('admin.daily.since', 'since') }} <span data-role="since">{{ s.since[:19] }}</span>
             {% endif %}
         </div>
 
         <div class="scc-metric-row" data-role="metric-row">
             <span>CPU <strong data-role="cpu-latest">—</strong></span>
             <span>RAM <strong data-role="mem-latest">—</strong></span>
-            <span>Threads <strong data-role="thr-latest">—</strong></span>
+            <span>{{ t('admin.daily.threads', 'Threads') }} <strong data-role="thr-latest">—</strong></span>
         </div>
         <div class="scc-sparkline">
             <canvas data-role="spark" data-unit="{{ s.unit }}"></canvas>
@@ -264,10 +260,10 @@
             {% else %}
                 <i class="bi bi-exclamation-triangle-fill"></i>
                 <span data-role="listener-summary-text">
-                    {{ _up|length }}/{{ s.ports|length }} listening
+                    {{ _up|length }}/{{ s.ports|length }} {{ t('admin.daily.listening', 'listening') }}
                 </span>
                 <span class="scc-down-list">
-                    — down:
+                    — {{ t('admin.daily.ports_down', 'down:') }}
                     {% for p in _down %}{{ p.name }}:{{ p.port }}{% if not loop.last %}, {% endif %}{% endfor %}
                 </span>
             {% endif %}
@@ -275,7 +271,7 @@
         <div class="scc-ports" data-role="ports">
         {% for p in s.ports %}
             <span class="scc-port {{ 'up' if p.up else ('down' if p.up is false else 'unknown') }}"
-                  title="{{ p.proto }} :{{ p.port }} — {{ 'listening' if p.up else ('not listening' if p.up is false else 'unknown') }}">
+                  title="{{ p.proto }} :{{ p.port }} — {{ t('admin.daily.listening', 'listening') if p.up else (t('admin.daily.not_listening', 'not listening') if p.up is false else t('admin.daily.unknown', 'unknown')) }}">
                 <span class="scc-dot"></span>{{ p.name }}:{{ p.port }}/{{ p.proto }}
             </span>
         {% endfor %}
@@ -285,17 +281,17 @@
         <div class="scc-actions">
             <form method="post" action="{{ url_for('control.service_action', unit=s.unit, action='restart') }}" class="d-inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="btn btn-primary" title="Restart"
-                        onclick="return confirm('Restart {{ s.unit }}?');">
-                    <i class="bi bi-arrow-clockwise"></i> Restart
+                <button class="btn btn-primary" title="{{ t('admin.daily.restart', 'Restart') }}"
+                        onclick="return confirm(this.dataset.confirm);" data-confirm="{{ t('admin.daily.restart_confirm', 'Restart {unit}?', unit=s.unit) }}">
+                    <i class="bi bi-arrow-clockwise"></i> {{ t('admin.daily.restart', 'Restart') }}
                 </button>
             </form>
             {% if s.is_running %}
             <form method="post" action="{{ url_for('control.service_action', unit=s.unit, action='stop') }}" class="d-inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="btn btn-outline-warning" title="Stop"
-                        onclick="return confirm('Stop {{ s.unit }}? It will not auto-restart until you click Start.');">
-                    <i class="bi bi-stop-fill"></i> Stop
+                <button class="btn btn-outline-warning" title="{{ t('admin.daily.stop', 'Stop') }}"
+                        onclick="return confirm(this.dataset.confirm);" data-confirm="{{ t('admin.daily.stop_confirm', 'Stop {unit}? It will not auto-restart until you click Start.', unit=s.unit) }}">
+                    <i class="bi bi-stop-fill"></i> {{ t('admin.daily.stop', 'Stop') }}
                 </button>
             </form>
             {% else %}
@@ -308,7 +304,7 @@
             {% endif %}
             <button type="button" class="btn btn-outline-secondary"
                     onclick="openJournal('{{ s.unit }}')">
-                <i class="bi bi-journal-text"></i> Logs
+                <i class="bi bi-journal-text"></i> {{ t('admin.daily.logs', 'Logs') }}
             </button>
             <a class="btn btn-outline-secondary"
                href="{{ url_for('control.service_journal_download', unit=s.unit, n=2000) }}"
@@ -322,11 +318,7 @@
 
 <div class="alert alert-info small">
     <i class="bi bi-info-circle"></i>
-    <strong>Note:</strong> Start / Stop / Restart calls
-    <code>sudo -n systemctl</code> and requires the NOPASSWD entries in
-    <code>/etc/sudoers.d/anetbbs</code>. The installer + update script
-    refresh that file automatically — if a button reports "permission
-    denied," re-run <code>sudo bash update.sh</code> on this host.
+    {{ t('admin.daily.service_permission_help', 'Start / Stop / Restart calls {command} and requires the NOPASSWD entries in {path}. The installer and update script refresh that file automatically. If a button reports "permission denied," re-run {update} on this host.', command='sudo -n systemctl', path='/etc/sudoers.d/anetbbs', update='sudo bash update.sh') }}
 </div>
 
 <!-- ====== Journal modal ====== -->
@@ -336,10 +328,10 @@
             <div class="modal-header">
                 <h5 class="modal-title">
                     <i class="bi bi-journal-text"></i>
-                    <span id="scc-journal-title">journal</span>
+                    <span id="scc-journal-title">{{ t('admin.daily.journal', 'journal') }}</span>
                 </h5>
                 <div class="d-flex align-items-center gap-2 ms-auto me-2">
-                    <label class="text-muted small mb-0" for="scc-journal-n">Lines:</label>
+                    <label class="text-muted small mb-0" for="scc-journal-n">{{ t('admin.daily.lines', 'Lines:') }}</label>
                     <select id="scc-journal-n" class="form-select form-select-sm" style="width:auto;">
                         <option value="100">100</option>
                         <option value="500" selected>500</option>
@@ -366,13 +358,13 @@
 <!-- ====== NodeSpy ====== -->
 <div class="card mb-3" id="nodespy">
     <div class="card-header">
-        <i class="bi bi-binoculars"></i> NodeSpy — terminal sessions
-        <small class="text-muted">(eye = view screen, door = kick)</small>
+        <i class="bi bi-binoculars"></i> {{ t('admin.daily.nodespy', 'NodeSpy — terminal sessions') }}
+        <small class="text-muted">{{ t('admin.daily.nodespy_hint', '(eye = view screen, door = kick)') }}</small>
     </div>
     <table class="table table-sm mb-0">
         <thead><tr>
-            <th>Slot</th><th>{{ t('ui.user', 'User') }}</th><th>Proto</th><th>{{ t('ui.page', 'Page') }}</th>
-            <th>Last action</th><th>Idle</th><th></th>
+            <th>{{ t('admin.daily.slot', 'Slot') }}</th><th>{{ t('ui.user', 'User') }}</th><th>{{ t('admin.daily.proto', 'Proto') }}</th><th>{{ t('ui.page', 'Page') }}</th>
+            <th>{{ t('admin.daily.last_action', 'Last action') }}</th><th>{{ t('admin.daily.idle', 'Idle') }}</th><th></th>
         </tr></thead>
         <tbody id="nodespy-body">
             <tr><td colspan="7" class="text-muted">{{ t('ui.loading', 'Loading…') }}</td></tr>
@@ -383,12 +375,12 @@
 <!-- ====== Web + terminal users ====== -->
 <div class="card mb-3" id="who-online">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-people"></i> Online (web + terminal, last 5 min)</span>
+        <span><i class="bi bi-people"></i> {{ t('admin.daily.online_recent', 'Online (web + terminal, last 5 min)') }}</span>
         <small id="who-count" class="text-muted"></small>
     </div>
     <table class="table table-sm mb-0">
         <thead><tr>
-            <th>{{ t('ui.user', 'User') }}</th><th>{{ t('ui.page', 'Page') }}</th><th>IP</th><th>UA</th><th>Last seen</th><th></th>
+            <th>{{ t('ui.user', 'User') }}</th><th>{{ t('ui.page', 'Page') }}</th><th>IP</th><th>UA</th><th>{{ t('admin.daily.last_seen', 'Last seen') }}</th><th></th>
         </tr></thead>
         <tbody id="who-body">
             <tr><td colspan="6" class="text-muted">{{ t('ui.loading', 'Loading…') }}</td></tr>
@@ -471,9 +463,9 @@ async function refreshServices() {
             if (portsEl && s.ports) {
                 portsEl.innerHTML = s.ports.map(p => {
                     const cls = portClass(p);
-                    const desc = (p.up === true) ? 'listening'
-                               : (p.up === false ? 'not listening' : 'unknown');
-                    return `<span class="scc-port ${cls}" title="${p.proto} :${p.port} — ${desc}">
+                    const desc = (p.up === true) ? {{ t('admin.daily.listening', 'listening')|tojson }}
+                               : (p.up === false ? {{ t('admin.daily.not_listening', 'not listening')|tojson }} : {{ t('admin.daily.unknown', 'unknown')|tojson }});
+                    return `<span class="scc-port ${cls}" title="${p.proto} :${p.port} — ${escapeHtml(desc)}">
                               <span class="scc-dot"></span>${p.name}:${p.port}/${p.proto}
                             </span>`;
                 }).join('');
@@ -488,13 +480,13 @@ async function refreshServices() {
                 if (down.length === 0) {
                     statusEl.classList.add('ok');
                     statusEl.innerHTML = `<i class="bi bi-check-circle-fill"></i>
-                        <span>All listeners up (${up.length}/${s.ports.length})</span>`;
+                        <span>${escapeHtml({{ t('admin.advanced.all_listeners_up', 'All listeners up (')|tojson }})}${up.length}/${s.ports.length})</span>`;
                 } else {
                     statusEl.classList.add(up.length ? 'partial' : 'down');
                     const downList = down.map(p => `${p.name}:${p.port}`).join(', ');
                     statusEl.innerHTML = `<i class="bi bi-exclamation-triangle-fill"></i>
-                        <span>${up.length}/${s.ports.length} listening</span>
-                        <span class="scc-down-list">— down: ${downList}</span>`;
+                        <span>${up.length}/${s.ports.length} ${escapeHtml({{ t('admin.daily.listening', 'listening')|tojson }})}</span>
+                        <span class="scc-down-list">— ${escapeHtml({{ t('admin.daily.ports_down', 'down:')|tojson }})} ${downList}</span>`;
                 }
             }
         }
@@ -711,7 +703,7 @@ async function reloadJournal() {
     if (!u) return;
     const n = document.getElementById('scc-journal-n').value;
     const body = document.getElementById('scc-journal-body');
-    body.textContent = 'Loading…';
+    body.textContent = {{ t('ui.loading', 'Loading…')|tojson }};
     const dl = document.getElementById('scc-journal-dl');
     dl.href = SCC_JOURNAL_DL.replace('UNIT', encodeURIComponent(u)) + '?n=' + n;
     try {
@@ -720,11 +712,11 @@ async function reloadJournal() {
         const html = await r.text();
         // The journal route returns the full template; extract <pre>
         const m = html.match(/<pre[^>]*>([\s\S]*?)<\/pre>/);
-        body.textContent = m ? m[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>') : '(no log)';
+        body.textContent = m ? m[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>') : {{ t('admin.daily.empty_log', '(no log)')|tojson }};
         // Scroll to bottom
         body.scrollTop = body.scrollHeight;
     } catch (e) {
-        body.textContent = 'Failed to load journal: ' + e;
+        body.textContent = {{ t('admin.daily.journal_error', 'Failed to load journal: ')|tojson }} + e;
     }
 }
 document.getElementById('scc-journal-n').addEventListener('change', reloadJournal);
@@ -748,7 +740,8 @@ async function refreshNodeSpy() {
         const body = document.getElementById('nodespy-body');
         if (!body) return;
         if (!data.length) {
-            body.innerHTML = '<tr><td colspan="7" class="text-muted">No terminal sessions.</td></tr>';
+            body.innerHTML = '<tr><td colspan="7" class="text-muted"></td></tr>';
+            body.querySelector('td').textContent = {{ t('admin.daily.empty_terminal_sessions', 'No terminal sessions.')|tojson }};
             return;
         }
         const now = Date.now();
@@ -763,8 +756,8 @@ async function refreshNodeSpy() {
                 <td><small>${escapeHtml(d.action||'')}</small></td>
                 <td><small>${idle}</small></td>
                 <td>
-                    <a class="btn btn-sm btn-outline-primary" href="/admin/control/nodespy/${d.slot}" title="View screen"><i class="bi bi-eye"></i></a>
-                    <button class="btn btn-sm btn-outline-danger" data-slot="${d.slot}" data-username="${escapeHtml(d.username||'')}" onclick="kickNode(this)" title="Kick / disconnect">
+                    <a class="btn btn-sm btn-outline-primary" href="/admin/control/nodespy/${d.slot}" title="${escapeHtml({{ t('admin.daily.view_screen', 'View screen')|tojson }})}"><i class="bi bi-eye"></i></a>
+                    <button class="btn btn-sm btn-outline-danger" data-slot="${d.slot}" data-username="${escapeHtml(d.username||'')}" onclick="kickNode(this)" title="${escapeHtml({{ t('admin.daily.disconnect', 'Kick / disconnect')|tojson }})}">
                         <i class="bi bi-box-arrow-right"></i>
                     </button>
                 </td>
@@ -778,7 +771,7 @@ setInterval(refreshNodeSpy, 4000);
 async function kickNode(btn) {
     const slot = btn.dataset.slot;
     const username = btn.dataset.username;
-    const reason = prompt(`Disconnect ${username} on slot ${slot}?\n\nOptional reason (shown to user before disconnect):`, '');
+    const reason = prompt({{ t('admin.daily.disconnect_prompt', 'Disconnect {username} on slot {slot}?\n\nOptional reason (shown to user before disconnect):')|tojson }}.replace(/\{(username|slot)\}/g, (_, key) => key === 'username' ? username : slot), '');
     if (reason === null) return;
     try {
         const fd = new FormData();
@@ -791,8 +784,8 @@ async function kickNode(btn) {
         });
         const j = await r.json();
         if (j.ok) refreshNodeSpy();
-        else alert(j.error || j.message || 'Kick failed');
-    } catch (e) { alert('Kick request failed: ' + e); }
+        else alert(j.error || j.message || {{ t('admin.daily.kick_failed', 'Kick failed')|tojson }});
+    } catch (e) { alert({{ t('admin.daily.kick_error', 'Kick request failed: ')|tojson }} + e); }
 }
 
 // ===== Who's online =====
@@ -802,10 +795,11 @@ async function refreshWho() {
         const data = await r.json();
         const body = document.getElementById('who-body');
         const count = document.getElementById('who-count');
-        if (count) count.textContent = data.length + ' online';
+        if (count) count.textContent = data.length + {{ t('admin.daily.online_count_suffix', ' online')|tojson }};
         if (!body) return;
         if (!data.length) {
-            body.innerHTML = '<tr><td colspan="6" class="text-muted">Nobody online.</td></tr>';
+            body.innerHTML = '<tr><td colspan="6" class="text-muted"></td></tr>';
+            body.querySelector('td').textContent = {{ t('admin.daily.empty_online', 'Nobody online.')|tojson }};
             return;
         }
         body.innerHTML = data.map(d => `
@@ -815,7 +809,7 @@ async function refreshWho() {
                 <td><small><code>${escapeHtml(d.ip||'')}</code></small></td>
                 <td><small>${escapeHtml(d.agent||'')}</small></td>
                 <td><small>${(d.last_seen||'').slice(11, 19)}</small></td>
-                <td>${d.kickable ? `<button class="btn btn-sm btn-outline-danger" data-id="${d.id}" data-username="${escapeHtml(d.username||'')}" onclick="kickWho(this)" title="Kick / log out"><i class="bi bi-box-arrow-right"></i></button>` : ''}</td>
+                <td>${d.kickable ? `<button class="btn btn-sm btn-outline-danger" data-id="${d.id}" data-username="${escapeHtml(d.username||'')}" onclick="kickWho(this)" title="${escapeHtml({{ t('admin.daily.logout', 'Kick / log out')|tojson }})}"><i class="bi bi-box-arrow-right"></i></button>` : ''}</td>
             </tr>`).join('');
     } catch (e) {}
 }
@@ -825,7 +819,7 @@ setInterval(refreshWho, 5000);
 async function kickWho(btn) {
     const id = btn.dataset.id;
     const username = btn.dataset.username;
-    const reason = prompt(`Log out ${username}'s web session?\n\nOptional reason (shown to user before logout):`, '');
+    const reason = prompt({{ t('admin.daily.logout_prompt', "Log out {username}'s web session?\n\nOptional reason (shown to user before logout):")|tojson }}.replace('{username}', () => username), '');
     if (reason === null) return;
     try {
         const fd = new FormData();
@@ -838,8 +832,8 @@ async function kickWho(btn) {
         });
         const j = await r.json();
         if (j.ok) refreshWho();
-        else alert(j.error || j.message || 'Kick failed');
-    } catch (e) { alert('Kick request failed: ' + e); }
+        else alert(j.error || j.message || {{ t('admin.daily.kick_failed', 'Kick failed')|tojson }});
+    } catch (e) { alert({{ t('admin.daily.kick_error', 'Kick request failed: ')|tojson }} + e); }
 }
 </script>
 {% endblock %}

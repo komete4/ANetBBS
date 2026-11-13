@@ -2,7 +2,7 @@
 {% block title %}{{ t('ui.heading.ip_whitelist', 'IP Whitelist') }}{% endblock %}
 {% block content %}
 <div class="bbs-header"><h1><i class="bi bi-shield-check"></i> {{ t('ui.heading.ip_whitelist', 'IP Whitelist') }}</h1></div>
-<p class="text-muted small">Whitelisted IPs bypass all ban checks and country blocks.</p>
+<p class="text-muted small">{{ t('admin.daily.whitelist_help', 'Whitelisted IPs bypass all ban checks and country blocks.') }}</p>
 
 <form method="post" class="card p-3 mb-3">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -10,20 +10,20 @@
     <div class="row g-2">
         <div class="col-md-4">
             <label class="form-label small mb-0">IP / CIDR</label>
-            <input type="text" name="cidr" class="form-control form-control-sm" placeholder="1.2.3.4 or 1.2.3.0/24" required>
+            <input type="text" name="cidr" class="form-control form-control-sm" placeholder="{{ t('admin.daily.cidr_example', '1.2.3.4 or 1.2.3.0/24') }}" required>
         </div>
         <div class="col-md-6">
-            <label class="form-label small mb-0">Note (optional)</label>
-            <input type="text" name="note" class="form-control form-control-sm" placeholder="e.g. sysop home IP">
+            <label class="form-label small mb-0">{{ t('admin.daily.note_optional', 'Note (optional)') }}</label>
+            <input type="text" name="note" class="form-control form-control-sm" placeholder="{{ t('admin.daily.whitelist_example', 'e.g. sysop home IP') }}">
         </div>
         <div class="col-md-2 d-flex align-items-end">
-            <button class="btn btn-success btn-sm w-100">Whitelist</button>
+            <button class="btn btn-success btn-sm w-100">{{ t('admin.daily.whitelist_add', 'Whitelist') }}</button>
         </div>
     </div>
 </form>
 
 <table class="table table-sm">
-    <thead><tr><th>CIDR</th><th>Note</th><th>{{ t('admin.ui.added_by', 'Added by') }}</th><th>{{ t('ui.when', 'When') }}</th><th></th></tr></thead>
+    <thead><tr><th>CIDR</th><th>{{ t('admin.daily.note', 'Note') }}</th><th>{{ t('admin.ui.added_by', 'Added by') }}</th><th>{{ t('ui.when', 'When') }}</th><th></th></tr></thead>
     <tbody>
     {% for r in rows %}
     <tr>
@@ -41,7 +41,7 @@
         </td>
     </tr>
     {% else %}
-    <tr><td colspan="5" class="text-muted">No whitelist entries.</td></tr>
+    <tr><td colspan="5" class="text-muted">{{ t('admin.daily.empty_whitelist', 'No whitelist entries.') }}</td></tr>
     {% endfor %}
     </tbody>
 </table>
