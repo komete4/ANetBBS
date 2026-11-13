@@ -24,11 +24,7 @@
     </summary>
     <div class="card-body">
         <p class="text-muted small mb-2">
-            Sends a FileFix <code>+ALL</code> netmail to the hub asking it
-            to feed every file echo it carries, and flips the local
-            <em>subscribed</em> flag on every <code>FileArea</code> row for
-            this network. Run <strong>{{ t('admin.ui.bulk_import', 'Bulk Import') }}</strong> first if your
-            local list is empty.
+            {{ t('transfer.ui.filefix_help', 'Sends FileFix +ALL to the hub and subscribes every local file area for this network. Run Bulk Import first if the local list is empty.') }}
         </p>
         {% for net in binkp_nets %}
         <div class="row g-2 mb-2 align-items-center">
@@ -38,18 +34,20 @@
             <div class="col-md-9 d-flex gap-2">
                 <form method="post"
                       action="{{ url_for('admin.file_areas_subscribe_all', network_id=net.id) }}"
-                      onsubmit="return confirm('Subscribe to ALL file areas on {{ net.name }}? Sends FileFix +ALL to {{ net.hub_address }} and marks every local FileArea row subscribed.');">
+                      onsubmit="return confirm(this.dataset.confirm);"
+                      data-confirm="{{ t('transfer.ui.confirm_subscribe', 'Subscribe to ALL file areas on {network}? Sends FileFix +ALL to {hub} and marks every local FileArea row subscribed.', network=net.name, hub=net.hub_address) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button class="btn btn-success btn-sm">
-                        <i class="bi bi-bell"></i> Subscribe to ALL
+                        <i class="bi bi-bell"></i> {{ t('transfer.ui.subscribe_all', 'Subscribe to ALL') }}
                     </button>
                 </form>
                 <form method="post"
                       action="{{ url_for('admin.file_areas_unsubscribe_all', network_id=net.id) }}"
-                      onsubmit="return confirm('Unsubscribe from ALL file areas on {{ net.name }}? Sends FileFix -ALL and clears every local subscribed flag.');">
+                      onsubmit="return confirm(this.dataset.confirm);"
+                      data-confirm="{{ t('transfer.ui.confirm_unsubscribe', 'Unsubscribe from ALL file areas on {network}? Sends FileFix -ALL and clears every local subscribed flag.', network=net.name) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button class="btn btn-warning btn-sm">
-                        <i class="bi bi-bell-slash"></i> Unsubscribe from ALL
+                        <i class="bi bi-bell-slash"></i> {{ t('transfer.ui.unsubscribe_all', 'Unsubscribe from ALL') }}
                     </button>
                 </form>
             </div>
@@ -75,7 +73,7 @@
                 <input type="text" name="name" class="form-control">
             </div>
             <div class="col-md-3">
-                <label class="form-label">Storage Path</label>
+                <label class="form-label">{{ t('transfer.ui.storage_path', 'Storage Path') }}</label>
                 <input type="text" name="storage_path" class="form-control"
                        placeholder="/home/stingray/anetbbs/data/file_areas/games">
             </div>
@@ -130,7 +128,7 @@
                                cb.checked = this.checked && visible;
                            });"
                            title="Only selects areas currently shown by the Show filter">
-                    <label class="form-check-label" for="bulkSelectAll">Select all shown</label>
+                    <label class="form-check-label" for="bulkSelectAll">{{ t('transfer.ui.select_all_shown', 'Select all shown') }}</label>
                 </div>
             </div>
             <div class="col-md-auto">
@@ -139,17 +137,17 @@
                                   document.querySelectorAll('input[name=area_ids]').forEach(cb => {
                                       cb.checked = (cb.dataset.networkId === this.value);
                                   }); this.value='';">
-                    <option value="">Select all in network…</option>
-                    <option value="none">— local (no network) —</option>
+                    <option value="">{{ t('transfer.ui.select_network', 'Select all in network…') }}</option>
+                    <option value="none">{{ t('transfer.ui.local', '— local (no network) —') }}</option>
                     {% for n in networks %}<option value="{{ n.id }}">{{ n.name }}</option>{% endfor %}
                 </select>
             </div>
             <div class="col-md-auto">
-                <label class="form-label small mb-0 me-1" for="areaFilterNetwork">Show:</label>
+                <label class="form-label small mb-0 me-1" for="areaFilterNetwork">{{ t('transfer.ui.show', 'Show:') }}</label>
                 <select id="areaFilterNetwork" class="form-select form-select-sm"
                         onchange="filterFileAreas(this.value)">
                     <option value="">{{ t('admin.ui.all_areas', 'All areas') }}</option>
-                    <option value="none">Local only (no network)</option>
+                    <option value="none">{{ t('transfer.ui.local_only', 'Local only (no network)') }}</option>
                     {% for n in networks %}<option value="{{ n.id }}">{{ n.name }} only</option>{% endfor %}
                 </select>
                 <span id="areaFilterCount" class="text-muted small ms-1"></span>
@@ -217,7 +215,7 @@
                     <input type="text" name="name" class="form-control form-control-sm" value="{{ fa.name or '' }}">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label small mb-0">Storage</label>
+                    <label class="form-label small mb-0">{{ t('transfer.ui.storage', 'Storage') }}</label>
                     <input type="text" name="storage_path" class="form-control form-control-sm" value="{{ fa.storage_path or '' }}">
                     <div class="form-check">
                         <input type="checkbox" name="create_storage_dir" id="createStorageDir{{ fa.id }}" class="form-check-input">
@@ -227,9 +225,9 @@
                 <div class="col-md-1">
                     <label class="form-label small mb-0">{{ t('ui.upload', 'Upload') }}</label>
                     <select name="upload_permission" class="form-select form-select-sm">
-                        <option value="users" {% if fa.upload_permission == 'users' %}selected{% endif %}>users</option>
-                        <option value="sysop" {% if fa.upload_permission == 'sysop' %}selected{% endif %}>sysop</option>
-                        <option value="none"  {% if fa.upload_permission == 'none' %}selected{% endif %}>none</option>
+                        <option value="users" {% if fa.upload_permission == 'users' %}selected{% endif %}>{{ t('transfer.ui.upload_users', 'users') }}</option>
+                        <option value="sysop" {% if fa.upload_permission == 'sysop' %}selected{% endif %}>{{ t('transfer.ui.upload_sysop', 'sysop') }}</option>
+                        <option value="none"  {% if fa.upload_permission == 'none' %}selected{% endif %}>{{ t('transfer.ui.upload_none', 'none') }}</option>
                     </select>
                 </div>
                 <div class="col-md-1">
@@ -239,14 +237,14 @@
                 <div class="col-md-2 d-flex flex-wrap">
                     <div class="form-check me-2"><input type="checkbox" name="is_active" {% if fa.is_active %}checked{% endif %} class="form-check-input"><label class="form-check-label small">{{ t('ui.active', 'Active') }}</label></div>
                     <div class="form-check me-2"><input type="checkbox" name="is_subscribed" {% if fa.is_subscribed %}checked{% endif %} class="form-check-input"><label class="form-check-label small">{{ t('ui.subscribed', 'Subscribed') }}</label></div>
-                    <div class="form-check"><input type="checkbox" name="is_sysop_only" {% if fa.is_sysop_only %}checked{% endif %} class="form-check-input"><label class="form-check-label small">Sysop-only</label></div>
+                    <div class="form-check"><input type="checkbox" name="is_sysop_only" {% if fa.is_sysop_only %}checked{% endif %} class="form-check-input"><label class="form-check-label small">{{ t('transfer.ui.sysop_only', 'Sysop-only') }}</label></div>
                 </div>
                 <div class="col-md-1">
-                    <label class="form-label small mb-0">Read Level</label>
+                    <label class="form-label small mb-0">{{ t('transfer.ui.read_level', 'Read Level') }}</label>
                     <input type="number" name="min_access_level" class="form-control form-control-sm" min="0" max="255" value="{{ fa.min_access_level if fa.min_access_level is not none else 10 }}" title="0=all, 10=registered, 50=VIP, 100=sysop">
                 </div>
                 <div class="col-md-1">
-                    <label class="form-label small mb-0">Write Level</label>
+                    <label class="form-label small mb-0">{{ t('transfer.ui.write_level', 'Write Level') }}</label>
                     <input type="number" name="min_write_level" class="form-control form-control-sm" min="0" max="255" value="{{ fa.min_write_level if fa.min_write_level is not none else '' }}" placeholder="=read" title="Leave blank to use read level for uploads too">
                 </div>
                 <div class="col-md-2">
@@ -270,10 +268,10 @@
                Nodelist table for /nodelist/ browsing — tagged by domain. #}
             <div class="row g-2 mt-2">
                 <div class="col-md-3">
-                    <div class="form-check"><input type="checkbox" name="is_nodelist_source" {% if fa.is_nodelist_source %}checked{% endif %} class="form-check-input"><label class="form-check-label small">Nodelist source (auto-import inbound TICs)</label></div>
+                    <div class="form-check"><input type="checkbox" name="is_nodelist_source" {% if fa.is_nodelist_source %}checked{% endif %} class="form-check-input"><label class="form-check-label small">{{ t('transfer.ui.nodelist_source', 'Nodelist source (auto-import inbound TICs)') }}</label></div>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label small mb-0">Nodelist domain</label>
+                    <label class="form-label small mb-0">{{ t('transfer.ui.nodelist_domain', 'Nodelist domain') }}</label>
                     <input type="text" name="nodelist_domain" class="form-control form-control-sm" value="{{ fa.nodelist_domain or '' }}" placeholder="e.g. tqwnet">
                 </div>
             </div>
@@ -293,8 +291,8 @@
                 <button class="btn btn-primary btn-sm" name="action" value="update">{{ t('ui.save', 'Save') }}</button>
                 <button class="btn btn-outline-danger btn-sm" name="action" value="delete"
                         onclick="return confirm('Delete area {{ fa.tag }}? Files on disk are NOT removed.')">{{ t('ui.delete', 'Delete') }}</button>
-                <a href="{{ url_for('file_areas.view_area', area_id=fa.id) }}" class="btn btn-outline-secondary btn-sm">Browse</a>
-                <a href="{{ url_for('file_areas.manage_files', area_id=fa.id) }}" class="btn btn-outline-info btn-sm"><i class="bi bi-folder-check"></i> Manage Files</a>
+                <a href="{{ url_for('file_areas.view_area', area_id=fa.id) }}" class="btn btn-outline-secondary btn-sm">{{ t('transfer.ui.browse', 'Browse') }}</a>
+                <a href="{{ url_for('file_areas.manage_files', area_id=fa.id) }}" class="btn btn-outline-info btn-sm"><i class="bi bi-folder-check"></i> {{ t('transfer.ui.manage', 'Manage Files') }}</a>
             </div>
             </div>
         </form>
@@ -304,7 +302,7 @@
     </div>
     {% endfor %}
 {% else %}
-    <div class="card"><div class="p-3 text-muted">No file areas configured. Create one above or wait for the first inbound TIC.</div></div>
+    <div class="card"><div class="p-3 text-muted">{{ t('transfer.ui.empty_areas', 'No file areas configured. Create one above or wait for the first inbound TIC.') }}</div></div>
 {% endif %}
 </div>
 

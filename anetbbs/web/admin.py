@@ -2354,12 +2354,15 @@ def file_areas_bulk_import():
             db.session.add(fa)
             imported += 1
         db.session.commit()
-        msg = f'Imported {imported} file areas, skipped {skipped} duplicates.'
+        msg = translate('transfer.notice.areas_imported',
+                        'Imported {imported} file areas, skipped {skipped} duplicates.',
+                        imported=imported, skipped=skipped)
         if dir_failures:
-            msg += (f' {len(dir_failures)} area(s) imported WITHOUT a storage '
-                    f'path (directory could not be created/didn\'t exist): '
-                    f'{", ".join(dir_failures[:10])}'
-                    f'{"…" if len(dir_failures) > 10 else ""}')
+            tags = ', '.join(dir_failures[:10]) + ('…' if len(dir_failures) > 10 else '')
+            msg += ' ' + translate(
+                'transfer.notice.import_without_directory',
+                "{count} area(s) imported WITHOUT a storage path (directory could not be created/didn't exist): {areas}",
+                count=len(dir_failures), areas=tags)
         flash(msg, 'success' if not dir_failures else 'warning')
         return redirect(url_for('admin.file_areas_admin'))
 

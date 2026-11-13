@@ -81,10 +81,14 @@ def check_quota(user, size_bytes):
         return True, ''
     row = _get_or_reset_usage_row(user_id)
     if row.bytes_used_today + size_bytes > quota:
+        from .i18n import translate
+
         remaining = max(0, quota - row.bytes_used_today)
-        return False, (
-            f'Daily download quota exceeded. You have {remaining:,} of '
-            f'{quota:,} bytes remaining today (resets at Eastern midnight).')
+        return False, translate(
+            'transfer.notice.quota_exceeded',
+            'Daily download quota exceeded. You have {remaining:,} of '
+            '{quota:,} bytes remaining today (resets at Eastern midnight).',
+            _language=_get(user, 'language') or 'en', remaining=remaining, quota=quota)
     return True, ''
 
 

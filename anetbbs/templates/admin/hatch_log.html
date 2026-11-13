@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}TIC Out Log - Admin{% endblock %}
+{% block title %}{{ t('transfer.ui.hatch_title', 'TIC Out Log - Admin') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header d-flex justify-content-between align-items-center flex-wrap gap-2">
     <div>
         <h1><i class="bi bi-file-earmark-arrow-up"></i> {{ t('ui.heading.tic_out_log', 'TIC Out Log') }}</h1>
-        <p>Outbound FidoNet file-echo deliveries — files hatched here or received via TIC and re-distributed to subscribed peers.</p>
+        <p>{{ t('transfer.ui.hatch_intro', 'Outbound FidoNet file-echo deliveries — files hatched here or received via TIC and re-distributed to subscribed peers.') }}</p>
     </div>
     <div>
         <a href="{{ url_for('admin.tic_log') }}" class="btn btn-outline-secondary btn-sm">
@@ -36,16 +36,16 @@
         <table class="table table-sm table-hover mb-0">
             <thead><tr>
                 <th>{{ t('ui.queued', 'Queued') }}</th><th>{{ t('ui.status', 'Status') }}</th><th>{{ t('ui.area', 'Area') }}</th><th>{{ t('ui.file', 'File') }}</th>
-                <th>Peer</th><th>{{ t('ui.size', 'Size') }}</th><th>{{ t('ui.retries', 'Retries') }}</th><th>Sent / Last Error</th>
+                <th>{{ t('transfer.ui.peer', 'Peer') }}</th><th>{{ t('ui.size', 'Size') }}</th><th>{{ t('ui.retries', 'Retries') }}</th><th>{{ t('transfer.ui.last_error', 'Sent / Last Error') }}</th>
             </tr></thead>
             <tbody>
             {% for h in pagination.items %}
                 <tr>
                     <td><code>{{ h.queued_at|eastern('%Y-%m-%d %H:%M') }}</code></td>
                     <td>
-                        {% if h.status == 'sent' %}<span class="badge bg-success">sent</span>
-                        {% elif h.status == 'failed' %}<span class="badge bg-danger">failed</span>
-                        {% elif h.status == 'pending' %}<span class="badge bg-secondary">pending</span>
+                        {% if h.status == 'sent' %}<span class="badge bg-success">{{ t('transfer.ui.sent', 'sent') }}</span>
+                        {% elif h.status == 'failed' %}<span class="badge bg-danger">{{ t('transfer.ui.failed', 'failed') }}</span>
+                        {% elif h.status == 'pending' %}<span class="badge bg-secondary">{{ t('transfer.ui.pending', 'pending') }}</span>
                         {% else %}<span class="badge bg-warning text-dark">{{ h.status }}</span>{% endif %}
                     </td>
                     <td><code>{{ h.file_area.tag if h.file_area else '?' }}</code></td>
@@ -62,7 +62,7 @@
                     </td>
                 </tr>
             {% else %}
-                <tr><td colspan="8" class="text-muted text-center p-3">No outbound TIC activity yet.</td></tr>
+                <tr><td colspan="8" class="text-muted text-center p-3">{{ t('transfer.ui.empty_hatch', 'No outbound TIC activity yet.') }}</td></tr>
             {% endfor %}
             </tbody>
         </table>

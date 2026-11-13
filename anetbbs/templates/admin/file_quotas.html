@@ -4,16 +4,7 @@
 <div class="bbs-header">
     <h1><i class="bi bi-cloud-download"></i> {{ t('ui.heading.daily_file_download_quotas', 'Daily File Download Quotas') }}</h1>
     <p class="small text-muted">
-        Caps how much a user can download per day (web + terminal + FTP),
-        based on their access level. A user gets whichever tier below
-        has the HIGHEST access level they still qualify for — e.g. tiers
-        at level 50 and 100 give a level-75 user the level-50 quota, not
-        the level-100 one. A level with no tier configured at or below
-        it is unlimited. Admins always bypass. Resets at Eastern
-        midnight. Echomail/netmail, door games, and the admin panel are
-        never affected — file-area, file-gallery, and FTP downloads only.
-        Anonymous FTP logins and QWK-node FTP sessions are never quota'd
-        (no local account to attribute usage to, or out of scope).
+        {{ t('transfer.ui.quota_help', "Caps how much a user can download per day (web + terminal + FTP), based on their access level. A user gets whichever tier below has the HIGHEST access level they still qualify for — e.g. tiers at level 50 and 100 give a level-75 user the level-50 quota, not the level-100 one. A level with no tier configured at or below it is unlimited. Admins always bypass. Resets at Eastern midnight. Echomail/netmail, door games, and the admin panel are never affected — file-area, file-gallery, and FTP downloads only. Anonymous FTP logins and QWK-node FTP sessions are never quota'd (no local account to attribute usage to, or out of scope).") }}
     </p>
 </div>
 
@@ -22,7 +13,7 @@
     <input type="hidden" name="action" value="add">
     <div class="row g-2">
         <div class="col-md-4">
-            <label class="form-label small mb-0">Minimum access level</label>
+            <label class="form-label small mb-0">{{ t('transfer.ui.minimum_level', 'Minimum access level') }}</label>
             <input type="number" name="min_access_level" class="form-control" placeholder="50" required>
         </div>
         <div class="col-md-4">
@@ -36,7 +27,7 @@
 </form>
 
 <table class="table table-sm">
-    <thead><tr><th>Min access level</th><th>{{ t('admin.ui.daily_quota', 'Daily quota') }}</th><th></th></tr></thead>
+    <thead><tr><th>{{ t('transfer.ui.min_level', 'Min access level') }}</th><th>{{ t('admin.ui.daily_quota', 'Daily quota') }}</th><th></th></tr></thead>
     <tbody>
     {% for t in rows %}
     <tr>
@@ -52,7 +43,7 @@
         </td>
     </tr>
     {% else %}
-    <tr><td colspan="3" class="text-muted">No quota tiers configured — downloads are unlimited for everyone.</td></tr>
+    <tr><td colspan="3" class="text-muted">{{ t('transfer.ui.no_tiers', 'No quota tiers configured — downloads are unlimited for everyone.') }}</td></tr>
     {% endfor %}
     </tbody>
 </table>

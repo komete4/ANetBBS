@@ -1052,3 +1052,37 @@ def test_admin_appearance_editors_and_validation(
     assert [event['value'] for event in module.select('[name=event_type] option')] == [
         'logon', 'logoff',
     ]
+
+
+def test_spanish_file_area_import_quota_and_tic(client, localized_app, make_user, tmp_path):
+    from anetbbs.models import FileArea, FileQuotaTier
+
+    admin_id, _, _ = make_user('es', is_admin=True)
+    _authenticate(client, admin_id)
+    path = '/admin/file-areas/bulk_import'
+    response = _post(client, path, {'echolist': 'GKS_TEST - Archivos de prueba'},
+                     token_path=path, follow_redirects=True)
+    assert 'Áreas de archivos importadas: 1. Duplicadas omitidas: 0.' in _soup(response).get_text(' ', strip=True)
+    tic = _soup(client.get('/admin/tic-log'))
+    assert 'Aún no se han recibido archivos TIC.' in tic.get_text(' ', strip=True)
+    cleanup = tic.select_one('form[action$="/clear-processed"]')
+    assert 'más de {days} días' in cleanup['data-confirm']
+
+    (tmp_path / 'gks.bin').write_bytes(b'GKS')
+    with localized_app.app_context():
+        area = FileArea.query.filter_by(tag='GKS_TEST').one()
+        area.storage_path = str(tmp_path)
+        tier = FileQuotaTier(min_access_level=10, daily_quota_bytes=2)
+        db.session.add(tier)
+        db.session.commit()
+        area_id, tier_id = area.id, tier.id
+    try:
+        user_id, _, _ = make_user('es')
+        _authenticate(client, user_id)
+        response = client.get(f'/file-areas/{area_id}/gks.bin', follow_redirects=True)
+        assert 'Hoy te quedan 2 de 2 bytes.' in _soup(response).get_text(' ', strip=True)
+    finally:
+        with localized_app.app_context():
+            db.session.delete(db.session.get(FileQuotaTier, tier_id))
+            db.session.delete(db.session.get(FileArea, area_id))
+            db.session.commit()

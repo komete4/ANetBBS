@@ -54,13 +54,14 @@ class FtpFileQuotaTests(unittest.TestCase):
         h.respond = MagicMock()
         return h
 
-    def _make_tiered_user(self, username, level, quota_bytes):
+    def _make_tiered_user(self, username, level, quota_bytes, language='en'):
         from anetbbs.models import db, User, FileQuotaTier
         with self.app.app_context():
             db.session.add(FileQuotaTier(min_access_level=level,
                                          daily_quota_bytes=quota_bytes))
             u = User(username=username, email=f'{username}@example.com',
-                    password_hash='x', is_admin=False, access_level=level)
+                    password_hash='x', is_admin=False, access_level=level,
+                    language=language)
             db.session.add(u)
             db.session.commit()
             return u.id
@@ -90,6 +91,16 @@ class FtpFileQuotaTests(unittest.TestCase):
             from anetbbs.models import FileQuotaUsage
             row = FileQuotaUsage.query.filter_by(user_id=user_id).first()
             self.assertEqual(row.bytes_used_today if row else 0, 0)
+
+    def test_ftp_quota_reply_uses_spanish_and_preserves_status_code(self):
+        self._make_tiered_user('ftpquotaes', 35, 50, language='es')
+        handler = self._make_handler('ftpquotaes')
+        with patch('pyftpdlib.handlers.FTPHandler.ftp_RETR') as mock_retr:
+            handler.ftp_RETR(self._make_file(100))
+        mock_retr.assert_not_called()
+        reply = handler.respond.call_args.args[0]
+        self.assertTrue(reply.startswith('550 Has superado la cuota diaria de descarga.'))
+        self.assertIn('50 de 50 bytes', reply)
 
     def test_ftp_retr_allowed_under_quota_calls_super(self):
         self._make_tiered_user('ftpquota2', 32, 1_000_000)

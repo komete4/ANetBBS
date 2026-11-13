@@ -1,25 +1,26 @@
 {% extends "base.html" %}
 
-{% block title %}TIC Log - Admin{% endblock %}
+{% block title %}{{ t('transfer.ui.tic_title', 'TIC Log - Admin') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header d-flex justify-content-between align-items-center flex-wrap gap-2">
     <div>
         <h1><i class="bi bi-file-earmark-arrow-down"></i> {{ t('ui.heading.tic_in_log', 'TIC In Log') }}</h1>
-        <p>Inbound FidoNet file-echo manifests.</p>
+        <p>{{ t('transfer.ui.tic_intro', 'Inbound FidoNet file-echo manifests.') }}</p>
     </div>
     <div>
         <form method="post" action="{{ url_for('admin.tic_rescan') }}" style="display:inline;">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-primary btn-sm">
-                <i class="bi bi-arrow-repeat"></i> Rescan Inbound Now
+                <i class="bi bi-arrow-repeat"></i> {{ t('transfer.ui.rescan_inbound', 'Rescan Inbound Now') }}
             </button>
         </form>
         <form method="post" action="{{ url_for('admin.tic_clear_processed') }}" style="display:inline;"
-              onsubmit="return confirm('Permanently delete processed/ files older than ' + this.days.value + ' day(s)? This cannot be undone.');">
+              onsubmit="return confirm(this.dataset.confirm.replace('{days}', this.elements.days.value));"
+              data-confirm="{{ t('transfer.ui.confirm_tic_cleanup', 'Permanently delete processed/ files older than {days} day(s)? This cannot be undone.') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="number" name="days" value="30" min="1" class="form-control form-control-sm d-inline-block"
-                   style="width:4.5rem;" title="Days">
+                   style="width:4.5rem;" title="{{ t('transfer.ui.days', 'Days') }}">
             <button type="submit" class="btn btn-outline-danger btn-sm">
                 <i class="bi bi-trash"></i> {{ t('admin.ui.clear_processed_files', 'Clear Processed Files') }}
             </button>
@@ -45,9 +46,9 @@
                 <tr>
                     <td><code>{{ t.received_at|eastern('%Y-%m-%d %H:%M') }}</code></td>
                     <td>
-                        {% if t.status == 'filed' %}<span class="badge bg-success">filed</span>
-                        {% elif t.status == 'error' %}<span class="badge bg-danger">error</span>
-                        {% elif t.status == 'pending' %}<span class="badge bg-secondary">pending</span>
+                        {% if t.status == 'filed' %}<span class="badge bg-success">{{ t('transfer.ui.filed', 'filed') }}</span>
+                        {% elif t.status == 'error' %}<span class="badge bg-danger">{{ t('transfer.ui.error', 'error') }}</span>
+                        {% elif t.status == 'pending' %}<span class="badge bg-secondary">{{ t('transfer.ui.pending', 'pending') }}</span>
                         {% else %}<span class="badge bg-warning text-dark">{{ t.status }}</span>{% endif %}
                     </td>
                     <td><code>{{ t.area_tag or '?' }}</code></td>
@@ -57,7 +58,7 @@
                     <td><small class="text-danger">{{ t.error_message or '' }}</small></td>
                 </tr>
             {% else %}
-                <tr><td colspan="7" class="text-muted text-center p-3">No TICs received yet.</td></tr>
+                <tr><td colspan="7" class="text-muted text-center p-3">{{ t('transfer.ui.no_tic', 'No TICs received yet.') }}</td></tr>
             {% endfor %}
             </tbody>
         </table>

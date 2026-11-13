@@ -1,21 +1,21 @@
 {% extends "base.html" %}
 
-{% block title %}{{ area.tag }} - File Area{% endblock %}
+{% block title %}{{ area.tag }} {{ t('transfer.ui.area_title', '- File Area') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-folder-fill"></i> {{ area.name or area.tag }}</h1>
     <p><code>{{ area.tag }}</code>{% if area.description %} — {{ area.description }}{% endif %}</p>
     <p class="text-muted small">
-        Upload: <code>{{ area.upload_permission }}</code>
+        {{ t('transfer.ui.upload_label', 'Upload:') }} <code>{{ area.upload_permission }}</code>
         {% if area.password %} {{ t('web.user.password_protected_dash_lowercase', '— password-protected') }}{% endif %}
     </p>
     {% if current_user.is_admin %}
-    <p class="text-muted small">Storage: <code>{{ area.storage_path or '(not set)' }}</code></p>
+    <p class="text-muted small">{{ t('transfer.ui.storage_label', 'Storage:') }} <code>{{ area.storage_path or '(not set)' }}</code></p>
     <form method="post" action="{{ url_for('file_areas.rescan_descriptions', area_id=area.id) }}" class="d-inline">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="btn btn-sm btn-outline-secondary" title="Drop the cached FILE_ID.DIZ descriptions and re-extract from each archive">
-            <i class="bi bi-arrow-clockwise"></i> Re-scan descriptions
+            <i class="bi bi-arrow-clockwise"></i> {{ t('transfer.ui.rescan', 'Re-scan descriptions') }}
         </button>
     </form>
     {% endif %}
@@ -64,13 +64,13 @@
                         {% endif %}
                         {% endif %}
                         <details class="mt-1">
-                            <summary class="small">share</summary>
+                            <summary class="small">{{ t('transfer.ui.share_lower', 'share') }}</summary>
                             <form method="post" action="{{ url_for('file_areas.create_share', area_id=area.id, filename=f.name) }}" class="mt-1 d-flex gap-1">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="text" name="note" class="form-control form-control-sm" placeholder="{{ t('web.user.note_optional_lowercase', 'note (optional)') }}">
                                 <input type="number" name="hours_valid" class="form-control form-control-sm" placeholder="hours" min="1" style="max-width:80px;">
                                 <input type="number" name="max_downloads" class="form-control form-control-sm" placeholder="max DL" min="1" style="max-width:80px;">
-                                <button class="btn btn-sm btn-outline-info">share</button>
+                                <button class="btn btn-sm btn-outline-info">{{ t('transfer.ui.share_lower', 'share') }}</button>
                             </form>
                         </details>
                     </td>
@@ -88,9 +88,9 @@
 <nav aria-label="{{ t('web.user.file_area_pages', 'File area pages') }}">
     <ul class="pagination justify-content-center">
         {% if pagination.has_prev %}
-        <li class="page-item"><a class="page-link" href="{{ url_for('file_areas.view_area', area_id=area.id, sort=sort, page=pagination.prev_num) }}">‹ Prev</a></li>
+        <li class="page-item"><a class="page-link" href="{{ url_for('file_areas.view_area', area_id=area.id, sort=sort, page=pagination.prev_num) }}">{{ t('transfer.ui.prev', '‹ Prev') }}</a></li>
         {% else %}
-        <li class="page-item disabled"><span class="page-link">‹ Prev</span></li>
+        <li class="page-item disabled"><span class="page-link">{{ t('transfer.ui.prev', '‹ Prev') }}</span></li>
         {% endif %}
         {% for p in pagination.iter_pages() %}
             {% if p %}
@@ -102,9 +102,9 @@
             {% endif %}
         {% endfor %}
         {% if pagination.has_next %}
-        <li class="page-item"><a class="page-link" href="{{ url_for('file_areas.view_area', area_id=area.id, sort=sort, page=pagination.next_num) }}">Next ›</a></li>
+        <li class="page-item"><a class="page-link" href="{{ url_for('file_areas.view_area', area_id=area.id, sort=sort, page=pagination.next_num) }}">{{ t('transfer.ui.next', 'Next ›') }}</a></li>
         {% else %}
-        <li class="page-item disabled"><span class="page-link">Next ›</span></li>
+        <li class="page-item disabled"><span class="page-link">{{ t('transfer.ui.next', 'Next ›') }}</span></li>
         {% endif %}
     </ul>
     <p class="text-center text-muted small">{{ t('ui.page', 'Page') }} {{ pagination.page }} of {{ pagination.pages }} — {{ pagination.total }} file{{ '' if pagination.total == 1 else 's' }} total</p>

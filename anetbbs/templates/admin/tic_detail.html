@@ -22,14 +22,14 @@
             <dd class="col-sm-9"><code>{{ tic.crc32 or '?' }}</code></dd>
             <dt class="col-sm-3">{{ t('ui.from', 'From') }}</dt>
             <dd class="col-sm-9"><code>{{ tic.from_address or '?' }}</code></dd>
-            <dt class="col-sm-3">Origin</dt>
+            <dt class="col-sm-3">{{ t('transfer.ui.origin', 'Origin') }}</dt>
             <dd class="col-sm-9"><code>{{ tic.origin or '?' }}</code></dd>
-            <dt class="col-sm-3">Stored at</dt>
+            <dt class="col-sm-3">{{ t('transfer.ui.stored_at', 'Stored at') }}</dt>
             <dd class="col-sm-9"><code>{{ tic.stored_path or '(not filed)' }}</code></dd>
             <dt class="col-sm-3">{{ t('ui.received', 'Received') }}</dt>
             <dd class="col-sm-9">{{ tic.received_at|eastern('%Y-%m-%d %H:%M:%S') }}</dd>
             {% if tic.processed_at %}
-            <dt class="col-sm-3">Processed</dt>
+            <dt class="col-sm-3">{{ t('transfer.ui.processed', 'Processed') }}</dt>
             <dd class="col-sm-9">{{ tic.processed_at|eastern('%Y-%m-%d %H:%M:%S') }}</dd>
             {% endif %}
         </dl>
@@ -67,13 +67,13 @@
 {% endif %}
 
 <div class="card">
-    <div class="card-header"><a class="text-decoration-none" data-bs-toggle="collapse" href="#raw">Raw TIC <small>{{ t('admin.advanced.click_to_expand_lowercase', '(click to expand)') }}</small></a></div>
+    <div class="card-header"><a class="text-decoration-none" data-bs-toggle="collapse" href="#raw">{{ t('transfer.ui.raw_tic', 'Raw TIC') }} <small>{{ t('admin.advanced.click_to_expand_lowercase', '(click to expand)') }}</small></a></div>
     <div id="raw" class="collapse">
         <div class="card-body p-2"><pre class="mb-0" style="font-size:11px;">{{ tic.raw_content or '' }}</pre></div>
     </div>
 </div>
 
 <div class="mt-3">
-    <a href="{{ url_for('admin.tic_log') }}" class="btn btn-link">← TIC log</a>
+    <a href="{{ url_for('admin.tic_log') }}" class="btn btn-link">{{ t('transfer.ui.back_tic', '← TIC log') }}</a>
 </div>
 {% endblock %}

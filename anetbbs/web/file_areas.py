@@ -472,8 +472,7 @@ def rescan_descriptions(area_id):
     area = FileArea.query.get_or_404(area_id)
     _clear_desc_cache(area)
     files = _scan_area(area)
-    flash(f'Re-scanned descriptions for {len(files)} file(s) in '
-          f'{area.name or area.tag}.', 'success')
+    flash(translate('transfer.notice.rescanned', 'Re-scanned descriptions for {count} file(s) in {area}.', count=len(files), area=area.name or area.tag), 'success')
     return redirect(url_for('file_areas.view_area', area_id=area.id))
 
 
@@ -518,10 +517,10 @@ def download(area_id, filename):
             file_size = os.path.getsize(full)
             projected_dl = dl + file_size
             if projected_dl > 0 and (ul / projected_dl) < ratio_min:
-                flash(
-                    f'Your upload/download ratio is below the required '
-                    f'{ratio_min:.2f}. Upload some files first to unlock '
-                    f'downloads.', 'danger')
+                flash(translate(
+                    'transfer.notice.ratio',
+                    'Your upload/download ratio is below the required {minimum:.2f}. Upload some files first to unlock downloads.',
+                    minimum=ratio_min), 'danger')
                 return redirect(url_for('file_areas.view_area',
                                         area_id=area.id))
         except Exception:
@@ -756,7 +755,7 @@ def upload(area_id):
                 status='pending',
             )
             db.session.add(entry); db.session.commit()
-            flash(f'{safe_name} uploaded — pending sysop approval.', 'info')
+            flash(translate('transfer.notice.pending', '{filename} uploaded — pending sysop approval.', filename=safe_name), 'info')
             return redirect(url_for('file_areas.view_area', area_id=area.id))
 
         dest = os.path.join(area.storage_path, safe_name)
@@ -771,7 +770,7 @@ def upload(area_id):
                     os.remove(dest)
                 except OSError:
                     pass
-                flash(f'Upload rejected: virus detected ({result.signature}).',
+                flash(translate('files.virus_detected', 'Upload rejected: virus detected ({signature}).', signature=result.signature),
                       'danger')
                 return redirect(url_for('file_areas.view_area', area_id=area.id))
         except Exception:
@@ -787,7 +786,7 @@ def upload(area_id):
                     os.remove(dest)
                 except OSError:
                     pass
-                flash(f'Upload rejected: corrupt archive ({result.message}).',
+                flash(translate('files.corrupt_archive', 'Upload rejected: corrupt archive ({reason}).', reason=result.message),
                       'danger')
                 return redirect(url_for('file_areas.view_area', area_id=area.id))
         except Exception:
@@ -816,12 +815,12 @@ def upload(area_id):
                                is_crash=bool(request.form.get('hatch_crash')),
                                is_hold=bool(request.form.get('hatch_hold')))
         if dupe_of:
-            flash(f'Uploaded {safe_name} (note: identical to existing "{dupe_of}").',
+            flash(translate('transfer.notice.duplicate', 'Uploaded {filename} (note: identical to existing "{existing}").', filename=safe_name, existing=dupe_of),
                   'warning')
         else:
-            flash(f'Uploaded {safe_name}.', 'success')
+            flash(translate('transfer.notice.uploaded', 'Uploaded {filename}.', filename=safe_name), 'success')
     except OSError as exc:
-        flash(f'Save failed: {exc}', 'danger')
+        flash(translate('transfer.notice.save_failed', 'Save failed: {error}', error=exc), 'danger')
     return redirect(url_for('file_areas.view_area', area_id=area.id))
 
 
@@ -896,7 +895,7 @@ def create_share(area_id, filename):
     db.session.add(link)
     db.session.commit()
     share_url = url_for('file_areas.fetch_shared', token=token, _external=True)
-    flash(f'Share link created: {share_url}', 'success')
+    flash(translate('transfer.notice.share_created', 'Share link created: {url}', url=share_url), 'success')
     return redirect(url_for('file_areas.view_area', area_id=area.id))
 
 
@@ -1001,10 +1000,10 @@ def manage_delete(area_id):
     area = FileArea.query.get_or_404(area_id)
     filename = request.form.get('filename', '')
     if not filename or filename.startswith('.') or os.sep in filename:
-        flash('Invalid filename.', 'danger')
+        flash(translate('files.area.invalid_filename', 'Invalid filename.'), 'danger')
         return redirect(url_for('file_areas.manage_files', area_id=area.id))
     if not area.storage_path:
-        flash('No storage path set for this area.', 'danger')
+        flash(translate('transfer.notice.area_path_missing', 'No storage path set for this area.'), 'danger')
         return redirect(url_for('file_areas.manage_files', area_id=area.id))
     # Real Low finding from a security/performance audit (2026-09-02):
     # this compared a lexically-normalized path (normpath, does not
@@ -1015,10 +1014,10 @@ def manage_delete(area_id):
     # the same realpath() on both sides for consistency).
     full = os.path.realpath(os.path.join(area.storage_path, filename))
     if not full.startswith(os.path.realpath(area.storage_path) + os.sep):
-        flash('Invalid path.', 'danger')
+        flash(translate('transfer.notice.invalid_path', 'Invalid path.'), 'danger')
         return redirect(url_for('file_areas.manage_files', area_id=area.id))
     if not os.path.isfile(full):
-        flash(f'{filename} not found.', 'danger')
+        flash(translate('transfer.notice.file_missing', '{filename} not found.', filename=filename), 'danger')
         return redirect(url_for('file_areas.manage_files', area_id=area.id))
     try:
         os.remove(full)
@@ -1027,9 +1026,9 @@ def manage_delete(area_id):
             cache.pop(filename, None)
             return cache
         _update_json_sidecar(_desc_cache_path(area), _mutate)
-        flash(f'Deleted {filename}.', 'success')
+        flash(translate('transfer.notice.deleted', 'Deleted {filename}.', filename=filename), 'success')
     except OSError as exc:
-        flash(f'Delete failed: {exc}', 'danger')
+        flash(translate('transfer.notice.delete_failed', 'Delete failed: {error}', error=exc), 'danger')
     return redirect(url_for('file_areas.manage_files', area_id=area.id))
 
 
@@ -1042,10 +1041,10 @@ def manage_desc(area_id):
     filename = request.form.get('filename', '')
     description = (request.form.get('description') or '').strip()
     if not filename or filename.startswith('.') or os.sep in filename:
-        flash('Invalid filename.', 'danger')
+        flash(translate('files.area.invalid_filename', 'Invalid filename.'), 'danger')
         return redirect(url_for('file_areas.manage_files', area_id=area.id))
     if not area.storage_path:
-        flash('No storage path set.', 'danger')
+        flash(translate('transfer.notice.path_missing', 'No storage path set.'), 'danger')
         return redirect(url_for('file_areas.manage_files', area_id=area.id))
     # Real gap found in a full file-areas audit: every sibling route that
     # touches a file by name in this module (manage_delete, download,
@@ -1064,10 +1063,10 @@ def manage_desc(area_id):
     # the same realpath() on both sides for consistency).
     full = os.path.realpath(os.path.join(area.storage_path, filename))
     if not full.startswith(os.path.realpath(area.storage_path) + os.sep):
-        flash('Invalid path.', 'danger')
+        flash(translate('transfer.notice.invalid_path', 'Invalid path.'), 'danger')
         return redirect(url_for('file_areas.manage_files', area_id=area.id))
     if not os.path.isfile(full):
-        flash(f'{filename} not found.', 'danger')
+        flash(translate('transfer.notice.file_missing', '{filename} not found.', filename=filename), 'danger')
         return redirect(url_for('file_areas.manage_files', area_id=area.id))
     try:
         st = os.stat(full)
@@ -1081,9 +1080,9 @@ def manage_desc(area_id):
             cache[filename] = entry
             return cache
         _update_json_sidecar(_desc_cache_path(area), _mutate)
-        flash(f'Description updated for {filename}.', 'success')
+        flash(translate('transfer.notice.desc_saved', 'Description updated for {filename}.', filename=filename), 'success')
     except OSError as exc:
-        flash(f'Failed: {exc}', 'danger')
+        flash(translate('transfer.notice.failed', 'Failed: {error}', error=exc), 'danger')
     return redirect(url_for('file_areas.manage_files', area_id=area.id))
 
 
@@ -1097,19 +1096,19 @@ def manage_upload(area_id):
         abort(403)
     area = FileArea.query.get_or_404(area_id)
     if not area.storage_path:
-        flash('No storage path configured for this area.', 'danger')
+        flash(translate('transfer.notice.area_path_missing', 'No storage path configured for this area.'), 'danger')
         return redirect(url_for('file_areas.manage_files', area_id=area.id))
     f = request.files.get('file')
     if not f or not f.filename:
-        flash('No file selected.', 'danger')
+        flash(translate('files.no_file', 'No file selected.'), 'danger')
         return redirect(url_for('file_areas.manage_files', area_id=area.id))
     too_big, max_size = _oversized_upload(f)
     if too_big:
-        flash(f'File too large. Maximum size is {max_size // 1024 // 1024}MB.', 'danger')
+        flash(translate('files.too_large', 'File too large. Maximum size is {size}MB.', size=max_size // 1024 // 1024), 'danger')
         return redirect(url_for('file_areas.manage_files', area_id=area.id))
     safe_name = os.path.basename(f.filename)
     if not safe_name or safe_name.startswith('.'):
-        flash('Invalid filename.', 'danger')
+        flash(translate('files.area.invalid_filename', 'Invalid filename.'), 'danger')
         return redirect(url_for('file_areas.manage_files', area_id=area.id))
     description = (request.form.get('description') or '').strip()
     try:
@@ -1128,7 +1127,7 @@ def manage_upload(area_id):
                     os.remove(dest)
                 except OSError:
                     pass
-                flash(f'Upload rejected: virus detected ({vr.signature}).', 'danger')
+                flash(translate('files.virus_detected', 'Upload rejected: virus detected ({signature}).', signature=vr.signature), 'danger')
                 return redirect(url_for('file_areas.manage_files', area_id=area.id))
         except Exception:
             current_app.logger.exception('virus scan crashed; allowing upload')
@@ -1140,7 +1139,7 @@ def manage_upload(area_id):
                     os.remove(dest)
                 except OSError:
                     pass
-                flash(f'Upload rejected: corrupt archive ({ar.message}).', 'danger')
+                flash(translate('files.corrupt_archive', 'Upload rejected: corrupt archive ({reason}).', reason=ar.message), 'danger')
                 return redirect(url_for('file_areas.manage_files', area_id=area.id))
         except Exception:
             current_app.logger.exception('archive integrity test crashed; allowing upload')
@@ -1163,12 +1162,12 @@ def manage_upload(area_id):
                                is_crash=bool(request.form.get('hatch_crash')),
                                is_hold=bool(request.form.get('hatch_hold')))
         if dupe_of:
-            flash(f'Uploaded {safe_name} (note: identical to existing "{dupe_of}").',
+            flash(translate('transfer.notice.duplicate', 'Uploaded {filename} (note: identical to existing "{existing}").', filename=safe_name, existing=dupe_of),
                   'warning')
         else:
-            flash(f'Uploaded {safe_name}.', 'success')
+            flash(translate('transfer.notice.uploaded', 'Uploaded {filename}.', filename=safe_name), 'success')
     except OSError as exc:
-        flash(f'Upload failed: {exc}', 'danger')
+        flash(translate('transfer.notice.upload_failed', 'Upload failed: {error}', error=exc), 'danger')
     return redirect(url_for('file_areas.manage_files', area_id=area.id))
 
 
@@ -1274,7 +1273,7 @@ def smart_upload():
                 )
                 db.session.add(entry)
                 db.session.commit()
-                flash(f'{safe} uploaded to {target.tag} — pending sysop approval.',
+                flash(translate('transfer.notice.area_pending', '{filename} uploaded to {area} — pending sysop approval.', filename=safe, area=target.tag),
                       'info')
                 return redirect(url_for('file_areas.view_area', area_id=target.id))
 
@@ -1288,7 +1287,7 @@ def smart_upload():
                 if r.infected:
                     try: os.remove(dest)
                     except OSError: pass
-                    flash(f'Rejected: virus ({r.signature}).', 'danger')
+                    flash(translate('files.virus_detected', 'Rejected: virus ({signature}).', signature=r.signature), 'danger')
                     return redirect(url_for('file_areas.smart_upload'))
             except Exception:
                 # Real gap found in a security/performance audit: this
@@ -1304,7 +1303,7 @@ def smart_upload():
                 if not ar.ok:
                     try: os.remove(dest)
                     except OSError: pass
-                    flash(f'Rejected: corrupt archive ({ar.message}).', 'danger')
+                    flash(translate('files.corrupt_archive', 'Rejected: corrupt archive ({reason}).', reason=ar.message), 'danger')
                     return redirect(url_for('file_areas.smart_upload'))
             except Exception:
                 # Same gap and fix as the virus-scan block just above.
@@ -1315,12 +1314,11 @@ def smart_upload():
                                    is_crash=bool(request.form.get('hatch_crash')),
                                    is_hold=bool(request.form.get('hatch_hold')))
             if dupe_of:
-                flash(f'Uploaded {safe} to {target.tag} '
-                      f'(note: identical to existing "{dupe_of}").', 'warning')
+                flash(translate('transfer.notice.area_duplicate', 'Uploaded {filename} to {area} (note: identical to existing "{existing}").', filename=safe, area=target.tag, existing=dupe_of), 'warning')
             else:
-                flash(f'Uploaded {safe} to {target.tag}.', 'success')
+                flash(translate('transfer.notice.area_uploaded', 'Uploaded {filename} to {area}.', filename=safe, area=target.tag), 'success')
             return redirect(url_for('file_areas.view_area', area_id=target.id))
         except OSError as exc:
-            flash(f'Save failed: {exc}', 'danger')
+            flash(translate('transfer.notice.save_failed', 'Save failed: {error}', error=exc), 'danger')
 
     return render_template('file_areas/smart_upload.html', areas=visible_areas)
