@@ -76,7 +76,7 @@
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="btn btn-success btn-sm"
                       onclick="return confirm('Post this now to every configured platform? This is real and public.')">
-                <i class="bi bi-send-fill"></i> Approve &amp; Post
+                <i class="bi bi-send-fill"></i> {{ t('admin.ui.approve_post', 'Approve & Post') }}
               </button>
             </form>
             <form method="post" action="{{ url_for('social_admin.skip', post_id=p.id) }}" style="display:inline;">

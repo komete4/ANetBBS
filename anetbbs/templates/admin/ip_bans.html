@@ -6,7 +6,7 @@
 <form method="post" class="card p-3 mb-3">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="action" value="auto_ban_settings">
-    <h6 class="mb-2"><i class="bi bi-shield-exclamation"></i> Auto-Ban Settings</h6>
+    <h6 class="mb-2"><i class="bi bi-shield-exclamation"></i> {{ t('admin.ui.auto_ban_settings', 'Auto-Ban Settings') }}</h6>
     <p class="text-muted small mb-2">
         Automatically bans an IP that fails to log in too many times in a row.
         Applies to the web login form.
@@ -20,7 +20,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <label class="form-label small mb-0">Failed attempts before ban</label>
+            <label class="form-label small mb-0">{{ t('admin.ui.failed_attempts_before_ban', 'Failed attempts before ban') }}</label>
             <input type="number" name="attempt_limit" min="1" class="form-control form-control-sm"
                    value="{{ auto_ban_cfg.attempt_limit }}">
         </div>
@@ -30,7 +30,7 @@
                    value="{{ (auto_ban_cfg.window_seconds / 60) | round(0, 'ceil') | int }}">
         </div>
         <div class="col-md-3">
-            <label class="form-label small mb-0">Ban duration, hours (0 = permanent)</label>
+            <label class="form-label small mb-0">{{ t('admin.ui.ban_duration_hours_0_permanent', 'Ban duration, hours (0 = permanent)') }}</label>
             <input type="number" name="ban_duration_hours" min="0" class="form-control form-control-sm"
                    value="{{ auto_ban_cfg.ban_duration_hours }}">
         </div>

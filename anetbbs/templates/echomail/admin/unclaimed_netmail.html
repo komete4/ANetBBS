@@ -32,7 +32,7 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             {% endif %}
             <button class="btn btn-outline-danger btn-sm">
-                <i class="bi bi-trash"></i> Clear All
+                <i class="bi bi-trash"></i> {{ t('admin.ui.clear_all', 'Clear All') }}
             </button>
         </form>
         <table class="table table-sm table-hover">
@@ -43,7 +43,7 @@
                     <th>To (as received)</th>
                     <th>{{ t('ui.subject', 'Subject') }}</th>
                     <th>{{ t('ui.received', 'Received') }}</th>
-                    <th class="text-end">Assign to</th>
+                    <th class="text-end">{{ t('admin.ui.assign_to', 'Assign to') }}</th>
                 </tr>
             </thead>
             <tbody>

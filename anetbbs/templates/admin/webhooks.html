@@ -34,7 +34,7 @@
             <div class="col-md-6">
                 <label class="form-label">Board (only used for the <code>post</code> event — leave as "All boards" for any other event)</label>
                 <select name="board_id" class="form-select">
-                    <option value="">All boards</option>
+                    <option value="">{{ t('admin.ui.all_boards', 'All boards') }}</option>
                     {% for b in boards %}
                     <option value="{{ b.id }}">{{ b.name }}</option>
                     {% endfor %}
@@ -45,9 +45,9 @@
                 <label class="form-label">Body template (optional, JSON; placeholders <code>{user} {text} {content}</code>)</label>
                 <textarea name="template" rows="3" class="form-control" style="font-family:monospace;" placeholder='{"content": "{content}"}'></textarea>
             </div>
-            <div class="col-md-6"><label class="form-label">Bearer secret (optional)</label>
+            <div class="col-md-6"><label class="form-label">{{ t('admin.ui.bearer_secret_optional', 'Bearer secret (optional)') }}</label>
                 <input type="text" name="secret" class="form-control"></div>
-            <div class="col-md-12"><button class="btn btn-primary">Add Webhook</button></div>
+            <div class="col-md-12"><button class="btn btn-primary">{{ t('admin.ui.add_webhook', 'Add Webhook') }}</button></div>
         </div>
     </div>
 </form>

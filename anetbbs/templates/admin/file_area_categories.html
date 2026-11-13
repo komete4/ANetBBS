@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}File Area Categories — Admin — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{{ t('admin.ui.file_area_categories_admin_suffix_section', 'File Area Categories — Admin —') }} {{ config.BBS_NAME }}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -11,7 +11,7 @@
         <form method="post" action="{{ url_for('admin.renumber_file_area_categories') }}" style="display:inline;"
               onsubmit="return confirm('Renumber every category to a clean 1/2/3/... sequence?');">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn btn-sm btn-primary" title="Auto-renumber all categories">
+            <button type="submit" class="btn btn-sm btn-primary" title="{{ t('admin.ui.auto_renumber_all_categories', 'Auto-renumber all categories') }}">
                 <i class="bi bi-sort-numeric-down"></i> {{ t('ui.renumber', 'Renumber') }}
             </button>
         </form>

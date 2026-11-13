@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Security Updates{% endblock %}
+{% block title %}{{ t('admin.ui.security_updates', 'Security Updates') }}{% endblock %}
 
 {% block head %}
 {{ super() if super }}
@@ -22,29 +22,26 @@
       <div>
         <h1>
           <i class="bi bi-shield-{% if report and report.apt_security > 0 %}exclamation{% else %}check{% endif %}"></i>
-          Security updates
+          {{ t('admin.ui.security_updates_sentence_case', 'Security updates') }}
         </h1>
         <div class="text-white-50 mt-1">
           {% if report %}
-            {{ report.apt_total }} apt updates pending
-            ({{ report.apt_security }} security),
-            {{ report.pip_total }} pip outdated.
-            Last scanned: {{ report.generated_at }}.
+            {{ t('admin.security.summary', '{apt} apt updates pending ({security} security), {pip} pip outdated. Last scanned: {date}.', apt=report.apt_total, security=report.apt_security, pip=report.pip_total, date=report.generated_at) }}
           {% else %}
-            No scan has run yet on this install.
+            {{ t('admin.security.no_scan', 'No scan has run yet on this install.') }}
           {% endif %}
         </div>
       </div>
       <form method="POST" action="{{ url_for('security_admin.run_now') }}">
         {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-        <button class="btn btn-light"><i class="bi bi-arrow-repeat"></i> Run scan now</button>
+        <button class="btn btn-light"><i class="bi bi-arrow-repeat"></i> {{ t('admin.security.run', 'Run scan now') }}</button>
       </form>
     </div>
   </div>
 
   {% if not report %}
     <div class="alert alert-info">
-      Click <strong>Run scan now</strong> to take a snapshot — or wait
+      Click <strong>{{ t('admin.security.run', 'Run scan now') }}</strong> to take a snapshot — or wait
       for the daily <code>04:00 UTC</code> tick (the event is seeded
       automatically; manage it under
       <a href="{{ url_for('events_admin.index') }}">{{ t('ui.heading.scheduled_events', 'Scheduled Events') }}</a>).
@@ -53,7 +50,7 @@
 
     {% if report.errors %}
       <div class="alert alert-warning">
-        Scan errors:
+        {{ t('admin.security.errors', 'Scan errors:') }}
         <ul class="mb-0">
           {% for e in report.errors %}<li><code>{{ e }}</code></li>{% endfor %}
         </ul>
@@ -63,7 +60,7 @@
     <!-- apt -->
     <div class="card sec-card mb-3">
       <div class="card-header bg-light d-flex justify-content-between align-items-center">
-        <strong><i class="bi bi-ubuntu"></i> OS packages (apt)</strong>
+        <strong><i class="bi bi-ubuntu"></i> {{ t('admin.security.apt', 'OS packages (apt)') }}</strong>
         <span class="sec-meta">{{ report.apt_total }} total
           {% if report.apt_security %}
             · <span class="badge sec-pill-security">{{ report.apt_security }} security</span>
@@ -72,11 +69,11 @@
       </div>
       <div class="card-body p-0">
         {% if not report.apt %}
-          <div class="p-3 sec-empty">Nothing pending — system is up to date.</div>
+          <div class="p-3 sec-empty">{{ t('admin.security.up_to_date', 'Nothing pending — system is up to date.') }}</div>
         {% else %}
         <table class="table table-sm mb-0 align-middle">
           <thead class="table-light">
-            <tr><th>Package</th><th>Current</th><th>Latest</th><th>{{ t('ui.source', 'Source') }}</th><th>{{ t('ui.type', 'Type') }}</th></tr>
+            <tr><th>{{ t('admin.security.package', 'Package') }}</th><th>{{ t('admin.security.current', 'Current') }}</th><th>{{ t('admin.security.latest', 'Latest') }}</th><th>{{ t('ui.source', 'Source') }}</th><th>{{ t('ui.type', 'Type') }}</th></tr>
           </thead>
           <tbody>
             {% for u in report.apt %}
@@ -87,9 +84,9 @@
               <td class="sec-meta"><small>{{ u.source }}</small></td>
               <td>
                 {% if u.security %}
-                  <span class="badge sec-pill-security">SECURITY</span>
+                  <span class="badge sec-pill-security">{{ t('admin.security.security', 'SECURITY') }}</span>
                 {% else %}
-                  <span class="badge sec-pill-update">update</span>
+                  <span class="badge sec-pill-update">{{ t('admin.security.update', 'update') }}</span>
                 {% endif %}
               </td>
             </tr>
@@ -100,8 +97,8 @@
       </div>
       {% if report.apt %}
         <div class="card-footer sec-meta">
-          To install everything: <code>sudo apt update &amp;&amp; sudo apt upgrade</code><br>
-          Security-only: <code>sudo unattended-upgrade -d</code> (if the package is installed)
+          {{ t('admin.security.install_all', 'To install everything:') }} <code>sudo apt update &amp;&amp; sudo apt upgrade</code><br>
+          {{ t('admin.security.security_only', 'Security-only:') }} <code>sudo unattended-upgrade -d</code> {{ t('admin.security.if_installed', '(if the package is installed)') }}
         </div>
       {% endif %}
     </div>
@@ -109,16 +106,16 @@
     <!-- pip -->
     <div class="card sec-card">
       <div class="card-header bg-light d-flex justify-content-between align-items-center">
-        <strong><i class="bi bi-filetype-py"></i> Python packages (pip)</strong>
+        <strong><i class="bi bi-filetype-py"></i> {{ t('admin.security.pip', 'Python packages (pip)') }}</strong>
         <span class="sec-meta">{{ report.pip_total }} outdated</span>
       </div>
       <div class="card-body p-0">
         {% if not report.pip %}
-          <div class="p-3 sec-empty">Nothing outdated — venv is current.</div>
+          <div class="p-3 sec-empty">{{ t('admin.security.pip_current', 'Nothing outdated — venv is current.') }}</div>
         {% else %}
         <table class="table table-sm mb-0 align-middle">
           <thead class="table-light">
-            <tr><th>Package</th><th>Current</th><th>Latest</th></tr>
+            <tr><th>{{ t('admin.security.package', 'Package') }}</th><th>{{ t('admin.security.current', 'Current') }}</th><th>{{ t('admin.security.latest', 'Latest') }}</th></tr>
           </thead>
           <tbody>
             {% for u in report.pip %}
@@ -152,7 +149,7 @@
       <div class="card-body p-0">
         <table class="table table-sm mb-0 align-middle">
           <thead class="table-light">
-            <tr><th>Package</th><th>Current</th><th>Latest (ignored)</th><th>{{ t('ui.reason', 'Reason') }}</th></tr>
+            <tr><th>{{ t('admin.security.package', 'Package') }}</th><th>{{ t('admin.security.current', 'Current') }}</th><th>{{ t('admin.security.latest', 'Latest') }} (ignored)</th><th>{{ t('ui.reason', 'Reason') }}</th></tr>
           </thead>
           <tbody>
             {% for u in report.pip_pinned %}

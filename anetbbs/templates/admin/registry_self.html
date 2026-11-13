@@ -14,7 +14,7 @@
             <div class="card-header"><i class="bi bi-gear"></i> {{ t('ui.configuration', 'Configuration') }}</div>
             <div class="card-body">
                 <dl class="mb-0">
-                    <dt>Hub URL</dt>
+                    <dt>{{ t('admin.ui.hub_url', 'Hub URL') }}</dt>
                     <dd><code>{{ hub or '(not set)' }}</code></dd>
                     <dt>Self-register enabled</dt>
                     <dd>
@@ -32,7 +32,7 @@
                     <dd>{{ meta.sysop or '(blank)' }}</dd>
                     <dt>{{ t('ui.location', 'Location') }}</dt>
                     <dd>{{ meta.location or '(blank)' }}</dd>
-                    <dt>Contact email</dt>
+                    <dt>{{ t('admin.ui.contact_email', 'Contact email') }}</dt>
                     <dd>{{ meta.contact_email or '(blank — required!)' }}</dd>
                     <dt>Software / version</dt>
                     <dd>{{ meta.software }} {{ meta.software_version }}</dd>

@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}{% if node %}{{ t('ui.edit', 'Edit') }}{% else %}{{ t('ui.add', 'Add') }}{% endif %} BinkP Node — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{% if node %}{{ t('ui.edit', 'Edit') }}{% else %}{{ t('ui.add', 'Add') }}{% endif %} {{ t('admin.ui.binkp_node_suffix', 'BinkP Node —') }} {{ config.BBS_NAME }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-    <h1><i class="bi bi-hdd-network"></i> {% if node %}Edit BinkP Node — {{ node.ftn_address }}{% else %}Add BinkP Node{% endif %}</h1>
+    <h1><i class="bi bi-hdd-network"></i> {% if node %}{{ t('admin.ui.edit_binkp_node_suffix', 'Edit BinkP Node —') }} {{ node.ftn_address }}{% else %}{{ t('admin.ui.add_binkp_node', 'Add BinkP Node') }}{% endif %}</h1>
     <a href="{{ url_for('hub_admin.binkp_nodes') }}" class="btn btn-secondary">
-        <i class="bi bi-arrow-left"></i> Back to Nodes
+        <i class="bi bi-arrow-left"></i> {{ t('admin.ui.back_to_nodes', 'Back to Nodes') }}
     </a>
 </div>
 
@@ -128,13 +128,13 @@
 
 {% if node %}
 <div class="card mt-4 border-danger" style="max-width:640px;">
-    <div class="card-header text-danger">Danger Zone</div>
+    <div class="card-header text-danger">{{ t('admin.ui.danger_zone', 'Danger Zone') }}</div>
     <div class="card-body">
         <p>Deleting this node will remove all subscriptions and pending hold-queue entries.</p>
         <form method="POST" action="{{ url_for('hub_admin.delete_binkp_node', node_id=node.id) }}"
               onsubmit="return confirm('Delete node {{ node.ftn_address }}?');">
             {{ form.hidden_tag() }}
-            <button type="submit" class="btn btn-danger btn-sm">Delete Node</button>
+            <button type="submit" class="btn btn-danger btn-sm">{{ t('admin.ui.delete_node', 'Delete Node') }}</button>
         </form>
     </div>
 </div>

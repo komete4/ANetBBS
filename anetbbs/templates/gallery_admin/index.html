@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Galleries — Admin{% endblock %}
+{% block title %}{{ t('admin.ui.galleries_admin_section', 'Galleries — Admin') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
@@ -12,7 +12,7 @@
         <i class="bi bi-arrow-left"></i> View Galleries
     </a>
     <a href="{{ url_for('gallery_admin.add') }}" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Add Gallery
+        <i class="bi bi-plus-circle"></i> {{ t('admin.ui.add_gallery', 'Add Gallery') }}
     </a>
 </div>
 

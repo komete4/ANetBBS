@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}ANSI Screens{% endblock %}
+{% block title %}{{ t('admin.ui.ansi_screens', 'ANSI Screens') }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-tv"></i> {{ t('ui.heading.login_logoff_ansi_screens', 'Login / Logoff ANSI Screens') }}</h1>
@@ -16,14 +16,14 @@
         <i class="bi bi-plus"></i> New screen / slot
     </a>
     <a href="{{ url_for('menu_admin.list_menus') }}" class="btn btn-secondary">
-        <i class="bi bi-arrow-left"></i> Back to menus
+        <i class="bi bi-arrow-left"></i> {{ t('admin.ui.back_to_menus', 'Back to menus') }}
     </a>
 </div>
 
 {% if missing_builtins %}
 <div class="card mb-3">
     <div class="card-header">
-        <i class="bi bi-exclamation-triangle"></i> Built-in slots not yet configured
+        <i class="bi bi-exclamation-triangle"></i> {{ t('admin.ui.built_in_slots_not_yet_configured', 'Built-in slots not yet configured') }}
     </div>
     <ul class="list-group list-group-flush">
     {% for slot, desc in missing_builtins %}

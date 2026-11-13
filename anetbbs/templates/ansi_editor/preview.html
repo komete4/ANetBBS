@@ -45,6 +45,6 @@
 
 <div class="mt-3">
     <a href="{{ url_for('ansi_editor.edit', art_id=art.id) }}" class="btn btn-link">← Back to editor</a>
-    <a href="{{ url_for('ansi_editor.raw_ansi', art_id=art.id) }}" class="btn btn-outline-secondary btn-sm">Download .ans</a>
+    <a href="{{ url_for('ansi_editor.raw_ansi', art_id=art.id) }}" class="btn btn-outline-secondary btn-sm">{{ t('admin.ui.download_ans', 'Download .ans') }}</a>
 </div>
 {% endblock %}

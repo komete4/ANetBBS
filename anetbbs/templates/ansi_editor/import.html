@@ -24,7 +24,7 @@
                 <input type="number" name="width" class="form-control" value="80" min="20" max="132">
             </div>
             <div class="col-md-3">
-                <label class="form-label">Height (default 25)</label>
+                <label class="form-label">{{ t('admin.ui.height_default_25', 'Height (default 25)') }}</label>
                 <input type="number" name="height" class="form-control" value="25" min="5" max="50">
             </div>
         </div>
@@ -32,7 +32,7 @@
             <label class="form-label">Name (optional)</label>
             <input type="text" name="name" class="form-control" placeholder="(filename used if blank)">
         </div>
-        <button class="btn btn-primary"><i class="bi bi-upload"></i> Import &amp; Edit</button>
+        <button class="btn btn-primary"><i class="bi bi-upload"></i> {{ t('admin.ui.import_edit', 'Import & Edit') }}</button>
         <a href="{{ url_for('ansi_editor.index') }}" class="btn btn-link">{{ t('ui.cancel', 'Cancel') }}</a>
     </div>
 </form>

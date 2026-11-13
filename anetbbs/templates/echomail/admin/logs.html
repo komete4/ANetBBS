@@ -12,13 +12,13 @@
     </a>
     <form method="get" class="d-flex gap-2">
         <select name="network_id" class="form-control form-control-sm" style="width:200px;">
-            <option value="">All Networks</option>
+            <option value="">{{ t('admin.ui.all_networks', 'All Networks') }}</option>
             {% for net in all_networks %}
             <option value="{{ net.id }}" {% if network_filter == net.id %}selected{% endif %}>{{ net.name }}</option>
             {% endfor %}
         </select>
         <select name="node_id" class="form-control form-control-sm" style="width:200px;">
-            <option value="">All Nodes</option>
+            <option value="">{{ t('admin.ui.all_nodes', 'All Nodes') }}</option>
             {% for n in all_nodes %}
             <option value="{{ n.id }}" {% if node_filter == n.id %}selected{% endif %}>{{ n.name }}</option>
             {% endfor %}

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Door errors{% endblock %}
+{% block title %}{{ t('admin.ui.door_errors', 'Door errors') }}{% endblock %}
 
 {% block head %}
 {{ super() if super }}
@@ -35,7 +35,7 @@
       <div>
         <h1>
           <i class="bi bi-{% if entries %}bug-fill{% else %}check-circle{% endif %}"></i>
-          Door errors
+          {{ t('admin.ui.door_errors', 'Door errors') }}
         </h1>
         <div class="text-white-50 mt-1">
           {% if entries %}
@@ -51,7 +51,7 @@
       <form method="POST" action="{{ url_for('door_errors.clear') }}"
             onsubmit="return confirm('Clear all {{ entries | length }} entries? They will be removed from disk — copy what you need first.');">
         {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-        <button class="btn btn-light"><i class="bi bi-trash"></i> Clear log</button>
+        <button class="btn btn-light"><i class="bi bi-trash"></i> {{ t('admin.ui.clear_log', 'Clear log') }}</button>
       </form>
       {% endif %}
     </div>

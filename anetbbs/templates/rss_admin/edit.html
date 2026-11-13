@@ -3,7 +3,7 @@
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-rss-fill"></i>
-        {% if feed %}Edit Feed: {{ feed.name }}{% else %}Add RSS Feed{% endif %}
+        {% if feed %}Edit Feed: {{ feed.name }}{% else %}{{ t('admin.ui.add_rss_feed', 'Add RSS Feed') }}{% endif %}
     </h1>
 </div>
 
@@ -25,7 +25,7 @@
                    placeholder="news / tech / scene / general">
         </div>
         <div class="col-12">
-            <label class="form-label">Feed URL <span class="text-danger">*</span></label>
+            <label class="form-label">{{ t('admin.ui.feed_url', 'Feed URL') }} <span class="text-danger">*</span></label>
             <input type="url" name="url" class="form-control" required
                    value="{{ feed.url if feed else '' }}"
                    placeholder="https://x-bit.org/rss/rss.xml">

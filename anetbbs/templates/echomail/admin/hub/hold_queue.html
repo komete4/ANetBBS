@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Hold Queue — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{{ t('admin.ui.hold_queue_suffix', 'Hold Queue —') }} {{ config.BBS_NAME }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -26,7 +26,7 @@
         <div>
             <label class="form-label">{{ t('ui.node', 'Node') }}</label>
             <select name="node_id" class="form-select form-select-sm">
-                <option value="">All nodes</option>
+                <option value="">{{ t('admin.ui.all_nodes_sentence_case', 'All nodes') }}</option>
                 {% for n in nodes %}
                 <option value="{{ n.id }}" {% if node_id==n.id %}selected{% endif %}>{{ n.ftn_address }} — {{ n.name }}</option>
                 {% endfor %}

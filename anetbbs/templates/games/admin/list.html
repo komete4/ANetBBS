@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Game List — Admin — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{{ t('admin.ui.game_list_admin_suffix_section', 'Game List — Admin —') }} {{ config.BBS_NAME }}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3><i class="bi bi-list"></i> {{ t('ui.games', 'Games') }}</h3>
     <div class="d-flex gap-2">
         <a href="{{ url_for('games_admin.add_game') }}" class="btn btn-primary btn-sm">
-            <i class="bi bi-plus-circle"></i> Add Game
+            <i class="bi bi-plus-circle"></i> {{ t('admin.ui.add_game', 'Add Game') }}
         </a>
         <a href="{{ url_for('games_admin.list_categories') }}" class="btn btn-primary btn-sm">
             <i class="bi bi-tags"></i> {{ t('ui.categories', 'Categories') }}
@@ -14,7 +14,7 @@
         <form method="post" action="{{ url_for('games_admin.renumber_games') }}" style="display:inline;"
               onsubmit="return confirm('Renumber every game? Submenu categories\' games get a clean 1/2/3/... sequence; top-level/inline games get a gapped 10/20/30/... sequence. This changes the number players type to pick a door -- update any hand-made ANSI door-menu art to match afterwards.');">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn btn-sm btn-primary" title="Auto-renumber all games">
+            <button type="submit" class="btn btn-sm btn-primary" title="{{ t('admin.ui.auto_renumber_all_games', 'Auto-renumber all games') }}">
                 <i class="bi bi-sort-numeric-down"></i> {{ t('ui.renumber', 'Renumber') }}
             </button>
         </form>

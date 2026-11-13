@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{% if menu %}{{ t('ui.edit', 'Edit') }}{% else %}{{ t('ui.new', 'New') }}{% endif %} BBS Menu{% endblock %}
+{% block title %}{% if menu %}{{ t('ui.edit', 'Edit') }}{% else %}{{ t('ui.new', 'New') }}{% endif %} {{ t('admin.ui.bbs_menu', 'BBS Menu') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
@@ -117,7 +117,7 @@
     <div class="col-md-4 mb-3 form-check pt-4">
       <input class="form-check-input" name="is_default" type="checkbox" id="isdef"
              {% if menu and menu.is_default %}checked{% endif %}>
-      <label class="form-check-label" for="isdef">Default menu (entry point)</label>
+      <label class="form-check-label" for="isdef">{{ t('admin.ui.default_menu_entry_point', 'Default menu (entry point)') }}</label>
     </div>
   </div>
 
@@ -166,7 +166,7 @@
   </tbody>
 </table>
 
-<h4>Add new item</h4>
+<h4>{{ t('admin.ui.add_new_item', 'Add new item') }}</h4>
 <form method="post" action="{{ url_for('menu_admin.add_item', menu_id=menu.id) }}" class="row g-2">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <div class="col-md-1"><input name="hotkey" class="form-control" placeholder="M" required></div>
@@ -187,7 +187,7 @@
 <div class="row g-3">
   <div class="col-md-6">
     <div class="card">
-      <div class="card-header"><i class="bi bi-diagram-3"></i> Add a sub-menu (one click)</div>
+      <div class="card-header"><i class="bi bi-diagram-3"></i> {{ t('admin.ui.add_a_sub_menu_one_click', 'Add a sub-menu (one click)') }}</div>
       <div class="card-body">
         <p class="small text-muted mb-2">
           Creates a new menu and adds a <code>goto</code> hotkey on this menu
@@ -204,17 +204,17 @@
             <input name="hotkey" class="form-control form-control-sm" placeholder="G" required></div>
           <div class="col-md-3"><label class="form-label small">Item label</label>
             <input name="label" class="form-control form-control-sm" placeholder="{{ t('ui.games', 'Games') }}"></div>
-          <div class="col-md-12"><button class="btn btn-success btn-sm"><i class="bi bi-plus-circle"></i> Create sub-menu</button></div>
+          <div class="col-md-12"><button class="btn btn-success btn-sm"><i class="bi bi-plus-circle"></i> {{ t('admin.ui.create_sub_menu', 'Create sub-menu') }}</button></div>
         </form>
       </div>
     </div>
   </div>
   <div class="col-md-6">
     <div class="card">
-      <div class="card-header"><i class="bi bi-info-circle"></i> Action args cheatsheet</div>
+      <div class="card-header"><i class="bi bi-info-circle"></i> {{ t('admin.ui.action_args_cheatsheet', 'Action args cheatsheet') }}</div>
       <ul class="list-group list-group-flush small">
         <li class="list-group-item bg-transparent"><code>goto</code> &mdash; another menu's name (e.g. <code>games_sub</code>)</li>
-        <li class="list-group-item bg-transparent"><code>door</code> &mdash; the Game id from <em>Door Games</em> admin</li>
+        <li class="list-group-item bg-transparent"><code>door</code> &mdash; the Game id from <em>{{ t('admin.ui.door_games', 'Door Games') }}</em> admin</li>
         <li class="list-group-item bg-transparent"><code>ansi</code> &mdash; an ANSI screen slot name (e.g. <code>weather_intro</code>)</li>
         <li class="list-group-item bg-transparent">
           <code>exec</code> &mdash; either a plain command line, or JSON with

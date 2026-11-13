@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{% if category %}{{ t('ui.edit', 'Edit') }}{% else %}{{ t('ui.add', 'Add') }}{% endif %} Category — Admin — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{% if category %}{{ t('ui.edit', 'Edit') }}{% else %}{{ t('ui.add', 'Add') }}{% endif %} {{ t('admin.ui.category_admin_suffix_section', 'Category — Admin —') }} {{ config.BBS_NAME }}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">

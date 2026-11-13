@@ -12,7 +12,7 @@
         </p>
     </div>
     <a href="{{ url_for('hub_admin.join_requests') }}" class="btn btn-secondary">
-        <i class="bi bi-arrow-left"></i> Back to Requests
+        <i class="bi bi-arrow-left"></i> {{ t('admin.ui.back_to_requests', 'Back to Requests') }}
     </a>
 </div>
 
@@ -25,17 +25,17 @@
 <div class="row g-3 mb-4">
   <div class="col-md-6">
     <div class="card h-100">
-      <div class="card-header">Applicant / BBS Info</div>
+      <div class="card-header">{{ t('admin.ui.applicant_bbs_info', 'Applicant / BBS Info') }}</div>
       <div class="card-body">
         <table class="table table-sm mb-0">
           {% if req.hub_identity and not req.hub_identity.is_default %}
-          <tr><th>Hub Identity</th><td>{{ req.hub_identity.name }}</td></tr>
+          <tr><th>{{ t('admin.ui.hub_identity', 'Hub Identity') }}</th><td>{{ req.hub_identity.name }}</td></tr>
           {% endif %}
           <tr><th>{{ t('ui.name', 'Name') }}</th><td>{{ req.name or '—' }}</td></tr>
           <tr><th>{{ t('ui.location', 'Location') }}</th><td>{{ req.location or '—' }}</td></tr>
           <tr><th>{{ t('ui.email', 'Email') }}</th><td>{{ req.email }}</td></tr>
           <tr><th>{{ t('ui.bbs_name', 'BBS Name') }}</th><td>{{ req.bbs_name }}</td></tr>
-          <tr><th>BBS Software</th><td>{{ req.bbs_software or '—' }}</td></tr>
+          <tr><th>{{ t('admin.ui.bbs_software', 'BBS Software') }}</th><td>{{ req.bbs_software or '—' }}</td></tr>
           <tr><th>BBS OS</th><td>{{ req.bbs_os or '—' }}</td></tr>
           <tr><th>Telnet Address</th><td>{{ req.telnet_address or '—' }}</td></tr>
           <tr><th>Website</th><td>{{ req.website_url or '—' }}</td></tr>
@@ -49,7 +49,7 @@
       <div class="card-header">Requested Transports</div>
       <div class="card-body">
         <table class="table table-sm mb-0">
-          <tr><th>BinkP Address</th><td class="font-monospace">{{ req.binkp_ftn_address or '—' }}</td></tr>
+          <tr><th>{{ t('admin.ui.binkp_address', 'BinkP Address') }}</th><td class="font-monospace">{{ req.binkp_ftn_address or '—' }}</td></tr>
           <tr><th>Crash/Hold</th><td>{{ req.binkp_crash_or_hold or '—' }}</td></tr>
           <tr><th>QWK Packet ID</th><td class="font-monospace">{{ req.qwk_packet_id or '—' }}</td></tr>
         </table>
@@ -57,7 +57,7 @@
         <hr>
         <table class="table table-sm mb-0">
           {% if req.binkp_node_id %}
-          <tr><th>BinkP Node</th><td>
+          <tr><th>{{ t('admin.ui.binkp_node', 'BinkP Node') }}</th><td>
             <a href="{{ url_for('hub_admin.binkp_node_detail', node_id=req.binkp_node_id) }}">view node</a>
             — pwd: <code>{{ req.generated_binkp_password }}</code>
           </td></tr>
@@ -87,15 +87,15 @@
       <div class="card-body">
         <table class="table table-sm mb-0">
           <tr><th>Rules Acknowledged</th><td>{{ 'Yes' if req.rules_ack else 'No' }}</td></tr>
-          <tr><th>IP Address</th><td class="font-monospace">{{ req.ip_address or '—' }}</td></tr>
+          <tr><th>{{ t('admin.ui.ip_address', 'IP Address') }}</th><td class="font-monospace">{{ req.ip_address or '—' }}</td></tr>
           <tr><th>User Agent</th><td class="small">{{ req.user_agent or '—' }}</td></tr>
           {% if req.status != 'pending' %}
           <tr><th>Reviewed</th><td>{{ req.reviewed_at|eastern('%Y-%m-%d %H:%M %Z', '?') }} by {{ req.reviewed_by or '—' }}</td></tr>
           {% if req.status == 'denied' %}
-          <tr><th>Deny Reason</th><td>{{ req.deny_reason or '—' }}</td></tr>
+          <tr><th>{{ t('admin.ui.deny_reason', 'Deny Reason') }}</th><td>{{ req.deny_reason or '—' }}</td></tr>
           {% endif %}
           {% if req.status == 'approved' %}
-          <tr><th>Credentials Email</th><td>
+          <tr><th>{{ t('admin.ui.credentials_email', 'Credentials Email') }}</th><td>
             {% if req.email_error %}
               {# email_error holds the MOST RECENT failure, even if an
                  earlier attempt succeeded -- must not read as "Sent". #}
@@ -152,7 +152,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('ui.cancel', 'Cancel') }}</button>
-          <button type="submit" class="btn btn-danger">Deny Request</button>
+          <button type="submit" class="btn btn-danger">{{ t('admin.ui.deny_request', 'Deny Request') }}</button>
         </div>
       </form>
     </div>
@@ -164,7 +164,7 @@
   <form method="POST" action="{{ url_for('hub_admin.archive_join_request', req_id=req.id) }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button class="btn btn-outline-secondary btn-sm">
-      <i class="bi bi-archive"></i> Archive Application to Disk
+      <i class="bi bi-archive"></i> {{ t('admin.ui.archive_application_to_disk', 'Archive Application to Disk') }}
     </button>
   </form>
 </div>

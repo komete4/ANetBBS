@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Echomail Networks — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{{ t('admin.ui.echomail_networks_suffix', 'Echomail Networks —') }} {{ config.BBS_NAME }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
@@ -11,7 +11,7 @@
         <i class="bi bi-arrow-left"></i> {{ t('ui.dashboard', 'Dashboard') }}
     </a>
     <a href="{{ url_for('echomail_admin.new_network') }}" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Add Network
+        <i class="bi bi-plus-circle"></i> {{ t('admin.ui.add_network', 'Add Network') }}
     </a>
 </div>
 
@@ -86,7 +86,7 @@
         <i class="bi bi-diagram-3" style="font-size:3rem;"></i>
         <p class="mt-3">No networks configured yet.</p>
         <a href="{{ url_for('echomail_admin.new_network') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Add First Network
+            <i class="bi bi-plus-circle"></i> {{ t('admin.ui.add_first_network', 'Add First Network') }}
         </a>
     </div>
 </div>

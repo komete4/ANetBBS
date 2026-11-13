@@ -9,7 +9,7 @@
     </div>
     <div class="d-flex gap-2">
         <a href="{{ url_for('hub_admin.new_qwk_node') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Add Node
+            <i class="bi bi-plus-circle"></i> {{ t('admin.ui.add_node', 'Add Node') }}
         </a>
         <a href="{{ url_for('hub_admin.index') }}" class="btn btn-secondary">
             <i class="bi bi-arrow-left"></i> {{ t('ui.hub_overview', 'Hub Overview') }}
@@ -77,7 +77,7 @@
         <p>Nodes poll the following endpoints. Replace <code>NODEID</code> with the node's assigned Packet ID (lowercase for the URL).</p>
         <table class="table table-sm">
             <tr>
-                <th>Download (HTTP)</th>
+                <th>{{ t('admin.ui.download_http', 'Download (HTTP)') }}</th>
                 <td><code>GET /qwkhub/&lt;NODEID&gt;.qwk</code> — authenticate with packet_id + password via HTTP Basic Auth</td>
             </tr>
             <tr>
@@ -85,7 +85,7 @@
                 <td><code>POST /qwkhub/&lt;NODEID&gt;.rep</code> — multipart upload of REP packet</td>
             </tr>
             <tr>
-                <th>Download (FTP)</th>
+                <th>{{ t('admin.ui.download_ftp', 'Download (FTP)') }}</th>
                 <td>FTP to port 21, log in as packet_id / password, download <code>&lt;HUBID&gt;.QWK</code></td>
             </tr>
         </table>

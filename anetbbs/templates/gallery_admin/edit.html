@@ -8,7 +8,7 @@
 </div>
 
 <a href="{{ url_for('gallery_admin.index') }}" class="btn btn-primary btn-sm mb-3">
-    <i class="bi bi-arrow-left"></i> Back to Galleries
+    <i class="bi bi-arrow-left"></i> {{ t('admin.ui.back_to_galleries', 'Back to Galleries') }}
 </a>
 
 <div class="card">
@@ -16,7 +16,7 @@
 <form method="post">
 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 <div class="mb-3">
-    <label class="form-label">Display Label</label>
+    <label class="form-label">{{ t('admin.ui.display_label', 'Display Label') }}</label>
     <input type="text" name="label" class="form-control" required
            value="{{ g.label if g else '' }}"
            placeholder="e.g. 90s GIFs Galore">
@@ -32,7 +32,7 @@
     {% if g %}<div class="form-text">Slug cannot be changed after creation.</div>{% endif %}
 </div>
 <div class="mb-3">
-    <label class="form-label">Filesystem Path</label>
+    <label class="form-label">{{ t('admin.ui.filesystem_path', 'Filesystem Path') }}</label>
     <input type="text" name="path" class="form-control" required
            value="{{ g.path if g else '' }}"
            placeholder="/opt/anetbbs/gallery/photos">
@@ -58,7 +58,7 @@
         <div class="form-check">
             <input type="checkbox" name="is_active" id="is_active" class="form-check-input"
                    {% if not g or g.is_active %}checked{% endif %}>
-            <label for="is_active" class="form-check-label">Active (visible to users)</label>
+            <label for="is_active" class="form-check-label">{{ t('admin.ui.active_visible_to_users', 'Active (visible to users)') }}</label>
         </div>
     </div>
 </div>

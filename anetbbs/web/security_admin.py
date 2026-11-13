@@ -26,6 +26,7 @@ security_bp = Blueprint('security_admin', __name__,
                         url_prefix='/admin/security')
 
 
+from ..features.i18n import translate
 from .access_control import require_admin_or_403 as _admin_required
 
 
@@ -93,5 +94,5 @@ def run_now():
               'success' if ok else 'warning')
     except Exception as exc:  # noqa: BLE001
         logger.exception('security scan failed')
-        flash(f'Security scan crashed: {exc!r}', 'danger')
+        flash(translate('security_admin.notice.scan_failed', 'Security scan crashed: {exc!r}', exc=exc), 'danger')
     return redirect(url_for('security_admin.index'))

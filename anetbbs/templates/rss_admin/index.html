@@ -8,7 +8,7 @@
 
 <div class="d-flex gap-2 mb-3">
     <a href="{{ url_for('rss_admin.add') }}" class="btn btn-primary">
-        <i class="bi bi-plus"></i> Add Feed
+        <i class="bi bi-plus"></i> {{ t('admin.ui.add_feed', 'Add Feed') }}
     </a>
     <a href="{{ url_for('rss.index') }}" class="btn btn-secondary">
         <i class="bi bi-arrow-left"></i> Reader View
@@ -59,7 +59,7 @@
             <td class="text-end">
                 <form method="post" action="{{ url_for('rss_admin.refresh', feed_id=feed.id) }}" class="d-inline">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button class="btn btn-sm btn-outline-secondary" title="Fetch now">
+                    <button class="btn btn-sm btn-outline-secondary" title="{{ t('admin.ui.fetch_now', 'Fetch now') }}">
                         <i class="bi bi-arrow-clockwise"></i>
                     </button>
                 </form>
@@ -80,7 +80,7 @@
 </table>
 {% else %}
 <div class="alert alert-info">
-    <i class="bi bi-info-circle"></i> No RSS feeds yet. Click <strong>Add Feed</strong> to add one.
+    <i class="bi bi-info-circle"></i> No RSS feeds yet. Click <strong>{{ t('admin.ui.add_feed', 'Add Feed') }}</strong> to add one.
 </div>
 {% endif %}
 {% endblock %}

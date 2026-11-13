@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Game Engine Config — Admin — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{{ t('admin.ui.game_engine_config_admin_suffix_section', 'Game Engine Config — Admin —') }} {{ config.BBS_NAME }}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -43,17 +43,17 @@
         <tr>
             <td><code>GAMES_MAX_NODES</code></td>
             <td>{{ cfg.GAMES_MAX_NODES }}</td>
-            <td>Global maximum concurrent game sessions</td>
+            <td>{{ t('admin.ui.global_maximum_concurrent_game_sessions', 'Global maximum concurrent game sessions') }}</td>
         </tr>
         <tr>
             <td><code>GAMES_SESSION_TIMEOUT</code></td>
             <td>{{ cfg.GAMES_SESSION_TIMEOUT }}s</td>
-            <td>Idle session timeout in seconds</td>
+            <td>{{ t('admin.ui.idle_session_timeout_in_seconds', 'Idle session timeout in seconds') }}</td>
         </tr>
         <tr>
             <td><code>GAMES_DATA_DIR</code></td>
             <td>{{ cfg.GAMES_DATA_DIR }}</td>
-            <td>Base directory for game data files</td>
+            <td>{{ t('admin.ui.base_directory_for_game_data_files', 'Base directory for game data files') }}</td>
         </tr>
     </tbody>
 </table>

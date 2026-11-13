@@ -35,7 +35,7 @@
       <small class="text-muted">0 = anyone, 100 = sysop</small>
     </div>
     <div class="col-md-4 mb-3">
-      <label class="form-label">Header color</label>
+      <label class="form-label">{{ t('admin.ui.header_color', 'Header color') }}</label>
       <select name="theme_color" class="form-select">
         <option value="">— default (light blue) —</option>
         {% for c in theme_color_choices %}
@@ -47,7 +47,7 @@
     <div class="col-md-4 mb-3 form-check pt-4">
       <input class="form-check-input" name="is_default" type="checkbox" id="isdef"
              {% if menu and menu.is_default %}checked{% endif %}>
-      <label class="form-check-label" for="isdef">Default menu (PETSCII entry point)</label>
+      <label class="form-check-label" for="isdef">{{ t('admin.ui.default_menu_petscii_entry_point', 'Default menu (PETSCII entry point)') }}</label>
     </div>
   </div>
 
@@ -96,7 +96,7 @@
   </tbody>
 </table>
 
-<h4>Add new item</h4>
+<h4>{{ t('admin.ui.add_new_item', 'Add new item') }}</h4>
 <form method="post" action="{{ url_for('petscii_menu_admin.add_item', menu_id=menu.id) }}" class="row g-2">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <div class="col-md-1"><input name="hotkey" class="form-control" placeholder="1" required></div>
@@ -117,7 +117,7 @@
 <div class="row g-3">
   <div class="col-md-6">
     <div class="card">
-      <div class="card-header"><i class="bi bi-diagram-3"></i> Add a sub-menu (one click)</div>
+      <div class="card-header"><i class="bi bi-diagram-3"></i> {{ t('admin.ui.add_a_sub_menu_one_click', 'Add a sub-menu (one click)') }}</div>
       <div class="card-body">
         <p class="small text-muted mb-2">
           Creates a new PETSCII menu and adds a <code>goto</code> hotkey on
@@ -134,14 +134,14 @@
             <input name="hotkey" class="form-control form-control-sm" placeholder="4" required></div>
           <div class="col-md-3"><label class="form-label small">Item label</label>
             <input name="label" class="form-control form-control-sm" placeholder="{{ t('ui.files', 'Files') }}"></div>
-          <div class="col-md-12"><button class="btn btn-success btn-sm"><i class="bi bi-plus-circle"></i> Create sub-menu</button></div>
+          <div class="col-md-12"><button class="btn btn-success btn-sm"><i class="bi bi-plus-circle"></i> {{ t('admin.ui.create_sub_menu', 'Create sub-menu') }}</button></div>
         </form>
       </div>
     </div>
   </div>
   <div class="col-md-6">
     <div class="card">
-      <div class="card-header"><i class="bi bi-info-circle"></i> Action args cheatsheet</div>
+      <div class="card-header"><i class="bi bi-info-circle"></i> {{ t('admin.ui.action_args_cheatsheet', 'Action args cheatsheet') }}</div>
       <ul class="list-group list-group-flush small">
         <li class="list-group-item bg-transparent"><code>goto</code> &mdash; another PETSCII menu's name (e.g. <code>files_sub</code>)</li>
         <li class="list-group-item bg-transparent">All other actions ignore args.</li>

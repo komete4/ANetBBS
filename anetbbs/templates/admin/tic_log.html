@@ -21,7 +21,7 @@
             <input type="number" name="days" value="30" min="1" class="form-control form-control-sm d-inline-block"
                    style="width:4.5rem;" title="Days">
             <button type="submit" class="btn btn-outline-danger btn-sm">
-                <i class="bi bi-trash"></i> Clear Processed Files
+                <i class="bi bi-trash"></i> {{ t('admin.ui.clear_processed_files', 'Clear Processed Files') }}
             </button>
         </form>
         <a href="{{ url_for('admin.hatch_log') }}" class="btn btn-outline-secondary btn-sm">

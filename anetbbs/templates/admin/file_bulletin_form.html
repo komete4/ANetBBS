@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Edit File Bulletin - Admin{% endblock %}
+{% block title %}{{ t('admin.ui.edit_file_bulletin_admin_title', 'Edit File Bulletin - Admin') }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-file-earmark-text-fill"></i> {{ t('ui.heading.edit_file_bulletin', 'Edit File Bulletin') }}</h1>
@@ -44,7 +44,7 @@
     <div class="mb-3 form-check">
         <input type="checkbox" name="is_active" class="form-check-input" id="is_active"
                {{ 'checked' if row.is_active }}>
-        <label class="form-check-label" for="is_active">Active (visible to users)</label>
+        <label class="form-check-label" for="is_active">{{ t('admin.ui.active_visible_to_users', 'Active (visible to users)') }}</label>
     </div>
 
     <div class="d-flex gap-2">

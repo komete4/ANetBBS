@@ -9,7 +9,7 @@
 
 <!-- Built-in fields -->
 <div class="card mb-4">
-    <div class="card-header"><i class="bi bi-toggles"></i> Built-in Fields</div>
+    <div class="card-header"><i class="bi bi-toggles"></i> {{ t('admin.ui.built_in_fields', 'Built-in Fields') }}</div>
     <div class="card-body p-0">
         <table class="table mb-0">
             <thead>
@@ -47,9 +47,9 @@
 
 <!-- Custom fields -->
 <div class="d-flex justify-content-between align-items-center mb-2">
-    <h5 class="mb-0"><i class="bi bi-plus-square"></i> Custom Fields</h5>
+    <h5 class="mb-0"><i class="bi bi-plus-square"></i> {{ t('admin.ui.custom_fields', 'Custom Fields') }}</h5>
     <a href="{{ url_for('admin.add_custom_field') }}" class="btn btn-primary btn-sm">
-        <i class="bi bi-plus-circle"></i> Add Field
+        <i class="bi bi-plus-circle"></i> {{ t('admin.ui.add_field', 'Add Field') }}
     </a>
 </div>
 

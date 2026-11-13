@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Bad Areas — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{{ t('admin.ui.bad_areas_suffix', 'Bad Areas —') }} {{ config.BBS_NAME }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid my-3">
@@ -27,7 +27,7 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 {% endif %}
                 <button class="btn btn-outline-danger btn-sm">
-                    <i class="bi bi-trash"></i> Clear All
+                    <i class="bi bi-trash"></i> {{ t('admin.ui.clear_all', 'Clear All') }}
                 </button>
             </form>
             {% endif %}

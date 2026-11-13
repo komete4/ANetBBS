@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{% if ev %}Edit event{% else %}New event{% endif %}{% endblock %}
+{% block title %}{% if ev %}{{ t('admin.ui.edit_event', 'Edit event') }}{% else %}New event{% endif %}{% endblock %}
 
 {% block content %}
 <div class="container py-3">
@@ -38,7 +38,7 @@
               <option value="daily"    {% if schedule.kind == 'daily'    %}selected{% endif %}>Daily</option>
               <option value="hourly"   {% if schedule.kind == 'hourly'   %}selected{% endif %}>Hourly</option>
               <option value="weekly"   {% if schedule.kind == 'weekly'   %}selected{% endif %}>Weekly</option>
-              <option value="interval" {% if schedule.kind == 'interval' %}selected{% endif %}>Every N min</option>
+              <option value="interval" {% if schedule.kind == 'interval' %}selected{% endif %}>{{ t('admin.ui.every_n_min', 'Every N min') }}</option>
             </select>
           </div>
           <div class="col-md-3 sched-field" data-kind="daily,weekly">
@@ -75,7 +75,7 @@
       <div class="form-check mb-3">
         <input class="form-check-input" type="checkbox" name="is_enabled" id="is_enabled"
                {% if not ev or ev.is_enabled %}checked{% endif %}>
-        <label for="is_enabled" class="form-check-label">Enabled (will fire on schedule)</label>
+        <label for="is_enabled" class="form-check-label">{{ t('admin.ui.enabled_will_fire_on_schedule', 'Enabled (will fire on schedule)') }}</label>
       </div>
 
       <button class="btn btn-primary"><i class="bi bi-check2-circle"></i> {{ t('ui.save', 'Save') }}</button>

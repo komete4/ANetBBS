@@ -15,13 +15,13 @@
 {% endif %}
 
 <div class="card mb-3">
-    <div class="card-header"><i class="bi bi-plus-square"></i> Add Subscription</div>
+    <div class="card-header"><i class="bi bi-plus-square"></i> {{ t('admin.ui.add_subscription', 'Add Subscription') }}</div>
     <div class="card-body">
         <form method="post" class="row g-2 align-items-end">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="action" value="add">
             <div class="col-md-5">
-                <label class="form-label">File Area</label>
+                <label class="form-label">{{ t('admin.ui.file_area', 'File Area') }}</label>
                 <select name="file_area_id" class="form-select" required>
                     {% for a in areas %}
                         <option value="{{ a.id }}">{{ a.tag }} — {{ a.name or '' }}</option>

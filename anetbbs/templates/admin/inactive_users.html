@@ -8,7 +8,7 @@
 
 <form method="get" class="d-flex gap-2 mb-3 align-items-end">
     <div>
-        <label class="form-label small mb-0">Days inactive</label>
+        <label class="form-label small mb-0">{{ t('admin.ui.days_inactive', 'Days inactive') }}</label>
         <input type="number" name="days" value="{{ days }}" min="1" class="form-control form-control-sm">
     </div>
     <button class="btn btn-primary btn-sm">{{ t('ui.filter', 'Filter') }}</button>

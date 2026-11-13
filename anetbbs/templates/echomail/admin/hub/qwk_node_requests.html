@@ -12,7 +12,7 @@
         <i class="bi bi-arrow-left"></i> {{ t('ui.hub_admin', 'Hub Admin') }}
     </a>
     <a href="{{ url_for('hub_admin.qwk_nodes') }}" class="btn btn-secondary btn-sm ms-1">
-        <i class="bi bi-archive"></i> Active Nodes
+        <i class="bi bi-archive"></i> {{ t('admin.ui.active_nodes', 'Active Nodes') }}
     </a>
 </div>
 
@@ -41,7 +41,7 @@
       <th>{{ t('ui.packet_id', 'Packet ID') }}</th>
       <th>Sysop</th>
       <th>{{ t('ui.email', 'Email') }}</th>
-      <th>BBS Address</th>
+      <th>{{ t('admin.ui.bbs_address', 'BBS Address') }}</th>
       <th>{{ t('ui.notes', 'Notes') }}</th>
       <th>Applied</th>
       <th class="text-end">{{ t('ui.actions', 'Actions') }}</th>
@@ -95,7 +95,7 @@
                 </div>
                 <div class="modal-footer">
                   <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('ui.cancel', 'Cancel') }}</button>
-                  <button type="submit" class="btn btn-danger">Deny Request</button>
+                  <button type="submit" class="btn btn-danger">{{ t('admin.ui.deny_request', 'Deny Request') }}</button>
                 </div>
               </form>
             </div>

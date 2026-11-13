@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}AreaFix Log — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{{ t('admin.ui.areafix_log_suffix', 'AreaFix Log —') }} {{ config.BBS_NAME }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid my-3">
@@ -24,7 +24,7 @@
             <div class="col-md-4">
                 <label class="form-label form-label-sm">Filter by network:</label>
                 <select name="network_id" class="form-select form-select-sm">
-                    <option value="">All networks</option>
+                    <option value="">{{ t('admin.ui.all_networks_sentence_case', 'All networks') }}</option>
                     {% for n in all_networks %}
                     <option value="{{ n.id }}"
                             {% if network_filter == n.id %}selected{% endif %}>

@@ -32,7 +32,7 @@
     <span class="pulse-status-dot"></span>
     <div>
       <strong id="pulse-health">Checking ANetBBS...</strong>
-      <small id="pulse-updated">Connecting to the local status API</small>
+      <small id="pulse-updated">{{ t('admin.ui.connecting_to_the_local_status_api', 'Connecting to the local status API') }}</small>
     </div>
   </section>
 
@@ -40,7 +40,7 @@
     <article class="pulse-card"><span>Callers</span><strong id="total-online">--</strong><small>terminal + web</small></article>
     <article class="pulse-card"><span>{{ t('ui.heading.services', 'Services') }}</span><strong id="healthy-services">--</strong><small id="service-ratio">checking</small></article>
     <article class="pulse-card"><span>Disk</span><strong id="disk-used">--</strong><small id="disk-free">checking</small></article>
-    <article class="pulse-card"><span>Host uptime</span><strong id="host-uptime">--</strong><small id="pulse-version">ANetBBS</small></article>
+    <article class="pulse-card"><span>{{ t('admin.ui.host_uptime', 'Host uptime') }}</span><strong id="host-uptime">--</strong><small id="pulse-version">ANetBBS</small></article>
   </section>
 
   <section class="pulse-section">
@@ -53,7 +53,7 @@
     <div id="pulse-services" class="pulse-list"><p class="pulse-empty">Loading services...</p></div>
   </section>
 
-  <section class="pulse-grid pulse-activity" aria-label="Activity over the last 24 hours">
+  <section class="pulse-grid pulse-activity" aria-label="{{ t('admin.ui.activity_over_the_last_24_hours', 'Activity over the last 24 hours') }}">
     <article class="pulse-card"><span>New users</span><strong id="new-users">--</strong><small>last 24 hours</small></article>
     <article class="pulse-card"><span>New posts</span><strong id="new-posts">--</strong><small>last 24 hours</small></article>
     <article class="pulse-card"><span>Total users</span><strong id="total-users">--</strong><small>registered</small></article>
@@ -67,7 +67,7 @@
 
   <footer class="pulse-footer">
     <span>Read-only dashboard</span>
-    <a href="{{ url_for('control.index') }}">Full Control Center</a>
+    <a href="{{ url_for('control.index') }}">{{ t('admin.ui.full_control_center', 'Full Control Center') }}</a>
   </footer>
 </main>
 <script defer src="{{ url_for('static', filename='pulse/pulse.js') }}"></script>

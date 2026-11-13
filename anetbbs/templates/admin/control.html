@@ -181,11 +181,11 @@
             </div>
             <div class="scc-count">
                 <strong id="scc-summary-conns">—</strong>
-                <span>Active connections</span>
+                <span>{{ t('admin.ui.active_connections', 'Active connections') }}</span>
             </div>
             <div class="scc-count">
                 <strong id="scc-updated">just now</strong>
-                <span>Auto-refresh: 2s</span>
+                <span>{{ t('admin.ui.auto_refresh_2s', 'Auto-refresh: 2s') }}</span>
             </div>
         </div>
 
@@ -201,7 +201,7 @@
 <!-- ====== Aggregate live charts ====== -->
 <div class="scc-dashboard">
     <div class="scc-chart-card">
-        <h6><span><i class="bi bi-cpu"></i> CPU % per service</span>
+        <h6><span><i class="bi bi-cpu"></i> {{ t('admin.ui.cpu_per_service', 'CPU % per service') }}</span>
             <span id="scc-cpu-total" class="text-muted small">—</span></h6>
         <div class="scc-chart-host"><canvas id="scc-cpu-chart"></canvas></div>
     </div>
@@ -312,7 +312,7 @@
             </button>
             <a class="btn btn-outline-secondary"
                href="{{ url_for('control.service_journal_download', unit=s.unit, n=2000) }}"
-               title="Download last 2000 lines as .txt">
+               title="{{ t('admin.ui.download_last_2000_lines_as_txt', 'Download last 2000 lines as .txt') }}">
                 <i class="bi bi-download"></i>
             </a>
         </div>
@@ -350,7 +350,7 @@
                         <i class="bi bi-arrow-clockwise"></i> {{ t('ui.refresh', 'Refresh') }}
                     </button>
                     <a class="btn btn-sm btn-outline-light" id="scc-journal-dl"
-                       href="#" title="Download .txt">
+                       href="#" title="{{ t('admin.ui.download_txt', 'Download .txt') }}">
                         <i class="bi bi-download"></i>
                     </a>
                 </div>

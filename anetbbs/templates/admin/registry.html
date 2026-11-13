@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Federation Registry — Admin{% endblock %}
+{% block title %}{{ t('admin.ui.federation_registry_admin_section', 'Federation Registry — Admin') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
@@ -38,7 +38,7 @@
                 <small class="text-muted">At the default interval, 72 ≈ 3 days before a peer drops off the public list.</small>
             </div>
             <div class="col-md-3">
-                <label class="form-label small">Heartbeat staleness (hours)</label>
+                <label class="form-label small">{{ t('admin.ui.heartbeat_staleness_hours', 'Heartbeat staleness (hours)') }}</label>
                 <input type="number" min="1" step="1" name="heartbeat_stale_hours" class="form-control form-control-sm"
                        value="{{ probe_settings.heartbeat_stale_hours }}">
                 <small class="text-muted">A peer's own daily heartbeat older than this is also treated as stale.</small>
@@ -57,8 +57,8 @@
 
 <div class="row g-2 mb-3">
     <div class="col"><div class="card"><div class="card-body p-2 text-center"><strong>{{ rows | length }}</strong><br><small>{{ t('ui.total', 'Total') }}</small></div></div></div>
-    <div class="col"><div class="card border-warning"><div class="card-body p-2 text-center"><strong>{{ pending_verify | length }}</strong><br><small>Awaiting email verify</small></div></div></div>
-    <div class="col"><div class="card border-info"><div class="card-body p-2 text-center"><strong>{{ pending_approve | length }}</strong><br><small>Awaiting your approval</small></div></div></div>
+    <div class="col"><div class="card border-warning"><div class="card-body p-2 text-center"><strong>{{ pending_verify | length }}</strong><br><small>{{ t('admin.ui.awaiting_email_verify', 'Awaiting email verify') }}</small></div></div></div>
+    <div class="col"><div class="card border-info"><div class="card-body p-2 text-center"><strong>{{ pending_approve | length }}</strong><br><small>{{ t('admin.ui.awaiting_your_approval', 'Awaiting your approval') }}</small></div></div></div>
     <div class="col"><div class="card border-success"><div class="card-body p-2 text-center"><strong>{{ listed | length }}</strong><br><small>Listed publicly</small></div></div></div>
 </div>
 
@@ -73,11 +73,11 @@
     <table class="table table-sm table-hover mb-0">
         <thead>
             <tr>
-                <th>Host / Name</th>
+                <th>{{ t('admin.ui.host_name', 'Host / Name') }}</th>
                 <th>Sysop / Location</th>
                 <th>{{ t('ui.software', 'Software') }}</th>
                 <th>State</th>
-                <th>Heartbeat / Probe</th>
+                <th>{{ t('admin.ui.heartbeat_probe', 'Heartbeat / Probe') }}</th>
                 <th style="width:160px;">{{ t('ui.actions', 'Actions') }}</th>
             </tr>
         </thead>
@@ -133,7 +133,7 @@
                     {% if not e.is_listed and e.is_verified %}
                     <form method="post" action="{{ url_for('admin.registry_approve', entry_id=e.id) }}" class="d-inline">
                         {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                        <button class="btn btn-success btn-sm" title="Approve + list publicly"><i class="bi bi-check-lg"></i></button>
+                        <button class="btn btn-success btn-sm" title="{{ t('admin.ui.approve_list_publicly', 'Approve + list publicly') }}"><i class="bi bi-check-lg"></i></button>
                     </form>
                     {% endif %}
                     {% if e.is_listed or e.is_approved %}
@@ -142,11 +142,11 @@
                         <button class="btn btn-warning btn-sm" title="Reject (delist, keep row)"><i class="bi bi-pause-fill"></i></button>
                     </form>
                     {% endif %}
-                    <button class="btn btn-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#edit-{{ e.id }}" title="Edit metadata"><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#edit-{{ e.id }}" title="{{ t('admin.ui.edit_metadata', 'Edit metadata') }}"><i class="bi bi-pencil"></i></button>
                     <form method="post" action="{{ url_for('admin.registry_delete', entry_id=e.id) }}" class="d-inline"
                           onsubmit="return confirm('Delete registry entry for {{ e.host }}? They can re-register.');">
                         {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                        <button class="btn btn-danger btn-sm" title="Delete row"><i class="bi bi-trash"></i></button>
+                        <button class="btn btn-danger btn-sm" title="{{ t('admin.ui.delete_row', 'Delete row') }}"><i class="bi bi-trash"></i></button>
                     </form>
                 </td>
             </tr>

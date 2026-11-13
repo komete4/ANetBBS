@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}File Bulletins - Admin{% endblock %}
+{% block title %}{{ t('admin.ui.file_bulletins_admin_title', 'File Bulletins - Admin') }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-file-earmark-text-fill"></i> {{ t('ui.heading.file_bulletins', 'File Bulletins') }}</h1>
@@ -10,7 +10,7 @@
     including score/news files a door game writes out itself — are
     auto-detected here (disabled by default) every time this page loads.
     Enable the ones you want visible; each shows in the terminal's
-    <strong>ANSI/File Bulletins</strong> menu, viewed through the same
+    <strong>{{ t('admin.ui.ansi_file_bulletins', 'ANSI/File Bulletins') }}</strong> menu, viewed through the same
     scrollable ANSI-aware reader used for messages. This is separate from
     the sysop-authored text <a href="{{ url_for('admin.bulletins') }}">{{ t('ui.bulletins', 'Bulletins') }}</a> menu.
 </p>
@@ -36,7 +36,7 @@
             <td>
                 <code>{{ row.filename }}</code>
                 {% if row.filename not in on_disk %}
-                <span class="badge bg-danger ms-1" title="File no longer found on disk">missing</span>
+                <span class="badge bg-danger ms-1" title="{{ t('admin.ui.file_no_longer_found_on_disk', 'File no longer found on disk') }}">missing</span>
                 {% endif %}
             </td>
             <td>{{ row.min_access_level }}</td>

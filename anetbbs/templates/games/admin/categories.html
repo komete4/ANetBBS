@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Game Categories — Admin — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{{ t('admin.ui.game_categories_admin_suffix_section', 'Game Categories — Admin —') }} {{ config.BBS_NAME }}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -11,7 +11,7 @@
         <form method="post" action="{{ url_for('games_admin.renumber_categories') }}" style="display:inline;"
               onsubmit="return confirm('Renumber every category to a clean 10/20/30/... sequence? For a category shown as a submenu entry, this is the number a player types in the top-level door menu -- update any hand-made ANSI door-menu art to match afterwards.');">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn btn-sm btn-primary" title="Auto-renumber all categories">
+            <button type="submit" class="btn btn-sm btn-primary" title="{{ t('admin.ui.auto_renumber_all_categories', 'Auto-renumber all categories') }}">
                 <i class="bi bi-sort-numeric-down"></i> {{ t('ui.renumber', 'Renumber') }}
             </button>
         </form>

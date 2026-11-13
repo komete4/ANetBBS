@@ -24,6 +24,7 @@ from flask import (Blueprint, flash, redirect, render_template, request,
                    url_for, current_app, jsonify)
 from flask_login import login_required
 
+from ..features.i18n import translate
 from ..models import db, ScheduledEvent
 from ..events.runner import compute_next_run, fire
 from ..events.handlers import REGISTRY, HANDLER_META
@@ -203,13 +204,13 @@ def _save(ev):
     params_json, perr = _validate_params_json(request.form.get('params_json', ''))
     schedule, serr = _parse_form_schedule(request.form)
     if not name:
-        flash('Name is required.', 'danger')
+        flash(translate('events_admin.notice.required', 'Name is required.'), 'danger')
     elif handler_key not in REGISTRY:
-        flash(f'Unknown handler: {handler_key!r}', 'danger')
+        flash(translate('events_admin.notice.unknown_handler', 'Unknown handler: {handler_key!r}', handler_key=handler_key), 'danger')
     elif perr:
-        flash(f'Params error: {perr}', 'danger')
+        flash(translate('events_admin.notice.params_error', 'Params error: {perr}', perr=perr), 'danger')
     elif serr:
-        flash(f'Schedule error: {serr}', 'danger')
+        flash(translate('events_admin.notice.schedule_error', 'Schedule error: {serr}', serr=serr), 'danger')
     else:
         if ev is None:
             ev = ScheduledEvent()
@@ -221,11 +222,11 @@ def _save(ev):
         ev.schedule_json = json.dumps(schedule)
         try:
             db.session.commit()
-            flash('Event saved.', 'success')
+            flash(translate('events_admin.notice.saved', 'Event saved.'), 'success')
             return redirect(url_for('events_admin.index'))
         except Exception as exc:  # noqa: BLE001
             db.session.rollback()
-            flash(f'Save failed: {exc}', 'danger')
+            flash(translate('events_admin.notice.save_failed', 'Save failed: {exc}', exc=exc), 'danger')
     # Validation failure — re-render with what they typed.
     return render_template('admin/event_form.html',
                            ev=ev, handler_meta=HANDLER_META,
@@ -240,7 +241,7 @@ def delete(eid):
     ev = ScheduledEvent.query.get_or_404(eid)
     db.session.delete(ev)
     db.session.commit()
-    flash(f'Deleted event "{ev.name}".', 'success')
+    flash(translate('events_admin.notice.deleted', 'Deleted event "{name}".', name=ev.name), 'success')
     return redirect(url_for('events_admin.index'))
 
 

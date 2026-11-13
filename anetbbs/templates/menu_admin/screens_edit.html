@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}{% if row %}{{ t('ui.edit', 'Edit') }}{% else %}{{ t('ui.new', 'New') }}{% endif %} ANSI Screen{% endblock %}
+{% block title %}{% if row %}{{ t('ui.edit', 'Edit') }}{% else %}{{ t('ui.new', 'New') }}{% endif %} {{ t('admin.ui.ansi_screen', 'ANSI Screen') }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-tv"></i> {% if row %}Edit screen <code>{{ row.slot }}</code>{% else %}New ANSI screen{% endif %}</h1>
+    <h1><i class="bi bi-tv"></i> {% if row %}{{ t('admin.ui.edit_screen', 'Edit screen') }} <code>{{ row.slot }}</code>{% else %}New ANSI screen{% endif %}</h1>
 </div>
 
 <form method="post">
@@ -59,7 +59,7 @@
     <div class="form-check mb-3">
         <input type="checkbox" name="is_active" id="ia" class="form-check-input"
                {% if not row or row.is_active %}checked{% endif %}>
-        <label for="ia" class="form-check-label">Active (uncheck to disable without deleting)</label>
+        <label for="ia" class="form-check-label">{{ t('admin.ui.active_uncheck_to_disable_without_deleting', 'Active (uncheck to disable without deleting)') }}</label>
     </div>
 
     <button class="btn btn-primary"><i class="bi bi-save"></i> {{ t('ui.save', 'Save') }}</button>

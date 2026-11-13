@@ -21,14 +21,14 @@
             <input class="form-check-input" type="checkbox" name="ibol_enabled"
                    id="ibol_enabled" {{ 'checked' if ibol_enabled }}>
             <label class="form-check-label" for="ibol_enabled">
-                Enable IBOL (InterBBS Oneliners)
+                {{ t('admin.ui.enable_ibol_interbbs_oneliners', 'Enable IBOL (InterBBS Oneliners)') }}
             </label>
         </div>
         <div class="form-check">
             <input class="form-check-input" type="checkbox" name="iblc_enabled"
                    id="iblc_enabled" {{ 'checked' if iblc_enabled }}>
             <label class="form-check-label" for="iblc_enabled">
-                Enable IBLC (InterBBS Last Callers)
+                {{ t('admin.ui.enable_iblc_interbbs_last_callers', 'Enable IBLC (InterBBS Last Callers)') }}
             </label>
         </div>
 

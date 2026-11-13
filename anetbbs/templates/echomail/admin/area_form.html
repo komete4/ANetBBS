@@ -1,17 +1,17 @@
 {% extends "base.html" %}
-{% block title %}{% if area %}Edit Area{% else %}{{ t('ui.add_area', 'Add Area') }}{% endif %} — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{% if area %}{{ t('admin.ui.edit_area', 'Edit Area') }}{% else %}{{ t('ui.add_area', 'Add Area') }}{% endif %} — {{ config.BBS_NAME }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-chat-square-text"></i> {% if area %}Edit Area: {{ area.name }}{% else %}Add Echo Area{% endif %}</h1>
+    <h1><i class="bi bi-chat-square-text"></i> {% if area %}Edit Area: {{ area.name }}{% else %}{{ t('admin.ui.add_echo_area', 'Add Echo Area') }}{% endif %}</h1>
 </div>
 
 <a href="{{ url_for('echomail_admin.areas') }}" class="btn btn-primary btn-sm mb-3">
-    <i class="bi bi-arrow-left"></i> Back to Areas
+    <i class="bi bi-arrow-left"></i> {{ t('admin.ui.back_to_areas', 'Back to Areas') }}
 </a>
 
 <div class="card">
-    <div class="card-header"><i class="bi bi-gear"></i> Area Configuration</div>
+    <div class="card-header"><i class="bi bi-gear"></i> {{ t('admin.ui.area_configuration', 'Area Configuration') }}</div>
     <div class="card-body">
         <form method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -47,14 +47,14 @@
 
             <div class="row g-3 mb-3">
                 <div class="col-md-8">
-                    <label class="form-label small text-muted text-uppercase" style="letter-spacing:1px;">Area Flags</label>
+                    <label class="form-label small text-muted text-uppercase" style="letter-spacing:1px;">{{ t('admin.ui.area_flags', 'Area Flags') }}</label>
                     <div class="d-flex gap-4 flex-wrap p-2" style="background:rgba(255,255,255,.04);border:1px solid #333;border-radius:6px;">
                         <div class="form-check">
                             {{ form.is_active(class="form-check-input") }}
                             <label class="form-check-label" for="is_active" style="color:#00ff00;">
                                 <i class="bi bi-check-circle"></i> {{ t('ui.active', 'Active') }}
                             </label>
-                            <div class="form-text" style="font-size:.7rem;">Area visible and accepting messages</div>
+                            <div class="form-text" style="font-size:.7rem;">{{ t('admin.ui.area_visible_and_accepting_messages', 'Area visible and accepting messages') }}</div>
                         </div>
                         <div class="form-check">
                             {{ form.is_subscribed(class="form-check-input") }}
@@ -68,7 +68,7 @@
                             <label class="form-check-label" for="is_sysop_only" style="color:#ff8800;">
                                 <i class="bi bi-shield-lock"></i> Sysop Only
                             </label>
-                            <div class="form-text" style="font-size:.7rem;">Hidden from and inaccessible to non-admins</div>
+                            <div class="form-text" style="font-size:.7rem;">{{ t('admin.ui.hidden_from_and_inaccessible_to_non_admins', 'Hidden from and inaccessible to non-admins') }}</div>
                         </div>
                         <div class="form-check">
                             {{ form.require_real_name(class="form-check-input") }}
@@ -80,7 +80,7 @@
                         <div class="form-check">
                             {{ form.jam_export_enabled(class="form-check-input") }}
                             <label class="form-check-label" for="jam_export_enabled" style="color:#66ccff;">
-                                <i class="bi bi-file-earmark-binary"></i> Export to JAM Message Base
+                                <i class="bi bi-file-earmark-binary"></i> {{ t('admin.ui.export_to_jam_message_base', 'Export to JAM Message Base') }}
                             </label>
                             <div class="form-text" style="font-size:.7rem;">{{ form.jam_export_enabled.description }}</div>
                         </div>

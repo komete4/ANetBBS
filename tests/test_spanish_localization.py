@@ -37,6 +37,10 @@ def localized_app(tmp_path_factory):
         patch.setattr(cfg.TestingConfig, 'WTF_CSRF_ENABLED', True)
         patch.setattr(cfg.TestingConfig, 'SECRET_KEY', 'spanish-integration-tests')
         patch.setattr(cfg.TestingConfig, 'NUV_ENABLED', False)
+        # Keep rendering tests independent of the public federation and IRC services.
+        patch.setattr(cfg.TestingConfig, 'REGISTRY_URL', '')
+        patch.setattr(cfg.TestingConfig, 'MRC_NETWORK_STATS_ENABLED', False)
+        patch.setattr(cfg.TestingConfig, 'SBBSIMSG_AUTO_REFRESH', False)
         patch.setattr(cfg.TestingConfig, 'REGISTRATION_INVITE_CODE', '')
         patch.setattr(cfg.TestingConfig, 'PUBLIC_BASE_URL', 'http://localhost', raising=False)
         for name in ('DATA_DIR', 'UPLOADS_DIR', 'AVATARS_DIR', 'NETWORK_JOIN_DIR',
@@ -840,3 +844,18 @@ def test_spanish_user_tools_render_and_report_validation(client, make_user):
     response = _post(client, path, {'question': '', 'options': 'Uno\nDos'},
                      token_path=path, follow_redirects=True)
     assert 'Escribe una pregunta para la encuesta.' in _soup(response).get_text(' ', strip=True)
+
+
+def test_spanish_admin_queue_and_security_render_locally(client, make_user, monkeypatch):
+    from anetbbs.web import security_admin
+
+    monkeypatch.setattr(security_admin, '_load_report', lambda: None)
+    user_id, _, _ = make_user('es', is_admin=True)
+    _authenticate(client, user_id)
+    queue = _soup(client.get('/admin/file-queue/?status=rejected'))
+    assert 'Cola de moderación de archivos' in queue.h1.get_text(strip=True)
+    assert 'No hay entradas con estado «Rechazado».' in queue.get_text(' ', strip=True)
+    security = _soup(client.get('/admin/security/'))
+    assert 'Actualizaciones de seguridad' in security.h1.get_text(strip=True)
+    assert 'Todavía no se ha ejecutado ningún análisis.' in security.get_text(' ', strip=True)
+    assert 'Ejecutar análisis' in security.get_text(' ', strip=True)

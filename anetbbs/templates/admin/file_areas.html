@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}File Areas - Admin{% endblock %}
+{% block title %}{{ t('admin.ui.file_areas_admin_title', 'File Areas - Admin') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
@@ -12,7 +12,7 @@
         <i class="bi bi-tags"></i> {{ t('ui.categories', 'Categories') }}
     </a>
     <a href="{{ url_for('admin.file_areas_bulk_import') }}" class="btn btn-primary btn-sm">
-        <i class="bi bi-upload"></i> Bulk Import (Backbone File)
+        <i class="bi bi-upload"></i> {{ t('admin.ui.bulk_import_backbone_file', 'Bulk Import (Backbone File)') }}
     </a>
 </div>
 
@@ -20,14 +20,14 @@
 {% if binkp_nets %}
 <details class="card mb-3" style="border-color:#006600;">
     <summary class="card-header" style="background:#001100; cursor:pointer;">
-        <i class="bi bi-cloud-arrow-up"></i> FileFix — Subscribe/Unsubscribe to All File Areas (per Network)
+        <i class="bi bi-cloud-arrow-up"></i> {{ t('admin.ui.filefix_subscribe_unsubscribe_to_all_file_areas_per_network_section', 'FileFix — Subscribe/Unsubscribe to All File Areas (per Network)') }}
     </summary>
     <div class="card-body">
         <p class="text-muted small mb-2">
             Sends a FileFix <code>+ALL</code> netmail to the hub asking it
             to feed every file echo it carries, and flips the local
             <em>subscribed</em> flag on every <code>FileArea</code> row for
-            this network. Run <strong>Bulk Import</strong> first if your
+            this network. Run <strong>{{ t('admin.ui.bulk_import', 'Bulk Import') }}</strong> first if your
             local list is empty.
         </p>
         {% for net in binkp_nets %}
@@ -60,7 +60,7 @@
 {% endif %}
 
 <div class="card mb-3">
-    <div class="card-header"><i class="bi bi-plus-square"></i> Create Area</div>
+    <div class="card-header"><i class="bi bi-plus-square"></i> {{ t('admin.ui.create_area', 'Create Area') }}</div>
     <div class="card-body">
         <form method="post" class="row g-2">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -148,7 +148,7 @@
                 <label class="form-label small mb-0 me-1" for="areaFilterNetwork">Show:</label>
                 <select id="areaFilterNetwork" class="form-select form-select-sm"
                         onchange="filterFileAreas(this.value)">
-                    <option value="">All areas</option>
+                    <option value="">{{ t('admin.ui.all_areas', 'All areas') }}</option>
                     <option value="none">Local only (no network)</option>
                     {% for n in networks %}<option value="{{ n.id }}">{{ n.name }} only</option>{% endfor %}
                 </select>
@@ -221,7 +221,7 @@
                     <input type="text" name="storage_path" class="form-control form-control-sm" value="{{ fa.storage_path or '' }}">
                     <div class="form-check">
                         <input type="checkbox" name="create_storage_dir" id="createStorageDir{{ fa.id }}" class="form-check-input">
-                        <label class="form-check-label small" for="createStorageDir{{ fa.id }}">Create if missing</label>
+                        <label class="form-check-label small" for="createStorageDir{{ fa.id }}">{{ t('admin.ui.create_if_missing', 'Create if missing') }}</label>
                     </div>
                 </div>
                 <div class="col-md-1">
@@ -282,10 +282,10 @@
                explicitly turn this on. #}
             <div class="row g-2 mt-2">
                 <div class="col-md-3">
-                    <div class="form-check"><input type="checkbox" name="freq_enabled" {% if fa.freq_enabled %}checked{% endif %} class="form-check-input"><label class="form-check-label small">Allow FREQ (peers can request files from this area)</label></div>
+                    <div class="form-check"><input type="checkbox" name="freq_enabled" {% if fa.freq_enabled %}checked{% endif %} class="form-check-input"><label class="form-check-label small">{{ t('admin.ui.allow_freq_peers_can_request_files_from_this_area', 'Allow FREQ (peers can request files from this area)') }}</label></div>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label small mb-0">FREQ password (blank = none required)</label>
+                    <label class="form-label small mb-0">{{ t('admin.ui.freq_password_blank_none_required', 'FREQ password (blank = none required)') }}</label>
                     <input type="text" name="freq_password" class="form-control form-control-sm" value="{{ fa.freq_password or '' }}" placeholder="optional">
                 </div>
             </div>

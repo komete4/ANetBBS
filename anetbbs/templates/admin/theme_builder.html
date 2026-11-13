@@ -18,7 +18,7 @@
                 <div class="row g-2 mb-2">
                     <div class="col-md-6"><label class="form-label">Slug (id)</label>
                         <input type="text" name="name" class="form-control" required pattern="[a-z0-9-]+" placeholder="midnight"></div>
-                    <div class="col-md-6"><label class="form-label">Display Name</label>
+                    <div class="col-md-6"><label class="form-label">{{ t('admin.ui.display_name', 'Display Name') }}</label>
                         <input type="text" name="display_name" class="form-control" required placeholder="Midnight"></div>
                 </div>
                 <div class="row g-2">
@@ -26,7 +26,7 @@
                         <input type="color" id="primary" name="primary" class="form-control form-control-color" value="#00ff00"></div>
                     <div class="col-md-4"><label class="form-label">Background</label>
                         <input type="color" id="bg" name="bg" class="form-control form-control-color" value="#000000"></div>
-                    <div class="col-md-4"><label class="form-label">Dark BG</label>
+                    <div class="col-md-4"><label class="form-label">{{ t('admin.ui.dark_bg', 'Dark BG') }}</label>
                         <input type="color" id="bg_dark" name="bg_dark" class="form-control form-control-color" value="#111111"></div>
                     <div class="col-md-4"><label class="form-label">{{ t('ui.text', 'Text') }}</label>
                         <input type="color" id="text" name="text" class="form-control form-control-color" value="#cccccc"></div>
@@ -56,10 +56,10 @@
 </div>
 
 <div class="card mt-3">
-    <div class="card-header">Existing themes</div>
+    <div class="card-header">{{ t('admin.ui.existing_themes', 'Existing themes') }}</div>
     <div class="card-body p-0">
         <table class="table table-sm mb-0">
-            <thead><tr><th>{{ t('ui.slug', 'Slug') }}</th><th>Display name</th><th>{{ t('ui.active', 'Active') }}</th><th>{{ t('ui.actions', 'Actions') }}</th></tr></thead>
+            <thead><tr><th>{{ t('ui.slug', 'Slug') }}</th><th>{{ t('admin.ui.display_name_sentence_case', 'Display name') }}</th><th>{{ t('ui.active', 'Active') }}</th><th>{{ t('ui.actions', 'Actions') }}</th></tr></thead>
             <tbody>
             {% for t in themes %}
                 <tr>
@@ -75,7 +75,7 @@
                             <button type="submit" class="btn btn-sm btn-danger" title="{{ t('ui.delete', 'Delete') }}"><i class="bi bi-trash"></i></button>
                         </form>
                         {% else %}
-                        <button class="btn btn-sm btn-danger" disabled title="Cannot delete default theme"><i class="bi bi-trash"></i></button>
+                        <button class="btn btn-sm btn-danger" disabled title="{{ t('admin.ui.cannot_delete_default_theme', 'Cannot delete default theme') }}"><i class="bi bi-trash"></i></button>
                         {% endif %}
                     </td>
                 </tr>

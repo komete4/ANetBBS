@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{% if game %}{{ t('ui.edit', 'Edit') }}{% else %}{{ t('ui.add', 'Add') }}{% endif %} Game — Admin — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{% if game %}{{ t('ui.edit', 'Edit') }}{% else %}{{ t('ui.add', 'Add') }}{% endif %} {{ t('admin.ui.game_admin_suffix_section', 'Game — Admin —') }} {{ config.BBS_NAME }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -18,7 +18,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3>{% if game %}<i class="bi bi-pencil"></i> {{ t('ui.edit_label', 'Edit:') }} {{ game.name }}
-        {% else %}<i class="bi bi-plus-circle"></i> Add New Game{% endif %}</h3>
+        {% else %}<i class="bi bi-plus-circle"></i> {{ t('admin.ui.add_new_game', 'Add New Game') }}{% endif %}</h3>
     <a href="{{ url_for('games_admin.list_games') }}" class="btn btn-primary btn-sm">
         <i class="bi bi-arrow-left"></i> {{ t('ui.back', 'Back') }}
     </a>
@@ -151,7 +151,7 @@
 
     <!-- DOS Door -->
     <div id="section_door_dos" class="game-type-section">
-        <div class="section-header"><i class="bi bi-terminal"></i> DOS Door Settings</div>
+        <div class="section-header"><i class="bi bi-terminal"></i> {{ t('admin.ui.dos_door_settings', 'DOS Door Settings') }}</div>
         <div class="row g-3 mb-2">
             <div class="col-md-6">
                 {{ form.executable_path.label(class="form-label") }}
@@ -411,7 +411,7 @@
         </div>
         <div class="row g-3 mb-2">
             <div class="col-md-6">
-                <label class="form-label" for="rlogin_bbs_tag">BBS Tag (optional)</label>
+                <label class="form-label" for="rlogin_bbs_tag">{{ t('admin.ui.bbs_tag_optional', 'BBS Tag (optional)') }}</label>
                 {{ form.rlogin_bbs_tag(class="form-control", placeholder="ANET", id="rlogin_bbs_tag") }}
                 <small style="color:#007700;">
                     A short tag the remote server uses to namespace users by source
@@ -423,8 +423,7 @@
             <div class="col-md-12">
                 <small style="color:#444;">
                     <strong>About the BBS tag.</strong> Game servers namespace
-                    inbound users by source BBS. Set your tag in the <strong>BBS
-                    Tag</strong> field above (just the letters, e.g. <code>ANET</code>)
+                    inbound users by source BBS. Set your tag in the <strong>{{ t('admin.ui.bbs_tag', 'BBS Tag') }}</strong> field above (just the letters, e.g. <code>ANET</code>)
                     and the BBS builds the actual suffix for you, sending it as
                     <em>username-ANET</em> (hyphen-joined, no space) — the
                     Mystic-style convention, not Synchronet's own native

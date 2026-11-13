@@ -15,6 +15,7 @@ from flask import (Blueprint, render_template, redirect, url_for, flash,
                    request, current_app)
 from flask_login import login_required, current_user
 
+from ..features.i18n import translate
 from ..models import db, FileQueueEntry, FileArea
 from .access_control import require_admin_or_403 as _require_admin
 
@@ -46,12 +47,12 @@ def approve(entry_id):
     _require_admin()
     entry = FileQueueEntry.query.get_or_404(entry_id)
     if entry.status != 'pending':
-        flash('Entry already reviewed.', 'warning')
+        flash(translate('file_queue.notice.already_reviewed', 'Entry already reviewed.'), 'warning')
         return redirect(url_for('file_queue.index'))
 
     area = FileArea.query.get(entry.file_area_id)
     if not area or not area.storage_path:
-        flash('Target area has no storage path.', 'danger')
+        flash(translate('file_queue.notice.no_storage', 'Target area has no storage path.'), 'danger')
         return redirect(url_for('file_queue.index'))
 
     try:
@@ -65,7 +66,7 @@ def approve(entry_id):
                                 f'{base}-{entry.id}{ext}')
         os.rename(entry.quarantine_path, dest)
     except OSError as exc:
-        flash(f'Approve failed: {exc}', 'danger')
+        flash(translate('file_queue.notice.approve_failed', 'Approve failed: {exc}', exc=exc), 'danger')
         return redirect(url_for('file_queue.index'))
 
     entry.status = 'approved'
@@ -80,7 +81,7 @@ def approve(entry_id):
             current_app.logger.exception(
                 'hatch_local_file failed for %s in area %s',
                 safe_name, area.tag)
-    flash(f'Approved {entry.filename}.', 'success')
+    flash(translate('file_queue.notice.approved', 'Approved {filename}.', filename=entry.filename), 'success')
     return redirect(url_for('file_queue.index'))
 
 
@@ -90,7 +91,7 @@ def reject(entry_id):
     _require_admin()
     entry = FileQueueEntry.query.get_or_404(entry_id)
     if entry.status != 'pending':
-        flash('Entry already reviewed.', 'warning')
+        flash(translate('file_queue.notice.already_reviewed', 'Entry already reviewed.'), 'warning')
         return redirect(url_for('file_queue.index'))
     reason = (request.form.get('reason') or '').strip() or None
     try:
@@ -103,7 +104,7 @@ def reject(entry_id):
     entry.reviewed_by_id = current_user.id
     entry.reviewed_at = datetime.utcnow()
     db.session.commit()
-    flash(f'Rejected {entry.filename}.', 'success')
+    flash(translate('file_queue.notice.rejected', 'Rejected {filename}.', filename=entry.filename), 'success')
     return redirect(url_for('file_queue.index'))
 
 
@@ -119,5 +120,5 @@ def delete(entry_id):
         pass
     db.session.delete(entry)
     db.session.commit()
-    flash('Queue entry deleted.', 'success')
+    flash(translate('file_queue.notice.deleted', 'Queue entry deleted.'), 'success')
     return redirect(url_for('file_queue.index'))

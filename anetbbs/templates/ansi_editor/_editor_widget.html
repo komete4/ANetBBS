@@ -100,7 +100,7 @@
     <button id="btnSave" class="btn btn-primary btn-sm"><i class="bi bi-save"></i> {{ t('ui.save', 'Save') }}</button>
     <button id="btnUndo" class="btn btn-outline-light btn-sm" title="Undo (Ctrl+Z)"><i class="bi bi-arrow-counterclockwise"></i></button>
     <button id="btnRedo" class="btn btn-outline-light btn-sm" title="Redo (Ctrl+Shift+Z)"><i class="bi bi-arrow-clockwise"></i></button>
-    <button id="btnClear" class="btn btn-outline-warning btn-sm" title="Clear canvas"><i class="bi bi-trash"></i> {{ t('ui.clear', 'Clear') }}</button>
+    <button id="btnClear" class="btn btn-outline-warning btn-sm" title="{{ t('admin.ui.clear_canvas', 'Clear canvas') }}"><i class="bi bi-trash"></i> {{ t('ui.clear', 'Clear') }}</button>
     <button id="btnImportImage" class="btn btn-outline-light btn-sm" title="Convert a .jpg/.png/.gif into CP437 art, filling the whole canvas"><i class="bi bi-image"></i> Import Image</button>
     <input type="file" id="importImageInput" accept="image/*" style="display:none;">
     <button id="btnPreview" class="btn btn-outline-info btn-sm" title="Preview as terminal would render"><i class="bi bi-eye"></i> {{ t('ui.preview', 'Preview') }}</button>
@@ -124,7 +124,7 @@
         <button class="btn btn-sm btn-outline-light tool-btn" data-tool="colorize" title="Colorize -- recolor a cell without changing its character"><i class="bi bi-palette"></i></button>
         <button class="btn btn-sm btn-outline-light tool-btn" data-tool="text" title="Text typing"><i class="bi bi-fonts"></i></button>
         <button class="btn btn-sm btn-outline-light tool-btn" data-tool="select" title="Select rectangle"><i class="bi bi-bounding-box"></i></button>
-        <button class="btn btn-sm btn-outline-light tool-btn" id="btnCopy" title="Copy selection (Ctrl+C)"><i class="bi bi-clipboard"></i></button>
+        <button class="btn btn-sm btn-outline-light tool-btn" id="btnCopy" title="{{ t('admin.ui.copy_selection_ctrl_c', 'Copy selection (Ctrl+C)') }}"><i class="bi bi-clipboard"></i></button>
         <button class="btn btn-sm btn-outline-light tool-btn" id="btnPaste" title="Paste (Ctrl+V)"><i class="bi bi-clipboard-check"></i></button>
         <button class="btn btn-sm btn-outline-light tool-btn" id="btnFlipH" title="Flip selection horizontally"><i class="bi bi-symmetry-vertical"></i></button>
         <button class="btn btn-sm btn-outline-light tool-btn" id="btnFlipV" title="Flip selection vertically"><i class="bi bi-symmetry-horizontal"></i></button>
@@ -176,7 +176,7 @@
         <div id="tdfInstallPanel" class="mb-1" style="display:none;">
             <p class="small text-muted mb-1">No fonts installed yet.</p>
             <button id="btnTdfInstall" class="btn btn-sm btn-outline-light w-100">
-                <i class="bi bi-cloud-download"></i> Download &amp; Install Fonts
+                <i class="bi bi-cloud-download"></i> {{ t('admin.ui.download_install_fonts', 'Download & Install Fonts') }}
             </button>
             <div id="tdfInstallStatus" class="small text-muted mt-1"></div>
         </div>
@@ -187,7 +187,7 @@
         <div id="tdfFontList" style="max-height:120px;overflow-y:auto;background:#000;border:1px solid #333;font-size:0.8rem;"></div>
         <div class="mt-1">
             <input type="text" id="tdfText" class="form-control form-control-sm"
-                   placeholder="Banner text" maxlength="200">
+                   placeholder="{{ t('admin.ui.banner_text', 'Banner text') }}" maxlength="200">
         </div>
         <div id="tdfPreview" style="background:#000;padding:4px;margin-top:4px;overflow-x:auto;white-space:pre;font-family:monospace;line-height:1;min-height:1.2em;"></div>
         <button id="btnTdfInsert" class="btn btn-sm btn-outline-light w-100 mt-1" disabled>
@@ -213,7 +213,7 @@
                     Dim canvas while tracing
                 </label>
             </div>
-            <label class="small text-muted d-block mt-1">Image opacity</label>
+            <label class="small text-muted d-block mt-1">{{ t('admin.ui.image_opacity', 'Image opacity') }}</label>
             <input type="range" id="refImageOpacity" class="form-range" min="10" max="100" value="60">
             <button id="btnRefImageRemove" class="btn btn-sm btn-outline-warning w-100 mt-1">
                 <i class="bi bi-x-circle"></i> Remove image

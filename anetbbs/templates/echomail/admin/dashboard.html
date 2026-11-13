@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Echomail Admin Dashboard — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{{ t('admin.ui.echomail_admin_dashboard_suffix', 'Echomail Admin Dashboard —') }} {{ config.BBS_NAME }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
@@ -51,7 +51,7 @@
                     <i class="bi bi-diagram-3"></i> Manage Networks
                 </a>
                 <a href="{{ url_for('echomail_admin.new_network') }}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> Add Network
+                    <i class="bi bi-plus-circle"></i> {{ t('admin.ui.add_network', 'Add Network') }}
                 </a>
                 <a href="{{ url_for('echomail_admin.areas') }}" class="btn btn-primary">
                     <i class="bi bi-chat-square-text"></i> Manage Areas

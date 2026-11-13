@@ -13,6 +13,7 @@ from flask import (Blueprint, current_app, flash, redirect,
                    render_template, request, url_for)
 from flask_login import login_required
 
+from ..features.i18n import translate
 from ..models import db, WallPost, EchomailNetwork
 from ..features.wall import WALL_SCHEMES, WALL_SCHEME_LABELS
 from .admin import _write_env_keys
@@ -72,7 +73,7 @@ def settings():
     interbbs_enabled = request.form.get('interbbs_enabled') == 'on'
     network_id = (request.form.get('interbbs_network_id') or '').strip()
     if interbbs_enabled and not network_id:
-        flash('Pick a network before enabling InterBBS Wall sharing.', 'danger')
+        flash(translate('wall_admin.notice.pick_network', 'Pick a network before enabling InterBBS Wall sharing.'), 'danger')
         return redirect(url_for('.index'))
     if interbbs_enabled:
         network = EchomailNetwork.query.get(int(network_id))
@@ -141,7 +142,7 @@ def delete(post_id):
     post = WallPost.query.get_or_404(post_id)
     post.is_deleted = True
     db.session.commit()
-    flash(f'Wall post #{post_id} deleted.', 'success')
+    flash(translate('wall_admin.notice.post_deleted', 'Wall post #{post_id} deleted.', post_id=post_id), 'success')
     return redirect(url_for('.index'))
 
 
@@ -152,7 +153,7 @@ def restore(post_id):
     post = WallPost.query.get_or_404(post_id)
     post.is_deleted = False
     db.session.commit()
-    flash(f'Wall post #{post_id} restored.', 'success')
+    flash(translate('wall_admin.notice.post_restored', 'Wall post #{post_id} restored.', post_id=post_id), 'success')
     return redirect(url_for('.index', deleted=1))
 
 
@@ -162,5 +163,5 @@ def clear_all():
     _admin_required()
     count = WallPost.query.filter_by(is_deleted=False).update({'is_deleted': True})
     db.session.commit()
-    flash(f'Cleared {count} wall posts.', 'warning')
+    flash(translate('wall_admin.notice.cleared', 'Cleared {count} wall posts.', count=count), 'warning')
     return redirect(url_for('.index'))

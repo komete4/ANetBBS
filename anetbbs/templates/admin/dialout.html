@@ -9,7 +9,7 @@
 </div>
 
 <div class="card mb-3">
-    <div class="card-header"><i class="bi bi-plus-square"></i> Add Destination</div>
+    <div class="card-header"><i class="bi bi-plus-square"></i> {{ t('admin.ui.add_destination', 'Add Destination') }}</div>
     <div class="card-body">
         <form method="post" class="row g-2 align-items-end">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

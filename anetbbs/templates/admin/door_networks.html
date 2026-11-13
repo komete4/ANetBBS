@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Door Networks Admin{% endblock %}
+{% block title %}{{ t('admin.ui.door_networks_admin', 'Door Networks Admin') }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-diagram-3-fill"></i> {{ t('ui.heading.door_networks', 'Door Networks') }}</h1>
@@ -13,11 +13,11 @@
 </p>
 
 <div class="card p-3 mb-4">
-    <h6 class="mb-2">DoorParty connection settings</h6>
+    <h6 class="mb-2">{{ t('admin.ui.doorparty_connection_settings', 'DoorParty connection settings') }}</h6>
     <p class="small text-muted">
         DoorParty's real credentials live entirely in a separate local
         daemon you run yourself (<a href="https://github.com/echicken/doorparty-connector"
-        target="_blank" rel="noopener">DoorParty Connector</a>) — ANetBBS
+        target="_blank" rel="noopener">{{ t('admin.ui.doorparty_connector', 'DoorParty Connector') }}</a>) — ANetBBS
         never needs to know them. These three fields are just what
         <em>you</em> picked when configuring that daemon's own
         <code>settings.json</code> and its Mystic/menu-side connection
@@ -50,7 +50,7 @@
 </div>
 
 <div class="card p-3 mb-4">
-    <h6 class="mb-2">Add a DoorParty game</h6>
+    <h6 class="mb-2">{{ t('admin.ui.add_a_doorparty_game', 'Add a DoorParty game') }}</h6>
     {% if not configured %}
     <p class="small text-danger">Save your connection settings above first.</p>
     {% endif %}
@@ -83,7 +83,7 @@
 <div class="card p-3">
     <h6 class="mb-2">Your DoorParty games</h6>
     <table class="table table-striped table-sm mb-0">
-        <thead><tr><th>{{ t('ui.name', 'Name') }}</th><th>Command line</th><th></th></tr></thead>
+        <thead><tr><th>{{ t('ui.name', 'Name') }}</th><th>{{ t('admin.ui.command_line', 'Command line') }}</th><th></th></tr></thead>
         <tbody>
             {% for game in games %}
             <tr>

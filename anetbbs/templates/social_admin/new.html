@@ -19,7 +19,7 @@
                placeholder="e.g. ANetBBS v1.0.54 is live — fixed a real memory leak, plus...">{{ text or '' }}</textarea>
     </div>
     <div class="mb-3">
-      <label class="form-label" for="image">Image (optional)</label>
+      <label class="form-label" for="image">{{ t('admin.ui.image_optional', 'Image (optional)') }}</label>
       <input type="file" id="image" name="image" class="form-control" accept="image/*">
       <div class="form-text">PNG/JPG, up to 5MB. Leave blank to post text only.</div>
     </div>

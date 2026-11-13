@@ -2670,7 +2670,7 @@ def manage_user(user_id):
             n = UserNote.query.get(nid)
             if n and n.user_id == user.id:
                 db.session.delete(n); db.session.commit()
-                flash('Note deleted.', 'success')
+                flash(translate('admin.notice.note_deleted', 'Note deleted.'), 'success')
         elif action == 'reset_password':
             new = (request.form.get('new_password') or '').strip()
             if len(new) >= 6:
@@ -3102,7 +3102,7 @@ def user_notes(user_id):
                 abort(400)
             db.session.delete(n)
             db.session.commit()
-            flash('Note deleted.', 'success')
+            flash(translate('admin.notice.note_deleted', 'Note deleted.'), 'success')
         return redirect(url_for('admin.user_notes', user_id=user_id))
 
     notes = (UserNote.query.filter_by(user_id=target.id)
@@ -3131,11 +3131,11 @@ def irc_presets():
                 order=request.form.get('order', type=int) or 0,
             )
             if not p.name or not p.server:
-                flash('Name and server are required.', 'danger')
+                flash(translate('admin.notice.preset_required', 'Name and server are required.'), 'danger')
             else:
                 db.session.add(p)
                 db.session.commit()
-                flash(f'Preset "{p.name}" created.', 'success')
+                flash(translate('admin.notice.preset_created', 'Preset "{name}" created.', name=p.name), 'success')
         elif action == 'edit':
             p = IrcPreset.query.get_or_404(request.form.get('preset_id', type=int))
             p.name = (request.form.get('name') or p.name).strip()
@@ -3147,7 +3147,7 @@ def irc_presets():
             p.is_active = bool(request.form.get('is_active'))
             p.order = request.form.get('order', type=int) or 0
             db.session.commit()
-            flash(f'Preset "{p.name}" updated.', 'success')
+            flash(translate('admin.notice.preset_updated', 'Preset "{name}" updated.', name=p.name), 'success')
         elif action == 'toggle':
             p = IrcPreset.query.get_or_404(request.form.get('preset_id', type=int))
             p.is_active = not p.is_active
@@ -3157,7 +3157,7 @@ def irc_presets():
             p = IrcPreset.query.get_or_404(request.form.get('preset_id', type=int))
             db.session.delete(p)
             db.session.commit()
-            flash('Deleted.', 'success')
+            flash(translate('admin.notice.item_deleted', 'Deleted.'), 'success')
         return redirect(url_for('admin.irc_presets'))
 
     presets = IrcPreset.query.order_by(IrcPreset.order, IrcPreset.name).all()
@@ -3334,7 +3334,7 @@ def dialout_admin():
             d = DialoutDestination.query.get_or_404(
                 request.form.get('dest_id', type=int))
             db.session.delete(d); db.session.commit()
-            flash('Deleted.', 'success')
+            flash(translate('admin.notice.item_deleted', 'Deleted.'), 'success')
         return redirect(url_for('admin.dialout_admin'))
 
     rows = (DialoutDestination.query
@@ -3357,7 +3357,7 @@ def motd_admin():
             if text:
                 db.session.add(MotdEntry(text=text, weight=weight, is_active=True))
                 db.session.commit()
-                flash('MOTD added.', 'success')
+                flash(translate('admin.notice.motd_added', 'MOTD added.'), 'success')
         elif action == 'toggle':
             m = MotdEntry.query.get_or_404(request.form.get('motd_id', type=int))
             m.is_active = not bool(m.is_active); db.session.commit()
@@ -3438,7 +3438,7 @@ def taglines_admin():
             if text:
                 db.session.add(Tagline(text=text[:200], is_active=True))
                 db.session.commit()
-                flash('Tagline added.', 'success')
+                flash(translate('admin.notice.tagline_added', 'Tagline added.'), 'success')
         elif action == 'toggle':
             t = Tagline.query.get_or_404(request.form.get('tagline_id', type=int))
             t.is_active = not bool(t.is_active); db.session.commit()
@@ -3715,7 +3715,7 @@ def newuser_questions():
                     sort_order=int(request.form.get('sort_order') or 0),
                     is_active=True))
                 db.session.commit()
-                flash('Question added.', 'success')
+                flash(translate('admin.notice.question_added', 'Question added.'), 'success')
         elif action == 'toggle':
             qid = request.form.get('qid', type=int)
             q = NewUserQuestion.query.get(qid)
@@ -3727,7 +3727,7 @@ def newuser_questions():
             q = NewUserQuestion.query.get(qid)
             if q:
                 db.session.delete(q); db.session.commit()
-                flash('Question deleted.', 'success')
+                flash(translate('admin.notice.question_deleted', 'Question deleted.'), 'success')
         return redirect(url_for('admin.newuser_questions'))
     rows = (NewUserQuestion.query
             .order_by(NewUserQuestion.sort_order,
@@ -3763,7 +3763,7 @@ def security_questions():
                     sort_order=int(request.form.get('sort_order') or 0),
                     is_active=True))
                 db.session.commit()
-                flash('Question added.', 'success')
+                flash(translate('admin.notice.question_added', 'Question added.'), 'success')
         elif action == 'edit':
             qid = request.form.get('qid', type=int)
             text = (request.form.get('text') or '').strip()
@@ -3771,7 +3771,7 @@ def security_questions():
             if q and text:
                 q.text = text[:300]
                 db.session.commit()
-                flash('Question updated.', 'success')
+                flash(translate('admin.notice.question_updated', 'Question updated.'), 'success')
         elif action == 'toggle':
             qid = request.form.get('qid', type=int)
             q = SecurityQuestion.query.get(qid)
@@ -3783,7 +3783,7 @@ def security_questions():
             q = SecurityQuestion.query.get(qid)
             if q:
                 db.session.delete(q); db.session.commit()
-                flash('Question deleted.', 'success')
+                flash(translate('admin.notice.question_deleted', 'Question deleted.'), 'success')
         return redirect(url_for('admin.security_questions'))
     rows = (SecurityQuestion.query
             .order_by(SecurityQuestion.sort_order, SecurityQuestion.id).all())
@@ -3806,22 +3806,22 @@ def file_quotas():
             level = request.form.get('min_access_level', type=int)
             quota_mb = request.form.get('quota_mb', type=float)
             if level is None or quota_mb is None or quota_mb <= 0:
-                flash('Enter a valid access level and quota.', 'danger')
+                flash(translate('admin.notice.quota_invalid', 'Enter a valid access level and quota.'), 'danger')
             elif FileQuotaTier.query.filter_by(min_access_level=level).first():
-                flash(f'A tier for access level {level} already exists.', 'danger')
+                flash(translate('admin.notice.quota_exists', 'A tier for access level {level} already exists.', level=level), 'danger')
             else:
                 db.session.add(FileQuotaTier(
                     min_access_level=level,
                     daily_quota_bytes=int(quota_mb * 1024 * 1024)))
                 db.session.commit()
-                flash('Quota tier added.', 'success')
+                flash(translate('admin.notice.quota_added', 'Quota tier added.'), 'success')
         elif action == 'delete':
             tid = request.form.get('tier_id', type=int)
             t = FileQuotaTier.query.get(tid)
             if t:
                 db.session.delete(t)
                 db.session.commit()
-                flash('Quota tier deleted.', 'success')
+                flash(translate('admin.notice.quota_deleted', 'Quota tier deleted.'), 'success')
         return redirect(url_for('admin.file_quotas'))
     rows = (FileQuotaTier.query
             .order_by(FileQuotaTier.min_access_level.desc()).all())
@@ -3852,7 +3852,7 @@ def time_budgets():
         b.daily_limit_min = int(request.form.get('daily_limit_min') or 0)
         b.bank_minutes = int(request.form.get('bank_minutes') or 0)
         db.session.commit()
-        flash(f'Updated time budget for {u.username}.', 'success')
+        flash(translate('admin.notice.time_budget_updated', 'Updated time budget for {username}.', username=u.username), 'success')
         return redirect(url_for('admin.time_budgets'))
 
     rows = (db.session.query(User, UserTimeBudget)
@@ -3872,7 +3872,7 @@ def db_backup():
     from flask import send_file as _send_file
 
     if db.engine.dialect.name != 'sqlite':
-        flash('DB backup only supports SQLite installs.', 'warning')
+        flash(translate('admin.notice.backup_sqlite_only', 'DB backup only supports SQLite installs.'), 'warning')
         return redirect(url_for('admin.dashboard'))
 
     snapshot = None
@@ -3918,7 +3918,7 @@ def db_backup():
         if snapshot is not None:
             snapshot.close()
         current_app.logger.error('db_backup: SQLite snapshot failed: %s', exc)
-        flash('Database backup failed. Please try again.', 'danger')
+        flash(translate('admin.notice.backup_failed', 'Database backup failed. Please try again.'), 'danger')
         return redirect(url_for('admin.dashboard'))
 
 
@@ -3949,19 +3949,19 @@ def theme_builder():
             '--theme-border':        request.form.get('primary',     '#00ff00'),
         }
         if not name or not display_name:
-            flash('Name + display name required.', 'danger')
+            flash(translate('admin.notice.theme_names_required', 'Name + display name required.'), 'danger')
             return redirect(url_for('admin.theme_builder'))
         existing = _Theme.query.filter_by(name=name).first()
         if existing:
             existing.display_name = display_name
             existing.css_variables = json.dumps(css_vars)
             existing.is_active = True
-            flash(f'Theme "{name}" updated.', 'success')
+            flash(translate('admin.notice.theme_builder_updated', 'Theme "{name}" updated.', name=name), 'success')
         else:
             db.session.add(_Theme(name=name, display_name=display_name,
                                   css_variables=json.dumps(css_vars),
                                   is_active=True))
-            flash(f'Theme "{name}" created.', 'success')
+            flash(translate('admin.notice.theme_builder_created', 'Theme "{name}" created.', name=name), 'success')
         db.session.commit()
         return redirect(url_for('admin.theme_builder'))
     themes = _Theme.query.order_by(_Theme.display_name).all()
@@ -3991,10 +3991,10 @@ def webhooks_admin():
                 is_active=bool(request.form.get('is_active')),
                 board_id=board_id or None)
             if not w.name or not w.url:
-                flash('Name + URL required.', 'danger')
+                flash(translate('admin.notice.webhook_required', 'Name + URL required.'), 'danger')
             else:
                 db.session.add(w); db.session.commit()
-                flash(f'Webhook "{w.name}" created.', 'success')
+                flash(translate('admin.notice.webhook_created', 'Webhook "{name}" created.', name=w.name), 'success')
         elif action == 'toggle':
             w = Webhook.query.get_or_404(request.form.get('w_id', type=int))
             w.is_active = not bool(w.is_active); db.session.commit()
@@ -4102,7 +4102,7 @@ def word_filter():
                                               is_active=True))
                     db.session.commit()
                     invalidate()
-                    flash(f'Added filter "{pat}".', 'success')
+                    flash(translate('admin.notice.filter_added', 'Added filter "{pat}".', pat=pat), 'success')
         elif action == 'toggle':
             w = WordFilter.query.get_or_404(request.form.get('w_id', type=int))
             w.is_active = not bool(w.is_active); db.session.commit()
@@ -4150,7 +4150,7 @@ def revoke_reset_token(token_id):
     rt = PasswordResetToken.query.get_or_404(token_id)
     rt.used_at = datetime.utcnow()
     db.session.commit()
-    flash(f'Reset token for {rt.user.username} revoked.', 'success')
+    flash(translate('admin.notice.reset_revoked', 'Reset token for {username} revoked.', username=rt.user.username), 'success')
     return redirect(url_for('admin.password_resets'))
 
 
@@ -4185,7 +4185,7 @@ def custom_fields():
 def toggle_builtin_field(field_name):
     valid = {name for name, _ in BUILTIN_FIELDS}
     if field_name not in valid:
-        flash('Unknown field.', 'danger')
+        flash(translate('admin.notice.field_unknown', 'Unknown field.'), 'danger')
         return redirect(url_for('admin.custom_fields'))
     row = BuiltinFieldConfig.query.filter_by(field_name=field_name).first()
     if row is None:
@@ -4207,7 +4207,7 @@ def add_custom_field():
         import re
         slug = re.sub(r'[^a-z0-9_]', '_', form.name.data.lower().strip())
         if UserField.query.filter_by(name=slug).first():
-            flash('A field with that name already exists.', 'danger')
+            flash(translate('admin.notice.field_exists', 'A field with that name already exists.'), 'danger')
             return render_template('admin/custom_field_form.html', form=form, action='Add')
         choices_json = None
         if form.field_type.data == 'select' and form.choices.data:
@@ -4224,7 +4224,7 @@ def add_custom_field():
         )
         db.session.add(f)
         db.session.commit()
-        flash(f'Custom field "{f.label}" created.', 'success')
+        flash(translate('admin.notice.field_created', 'Custom field "{label}" created.', label=f.label), 'success')
         return redirect(url_for('admin.custom_fields'))
     return render_template('admin/custom_field_form.html', form=form, action='Add')
 
@@ -4247,7 +4247,7 @@ def edit_custom_field(field_id):
         else:
             f.choices = None
         db.session.commit()
-        flash(f'Custom field "{f.label}" updated.', 'success')
+        flash(translate('admin.notice.field_updated', 'Custom field "{label}" updated.', label=f.label), 'success')
         return redirect(url_for('admin.custom_fields'))
     # Pre-fill choices textarea
     if f.choices:
@@ -4266,7 +4266,7 @@ def delete_custom_field(field_id):
     label = f.label
     db.session.delete(f)
     db.session.commit()
-    flash(f'Custom field "{label}" deleted.', 'success')
+    flash(translate('admin.notice.field_deleted', 'Custom field "{label}" deleted.', label=label), 'success')
     return redirect(url_for('admin.custom_fields'))
 
 

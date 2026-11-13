@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Hub Identities — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{{ t('admin.ui.hub_identities_suffix', 'Hub Identities —') }} {{ config.BBS_NAME }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -9,7 +9,7 @@
     </div>
     <div class="d-flex gap-2">
         <a href="{{ url_for('hub_admin.new_hub_identity') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Add Hub Identity
+            <i class="bi bi-plus-circle"></i> {{ t('admin.ui.add_hub_identity', 'Add Hub Identity') }}
         </a>
         <a href="{{ url_for('hub_admin.index') }}" class="btn btn-secondary">
             <i class="bi bi-arrow-left"></i> {{ t('ui.hub_overview', 'Hub Overview') }}

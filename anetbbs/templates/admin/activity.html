@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Activity Log - Admin{% endblock %}
+{% block title %}{{ t('admin.ui.activity_log_admin_title', 'Activity Log - Admin') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
@@ -8,12 +8,12 @@
 </div>
 <div class="mb-3">
     <a href="{{ url_for('admin.caller_log') }}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-clock-history"></i> Caller Log (per-session view)</a>
+        <i class="bi bi-clock-history"></i> {{ t('admin.ui.caller_log_per_session_view', 'Caller Log (per-session view)') }}</a>
 </div>
 
 <form method="get" class="row g-2 mb-3">
     <div class="col-md-4">
-        <label class="form-label">Activity Type</label>
+        <label class="form-label">{{ t('admin.ui.activity_type', 'Activity Type') }}</label>
         <select name="type" class="form-select">
             <option value="">— all —</option>
             {% for t in distinct_types %}
@@ -26,7 +26,7 @@
         <input type="text" name="user" value="{{ current_user_filter }}" class="form-control">
     </div>
     <div class="col-md-3">
-        <label class="form-label">IP Address</label>
+        <label class="form-label">{{ t('admin.ui.ip_address', 'IP Address') }}</label>
         <input type="text" name="ip" value="{{ current_ip }}" class="form-control">
     </div>
     <div class="col-md-2 d-flex align-items-end">

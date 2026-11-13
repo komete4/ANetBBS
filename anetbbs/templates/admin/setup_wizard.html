@@ -17,7 +17,7 @@
             <li>{{ '✅' if progress.has_network else '⬜' }} Echomail network configured (<a href="{{ url_for('echomail_admin.dashboard') }}">configure</a>)</li>
             <li>{{ '✅' if progress.has_areas else '⬜' }} Echo areas subscribed (<a href="{{ url_for('admin.default_echos') }}">configure</a>)</li>
             <li>{{ '✅' if progress.has_menus else '⬜' }} BBS menus seeded (auto on first deploy)</li>
-            <li>{{ '✅' if progress.has_dial else '⬜' }} Dial-out directory populated</li>
+            <li>{{ '✅' if progress.has_dial else '⬜' }} {{ t('admin.ui.dial_out_directory_populated', 'Dial-out directory populated') }}</li>
         </ul>
     </div>
 </div>
@@ -25,7 +25,7 @@
 <form method="post" class="card">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="card-body">
-        <h6>BBS Branding</h6>
+        <h6>{{ t('admin.ui.bbs_branding', 'BBS Branding') }}</h6>
         <div class="row g-2 mb-3">
             <div class="col-md-6"><label class="form-label">{{ t('ui.bbs_name', 'BBS Name') }}</label>
                 <input type="text" name="bbs_name" class="form-control" value="{{ config.BBS_NAME or '' }}"></div>
@@ -46,10 +46,10 @@
                 <input type="email" name="sysop_email" class="form-control"
                        value="{{ config.SYSOP_EMAIL or '' }}"
                        placeholder="you@example.com"></div>
-            <div class="col-md-6"><label class="form-label">BBS Location</label>
+            <div class="col-md-6"><label class="form-label">{{ t('admin.ui.bbs_location', 'BBS Location') }}</label>
                 <input type="text" name="bbs_location" class="form-control"
                        value="{{ config.BBS_LOCATION or '' }}"
-                       placeholder="City, State, Country"></div>
+                       placeholder="{{ t('admin.ui.city_state_country', 'City, State, Country') }}"></div>
         </div>
         <div class="form-check mb-2">
             <input class="form-check-input" type="checkbox"
@@ -121,12 +121,12 @@
             <input class="form-check-input" type="checkbox" name="seed_ansi" id="cb_ansi" checked>
             <label for="cb_ansi" class="form-check-label">
                 Add sample art (welcome banner, login splash, divider, goodbye) to the
-                <a href="{{ url_for('ansi_editor.index') }}">ANSI editor library</a>
+                <a href="{{ url_for('ansi_editor.index') }}">{{ t('admin.ui.ansi_editor_library', 'ANSI editor library') }}</a>
             </label>
         </div>
 
         <button class="btn btn-primary"><i class="bi bi-check2-circle"></i> {{ t('ui.apply', 'Apply') }}</button>
-        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-link">Back to dashboard</a>
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-link">{{ t('admin.ui.back_to_dashboard', 'Back to dashboard') }}</a>
     </div>
 </form>
 {% endblock %}

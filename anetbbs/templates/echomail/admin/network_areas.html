@@ -16,14 +16,14 @@
 {# Breadcrumb + top toolbar #}
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
     <a href="{{ url_for('echomail_admin.areas') }}" class="btn btn-primary btn-sm">
-        <i class="bi bi-arrow-left"></i> Back to Networks
+        <i class="bi bi-arrow-left"></i> {{ t('admin.ui.back_to_networks', 'Back to Networks') }}
     </a>
     <div class="d-flex gap-2 flex-wrap">
         <a href="{{ url_for('echomail_admin.bad_areas') }}" class="btn btn-warning btn-sm">
             <i class="bi bi-exclamation-triangle"></i> {{ t('ui.bad_areas', 'Bad Areas') }}
         </a>
         <a href="{{ url_for('echomail_admin.bulk_import') }}" class="btn btn-primary btn-sm">
-            <i class="bi bi-upload"></i> Bulk Import
+            <i class="bi bi-upload"></i> {{ t('admin.ui.bulk_import', 'Bulk Import') }}
         </a>
         <a href="{{ url_for('echomail_admin.new_area') }}" class="btn btn-primary btn-sm">
             <i class="bi bi-plus-circle"></i> {{ t('ui.add_area', 'Add Area') }}
@@ -44,7 +44,7 @@
 {% if network.network_type == 'binkp' %}
 <details class="mb-3">
   <summary class="btn btn-outline-secondary btn-sm">
-    <i class="bi bi-wrench"></i> AreaFix / Network Tools
+    <i class="bi bi-wrench"></i> {{ t('admin.ui.areafix_network_tools', 'AreaFix / Network Tools') }}
   </summary>
   <div class="card mt-2">
     <div class="card-body row g-3">
@@ -53,7 +53,7 @@
       <div class="col-md-6">
         <form method="POST" action="{{ url_for('echomail_admin.custom_areafix', network_id=network.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <label class="form-label fw-bold">Custom AreaFix Request</label>
+          <label class="form-label fw-bold">{{ t('admin.ui.custom_areafix_request', 'Custom AreaFix Request') }}</label>
           <textarea name="body" rows="4" class="form-control form-control-sm font-monospace"
             placeholder="+TAG1&#10;-TAG2&#10;%RESCAN SOME.TAG&#10;%QUERY"></textarea>
           <div class="mt-2 d-flex gap-2">
@@ -109,7 +109,7 @@
         <textarea name="entries" rows="5" class="form-control form-control-sm font-monospace"
           placeholder="2001 General Discussion&#10;2002 Technology&#10;2003 BBS Scene"></textarea>
         <button class="btn btn-sm btn-primary mt-2">
-          <i class="bi bi-plus-circle"></i> Add / Update Conferences
+          <i class="bi bi-plus-circle"></i> {{ t('admin.ui.add_update_conferences', 'Add / Update Conferences') }}
         </button>
       </form>
     </div>
@@ -150,7 +150,7 @@
         </optgroup>
         <optgroup label="Sysop-Only">
           <option value="set_sysop_only">Set Sysop-Only</option>
-          <option value="clear_sysop_only">Clear Sysop-Only</option>
+          <option value="clear_sysop_only">{{ t('admin.ui.clear_sysop_only', 'Clear Sysop-Only') }}</option>
         </optgroup>
         <optgroup label="Access Level">
           <option value="set_access_level">Set Access Level →</option>
@@ -278,7 +278,7 @@
 {% else %}
 <div class="alert alert-info">
   No areas configured for this network yet.
-  <a href="{{ url_for('echomail_admin.new_area') }}">Add an area</a> or
+  <a href="{{ url_for('echomail_admin.new_area') }}">{{ t('admin.ui.add_an_area', 'Add an area') }}</a> or
   <a href="{{ url_for('echomail_admin.bulk_import') }}">bulk import</a> from a backbone file.
 </div>
 {% endif %}

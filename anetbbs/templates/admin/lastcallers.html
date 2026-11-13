@@ -37,7 +37,7 @@
                     <input class="form-check-input" type="checkbox" name="hide_sysop"
                            id="hide_sysop" {{ 'checked' if hide_sysop }}>
                     <label class="form-check-label" for="hide_sysop">
-                        Hide sysop logins from the Last Callers displays
+                        {{ t('admin.ui.hide_sysop_logins_from_the_last_callers_displays', 'Hide sysop logins from the Last Callers displays') }}
                     </label>
                 </div>
                 <div class="form-text mt-1 mb-3">Keeps a frequently-logged-in sysop from flooding the user-facing Last Callers list (terminal screen, terminal inline block, and the web one-liners page) — this admin list below always shows everything regardless of this setting. Also keeps sysop logins from being relayed to InterBBS Last Callers above, so testing heavily on your own account doesn't flood every other BBS on the network with your logins too.</div>

@@ -4,7 +4,7 @@
 <div class="bbs-header"><h1><i class="bi bi-clock-history"></i> {{ t('ui.caller_log', 'Caller Log') }}</h1></div>
 <div class="mb-3">
     <a href="{{ url_for('admin.activity') }}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-list-ul"></i> Full Activity Feed</a>
+        <i class="bi bi-list-ul"></i> {{ t('admin.ui.full_activity_feed', 'Full Activity Feed') }}</a>
     <a href="{{ url_for('lastcallers_admin.index') }}" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-globe"></i> InterBBS Last Callers</a>
 </div>

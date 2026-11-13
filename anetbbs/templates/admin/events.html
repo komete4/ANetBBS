@@ -20,26 +20,25 @@
     <div>
       <h1 class="m-0"><i class="bi bi-calendar2-event"></i> {{ t('ui.heading.scheduled_events', 'Scheduled Events') }}</h1>
       <div class="text-white-50 mt-1">
-        Cron-style tasks — door maintenance, DB vacuum, log rotation, ad-hoc shell.
+        {{ t('admin.events.intro', 'Cron-style tasks — door maintenance, DB vacuum, log rotation, ad-hoc shell.') }}
       </div>
     </div>
     <a href="{{ url_for('events_admin.new') }}" class="btn btn-light btn-sm">
-      <i class="bi bi-plus-lg"></i> New event
+      <i class="bi bi-plus-lg"></i> {{ t('admin.events.new', 'New event') }}
     </a>
   </div>
 
   {% if not rows %}
     <div class="alert alert-warning">
-      No events configured. Click <strong>New event</strong> to add one, or run
-      the seeder to drop in defaults (TW2 maint, weekly VACUUM, log rotation).
+      {{ t('admin.events.empty', 'No events configured. Click') }} <strong>{{ t('admin.events.new', 'New event') }}</strong> {{ t('admin.events.empty_end', 'to add one, or run the seeder to drop in defaults (TW2 maint, weekly VACUUM, log rotation).') }}
     </div>
   {% else %}
   <div class="card ev-card">
     <table class="table table-hover align-middle mb-0">
       <thead class="table-light">
         <tr>
-          <th>{{ t('ui.name', 'Name') }}</th><th>Handler</th><th>{{ t('ui.schedule', 'Schedule') }}</th>
-          <th>Last run</th><th>Next run</th>
+          <th>{{ t('ui.name', 'Name') }}</th><th>{{ t('admin.events.handler', 'Handler') }}</th><th>{{ t('ui.schedule', 'Schedule') }}</th>
+          <th>{{ t('admin.events.last', 'Last run') }}</th><th>{{ t('admin.events.next', 'Next run') }}</th>
           <th class="text-end">{{ t('ui.actions', 'Actions') }}</th>
         </tr>
       </thead>
@@ -49,7 +48,7 @@
         <tr id="ev-{{ ev.id }}" {% if not ev.is_enabled %}class="text-muted"{% endif %}>
           <td>
             <strong>{{ ev.name }}</strong>
-            {% if not ev.is_enabled %}<span class="badge bg-secondary ms-1">disabled</span>{% endif %}
+            {% if not ev.is_enabled %}<span class="badge bg-secondary ms-1">{{ t('admin.events.disabled', 'disabled') }}</span>{% endif %}
           </td>
           <td><code>{{ ev.handler_key }}</code><div class="ev-meta">{{ v.handler_label }}</div></td>
           <td>{{ v.schedule_human }}</td>
@@ -60,11 +59,11 @@
               {% if ev.last_duration_ms %}<span class="ev-meta">({{ ev.last_duration_ms }} ms)</span>{% endif %}
               {% if ev.last_output %}
                 <button class="btn btn-link btn-sm p-0 ms-1 ev-show-out"
-                        data-target="ev-out-{{ ev.id }}">show</button>
+                        data-target="ev-out-{{ ev.id }}">{{ t('admin.events.show', 'show') }}</button>
                 <div class="ev-out" id="ev-out-{{ ev.id }}">{{ ev.last_output }}</div>
               {% endif %}
             {% else %}
-              <span class="ev-meta">never</span>
+              <span class="ev-meta">{{ t('admin.events.never', 'never') }}</span>
             {% endif %}
           </td>
           <td>
@@ -77,18 +76,18 @@
           <td class="text-end">
             <form method="POST" action="{{ url_for('events_admin.toggle', eid=ev.id) }}" style="display:inline;">
               {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-              <button class="btn btn-sm btn-outline-secondary" title="Enable / disable">
+              <button class="btn btn-sm btn-outline-secondary" title="{{ t('admin.ui.enable_disable', 'Enable / disable') }}">
                 <i class="bi bi-{% if ev.is_enabled %}toggle-on{% else %}toggle-off{% endif %}"></i>
               </button>
             </form>
-            <button class="btn btn-sm btn-outline-primary ev-run-btn" data-id="{{ ev.id }}" title="Run now">
+            <button class="btn btn-sm btn-outline-primary ev-run-btn" data-id="{{ ev.id }}" title="{{ t('admin.events.run_now', 'Run now') }}">
               <i class="bi bi-play-fill"></i>
             </button>
             <a class="btn btn-sm btn-outline-primary" href="{{ url_for('events_admin.edit', eid=ev.id) }}">
               <i class="bi bi-pencil"></i>
             </a>
             <form method="POST" action="{{ url_for('events_admin.delete', eid=ev.id) }}" style="display:inline;"
-                  onsubmit="return confirm('Delete this event? Cannot be undone.');">
+                  data-confirm="{{ t('admin.events.confirm_delete', 'Delete this event? Cannot be undone.') }}" onsubmit="return confirm(this.dataset.confirm);">
               {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
               <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
             </form>
@@ -109,7 +108,7 @@ document.querySelectorAll('.ev-show-out').forEach(btn => {
     const target = document.getElementById(btn.dataset.target);
     if (!target) return;
     target.style.display = target.style.display === 'none' ? 'block' : 'none';
-    btn.textContent = target.style.display === 'none' ? 'show' : 'hide';
+    btn.textContent = target.style.display === 'none' ? {{ t('admin.events.show', 'show') | tojson }} : {{ t('admin.events.hide', 'hide') | tojson }};
   });
 });
 
@@ -128,10 +127,10 @@ document.querySelectorAll('.ev-run-btn').forEach(btn => {
       let j;
       try { j = JSON.parse(text); }
       catch (_) { j = {ok: false, output: 'HTTP ' + r.status + ': ' + text.slice(0, 200)}; }
-      alert((j.ok ? '✓ ok' : '✗ failed') + '\n\n' + (j.output || '(no output)'));
+      alert((j.ok ? {{ t('admin.events.result_ok', '✓ ok') | tojson }} : {{ t('admin.events.result_failed', '✗ failed') | tojson }}) + '\n\n' + (j.output || {{ t('admin.events.no_output', '(no output)') | tojson }}));
       window.location.reload();
     } catch (e) {
-      alert('Run failed: ' + e.message);
+      alert({{ t('admin.events.run_failed', 'Run failed: ') | tojson }} + e.message);
     } finally {
       btn.disabled = false;
       btn.innerHTML = orig;

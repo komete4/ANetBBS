@@ -24,7 +24,7 @@
 
     <div class="row g-3 mb-3">
         <div class="col-md-6">
-            <label class="form-label">Event Type <span class="text-danger">*</span></label>
+            <label class="form-label">{{ t('admin.ui.event_type', 'Event Type') }} <span class="text-danger">*</span></label>
             <select name="event_type" class="form-select" required>
                 {% for val, label in event_types %}
                 <option value="{{ val }}" {{ 'selected' if mod and mod.event_type == val }}>{{ label }}</option>

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}File Queue — Sysop{% endblock %}
+{% block title %}{{ t('admin.ui.file_queue_sysop_section', 'File Queue — Sysop') }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-shield-check"></i> {{ t('ui.heading.file_moderation_queue', 'File Moderation Queue') }}</h1>
@@ -9,7 +9,7 @@
     {% for s in ['pending','approved','rejected'] %}
         <a href="?status={{ s }}"
            class="btn btn-sm {% if status == s %}btn-primary{% else %}btn-outline-primary{% endif %}">
-            {{ s|capitalize }} ({{ counts[s] }})
+            {{ t('admin.file_queue.status.' ~ s, s|capitalize) }} ({{ counts[s] }})
         </a>
     {% endfor %}
 </div>
@@ -41,44 +41,44 @@
             {% if e.status == 'pending' %}
             <form method="post" action="{{ url_for('file_queue.approve', entry_id=e.id) }}" class="d-inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="btn btn-sm btn-success" title="Publish to area">
+                <button class="btn btn-sm btn-success" title="{{ t('admin.ui.publish_to_area', 'Publish to area') }}">
                     <i class="bi bi-check-lg"></i>
                 </button>
             </form>
             <form method="post" action="{{ url_for('file_queue.reject', entry_id=e.id) }}" class="d-inline"
-                  onsubmit="this.elements.reason.value = prompt('Reason (optional):') || '';">
+                  data-prompt="{{ t('admin.file_queue.reason', 'Reason (optional):') }}" onsubmit="this.elements.reason.value = prompt(this.dataset.prompt) || '';">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="reason">
-                <button class="btn btn-sm btn-warning" title="Reject and delete">
+                <button class="btn btn-sm btn-warning" title="{{ t('admin.ui.reject_and_delete', 'Reject and delete') }}">
                     <i class="bi bi-x-lg"></i>
                 </button>
             </form>
             {% else %}
-            <span class="badge bg-secondary">{{ e.status }}</span>
+            <span class="badge bg-secondary">{{ t('admin.file_queue.status.' ~ e.status, e.status) }}</span>
             {% if e.reviewed_by %}<small class="text-muted">by {{ e.reviewed_by.username }}</small>{% endif %}
             {% endif %}
             <form method="post" action="{{ url_for('file_queue.delete', entry_id=e.id) }}" class="d-inline"
-                  onsubmit="return confirm('Permanently delete this queue entry?');">
+                  data-prompt="{{ t('admin.file_queue.confirm_delete', 'Permanently delete this queue entry?') }}" onsubmit="return confirm(this.dataset.prompt);">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="btn btn-sm btn-outline-danger" title="Remove from queue">
+                <button class="btn btn-sm btn-outline-danger" title="{{ t('admin.ui.remove_from_queue', 'Remove from queue') }}">
                     <i class="bi bi-trash"></i>
                 </button>
             </form>
         </td>
     </tr>
     {% if e.rejection_reason %}
-    <tr><td></td><td colspan="6"><small class="text-muted">Rejected: {{ e.rejection_reason }}</small></td></tr>
+    <tr><td></td><td colspan="6"><small class="text-muted">{{ t('admin.file_queue.rejection_reason', 'Rejected: {reason}', reason=e.rejection_reason) }}</small></td></tr>
     {% endif %}
     {% endfor %}
     </tbody>
 </table>
 </div>
 {% else %}
-<div class="card"><div class="card-body text-muted">{{ t('ui.no', 'No') }} {{ status }} entries.</div></div>
+<div class="card"><div class="card-body text-muted">{{ t('admin.file_queue.empty', 'No {status} entries.', status=t('admin.file_queue.status.' ~ status, status)) }}</div></div>
 {% endif %}
 
 <div class="mt-3 small text-muted">
-    To enable the queue, set <code>FILE_MOD_QUEUE_ENABLED=true</code> in your <code>.env</code>.
-    When enabled, regular-user uploads land here for sysop approval before publishing.
+    {{ t('admin.file_queue.enable_prefix', 'To enable the queue, set') }} <code>FILE_MOD_QUEUE_ENABLED=true</code> {{ t('admin.file_queue.env_location', 'in your') }} <code>.env</code>.
+    {{ t('admin.file_queue.help', 'When enabled, regular-user uploads land here for sysop approval before publishing.') }}
 </div>
 {% endblock %}

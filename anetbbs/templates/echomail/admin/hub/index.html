@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Hub Management — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{{ t('admin.ui.hub_management_suffix', 'Hub Management —') }} {{ config.BBS_NAME }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
@@ -28,7 +28,7 @@
         <div class="card text-center">
             <div class="card-body">
                 <div style="font-size:2rem; color:#ffff00;">{{ pending_hold }}</div>
-                <div>Hold Queue (pending)</div>
+                <div>{{ t('admin.ui.hold_queue_pending', 'Hold Queue (pending)') }}</div>
             </div>
         </div>
     </div>
@@ -36,7 +36,7 @@
         <div class="card text-center">
             <div class="card-body">
                 <div style="font-size:2rem; color:#aaaaaa;"><i class="bi bi-diagram-3"></i></div>
-                <div>Hub Mode</div>
+                <div>{{ t('admin.ui.hub_mode', 'Hub Mode') }}</div>
             </div>
         </div>
     </div>
@@ -54,13 +54,13 @@
                     <i class="bi bi-hdd-network"></i> {{ t('ui.binkp_nodes', 'BinkP Nodes') }}
                 </a>
                 <a href="{{ url_for('hub_admin.new_binkp_node') }}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> Add BinkP Node
+                    <i class="bi bi-plus-circle"></i> {{ t('admin.ui.add_binkp_node', 'Add BinkP Node') }}
                 </a>
                 <a href="{{ url_for('hub_admin.qwk_nodes') }}" class="btn btn-primary">
                     <i class="bi bi-archive"></i> {{ t('ui.qwk_nodes', 'QWK Nodes') }}
                 </a>
                 <a href="{{ url_for('hub_admin.new_qwk_node') }}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> Add QWK Node
+                    <i class="bi bi-plus-circle"></i> {{ t('admin.ui.add_qwk_node', 'Add QWK Node') }}
                 </a>
                 <a href="{{ url_for('hub_admin.hold_queue') }}" class="btn btn-warning">
                     <i class="bi bi-clock-history"></i> {{ t('ui.heading.hold_queue', 'Hold Queue') }}
@@ -128,7 +128,7 @@
 <div class="row g-3 mb-4">
     <div class="col-12">
         <div class="card">
-            <div class="card-header"><i class="bi bi-gear-wide-connected"></i> Generation &amp; Distribution</div>
+            <div class="card-header"><i class="bi bi-gear-wide-connected"></i> {{ t('admin.ui.generation_distribution', 'Generation & Distribution') }}</div>
             <div class="card-body">
                 <ul class="nav nav-tabs mb-3" id="genTabs">
                     <li class="nav-item">
@@ -194,7 +194,7 @@
                 <form method="post" action="{{ url_for('hub_admin.nodelist_generate_now') }}" class="d-inline">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-primary" {% if not nodelist_event %}disabled{% endif %}>
-                        <i class="bi bi-play-circle"></i> Generate Now
+                        <i class="bi bi-play-circle"></i> {{ t('admin.ui.generate_now', 'Generate Now') }}
                     </button>
                 </form>
 
@@ -317,7 +317,7 @@
                             <input type="checkbox" id="join_enabled" name="enabled" class="form-check-input"
                                    {% if join_cfg.enabled %}checked{% endif %}>
                             <label class="form-check-label" for="join_enabled">
-                                Enable the public join form
+                                {{ t('admin.ui.enable_the_public_join_form', 'Enable the public join form') }}
                                 {% if join_cfg.enabled %}
                                 <a href="{{ url_for('network_join.apply', slug=(join_identity.slug if not join_identity.is_default else None)) }}" target="_blank" class="ms-1">
                                     <i class="bi bi-box-arrow-up-right"></i> view live
@@ -332,12 +332,12 @@
                                value="{{ join_cfg.network_name or '' }}" placeholder="e.g. ANotherNetwork">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">BinkP Zone</label>
+                        <label class="form-label">{{ t('admin.ui.binkp_zone', 'BinkP Zone') }}</label>
                         <input type="number" name="binkp_zone" class="form-control"
                                value="{{ join_cfg.binkp_zone or '' }}" placeholder="e.g. 1200">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">BinkP Net</label>
+                        <label class="form-label">{{ t('admin.ui.binkp_net', 'BinkP Net') }}</label>
                         <input type="number" name="binkp_net" class="form-control"
                                value="{{ join_cfg.binkp_net or '' }}" placeholder="e.g. 1">
                         <div class="form-text">Both set: auto-assign sequential node numbers

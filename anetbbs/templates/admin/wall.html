@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Graffiti Wall Admin{% endblock %}
+{% block title %}{{ t('admin.ui.graffiti_wall_admin', 'Graffiti Wall Admin') }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-pen-fill"></i> {{ t('ui.heading.graffiti_wall', 'Graffiti Wall') }}</h1>
@@ -8,7 +8,7 @@
 <div class="row g-3 mb-4">
     <div class="col-md-8">
         <div class="card p-3">
-            <h6 class="mb-2">Color Scheme</h6>
+            <h6 class="mb-2">{{ t('admin.ui.color_scheme', 'Color Scheme') }}</h6>
             <form method="post" action="{{ url_for('wall_admin.settings') }}" class="d-flex gap-2 align-items-center flex-wrap">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 {% for key, label in schemes.items() %}
@@ -51,7 +51,7 @@
             <form method="post" action="{{ url_for('wall_admin.clear_all') }}"
                   onsubmit="return confirm('Soft-delete ALL active wall posts?')">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="btn btn-sm btn-danger">Clear All</button>
+                <button class="btn btn-sm btn-danger">{{ t('admin.ui.clear_all', 'Clear All') }}</button>
             </form>
             {% endif %}
         </div>
