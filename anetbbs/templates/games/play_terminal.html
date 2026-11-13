@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Playing {{ game.name }} — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{{ t('games.launch.playing', 'Playing {name}', name=game.name) }} — {{ config.BBS_NAME }}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
@@ -58,9 +58,9 @@
         <strong>{{ game.name }}</strong>
     </span>
     <div>
-        <span id="conn-status" class="badge" style="background:#003300;color:#00ff00;">Connecting…</span>
+        <span id="conn-status" class="badge" style="background:#003300;color:#00ff00;">{{ t('games.launch.connecting', 'Connecting…') }}</span>
         <a href="{{ url_for('games.lobby') }}" class="btn btn-sm btn-primary ms-2">
-            <i class="bi bi-x-circle"></i> Quit
+            <i class="bi bi-x-circle"></i> {{ t('games.launch.quit', 'Quit') }}
         </a>
     </div>
 </div>
@@ -72,7 +72,7 @@
 </div>
 
 <div id="status-bar">
-    <span id="session-info">Starting game session…</span>
+    <span id="session-info">{{ t('games.launch.starting', 'Starting game session…') }}</span>
     <span id="dimensions">80 × 25</span>
 </div>
 {% endblock %}
@@ -157,13 +157,13 @@
     var socket = io('/game', { transports: ['websocket'] });
 
     socket.on('connect', function () {
-        document.getElementById('conn-status').textContent = 'Connected';
+        document.getElementById('conn-status').textContent = {{ t('games.launch.connected', 'Connected') | tojson }};
         document.getElementById('conn-status').style.background = '#003300';
         socket.emit('start_game', { game_slug: gameSlug });
     });
 
     socket.on('disconnect', function () {
-        document.getElementById('conn-status').textContent = 'Disconnected';
+        document.getElementById('conn-status').textContent = {{ t('games.launch.disconnected', 'Disconnected') | tojson }};
         document.getElementById('conn-status').style.background = '#330000';
         document.getElementById('conn-status').style.color = '#ff0000';
     });
@@ -171,7 +171,7 @@
     socket.on('game_started', function (data) {
         sessionId = data.session_id;
         document.getElementById('session-info').textContent =
-            'Session #' + sessionId + ' — node active';
+            {{ t('games.launch.session_active', 'Session #{id} — node active') | tojson }}.replace("{id}", sessionId);
     });
 
     socket.on('game_output', function (data) {
@@ -179,13 +179,13 @@
     });
 
     socket.on('game_ended', function (data) {
-        term.writeln('\r\n\r\n*** Game session ended ***\r\n');
-        document.getElementById('conn-status').textContent = 'Ended';
+        term.writeln('\r\n\r\n*** ' + {{ t('games.launch.game_ended', 'Game session ended') | tojson }} + ' ***\r\n');
+        document.getElementById('conn-status').textContent = {{ t('games.launch.ended', 'Ended') | tojson }};
         sessionId = null;
     });
 
     socket.on('game_error', function (data) {
-        term.writeln('\r\n\033[1;31mError: ' + data.message + '\033[0m\r\n');
+        term.writeln('\r\n\033[1;31m' + {{ t('games.launch.error', 'Error: ') | tojson }} + data.message + '\033[0m\r\n');
     });
 
     term.onData(function (data) {

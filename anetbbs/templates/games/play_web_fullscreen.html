@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ current_language }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Playing {{ game.name }} — {{ config.BBS_NAME }}</title>
+<title>{{ t('games.launch.playing', 'Playing {name}', name=game.name) }} — {{ config.BBS_NAME }}</title>
 {% if csrf_token is defined %}
 <meta name="csrf-token" content="{{ csrf_token() }}">
 {% endif %}
@@ -28,7 +28,7 @@
 </style>
 </head>
 <body>
-<a id="fsBackLink" href="{{ url_for('games.lobby') }}">&larr; Game Center</a>
+<a id="fsBackLink" href="{{ url_for('games.lobby') }}">&larr; {{ t('ui.game_center', 'Game Center') }}</a>
 {% include "games/web/" + module + ".html" %}
 </body>
 </html>

@@ -349,11 +349,9 @@ def handle_start_game(data):
 
     slug = data.get('game_slug', '')
     game = Game.query.filter_by(slug=slug, is_active=True).first()
-    if not game or game.game_type == 'builtin_web':
-        emit('game_error', {'message': 'Game not found or not a terminal game.'})
-        return
-    if not _game_accessible(game):
-        emit('game_error', {'message': 'Game not found or not a terminal game.'})
+    if not game or game.game_type == 'builtin_web' or not _game_accessible(game):
+        emit('game_error', {'message': translate(
+            'games.launch.unavailable', 'Game not found or not a terminal game.')})
         return
 
     bbs_name = current_app.config.get('BBS_NAME', 'ANetBBS')
@@ -497,11 +495,12 @@ def handle_start_game(data):
         try:
             session_id = launcher(game, current_user, _emit_output, bbs_name)
         except Exception as exc:  # pylint: disable=broad-except
-            emit('game_error', {'message': f'Cannot start: {exc}'})
+            emit('game_error', {'message': translate(
+                'games.launch.cannot_start', 'Cannot start: {error}', error=exc)})
             return
         if session_id is None:
-            emit('game_error', {'message': 'All game nodes are currently '
-                                           'in use. Please try again later.'})
+            emit('game_error', {'message': translate(
+                'games.launch.nodes_busy', 'All game nodes are currently in use. Please try again later.')})
             return
         sid_box[0] = session_id
         join_room(str(session_id))
@@ -521,15 +520,16 @@ def handle_start_game(data):
                      getattr(game, 'slug', '?'),
                      getattr(game, 'game_type', '?'),
                      exc, _tb.format_exc())
-        emit('game_error', {'message': f'Cannot start: {exc}'})
+        emit('game_error', {'message': translate(
+            'games.launch.cannot_start', 'Cannot start: {error}', error=exc)})
         return
 
     session_id = launch_door_game(game, current_user, _emit_output, bbs_name)
     sid_box[0] = session_id
 
     if session_id is None:
-        emit('game_error', {'message': 'All game nodes are currently in use. '
-                                       'Please try again later.'})
+        emit('game_error', {'message': translate(
+            'games.launch.nodes_busy', 'All game nodes are currently in use. Please try again later.')})
         return
 
     join_room(str(session_id))
@@ -752,7 +752,9 @@ def scoreboard():
     """Cross-game leaderboard — top scores per game."""
     from ..models import db as _db, GameScore as _GS, Game as _G
     by_game = {}
+    categories = {}
     try:
+        categories = {category.slug: category.name for category in GameCategory.query.all()}
         games = _G.query.filter_by(is_active=True).order_by(_G.name).all()
         for g in games:
             if not _game_accessible(g):
@@ -775,4 +777,8 @@ def scoreboard():
                 by_game[g] = rows
     except Exception:
         _db.session.rollback()
-    return render_template('games/scoreboard.html', by_game=by_game)
+    category_names = {
+        category: category_label(category, categories.get(category, category), translate)
+        for category in {game.category for game in by_game}
+    }
+    return render_template('games/scoreboard.html', by_game=by_game, category_names=category_names)

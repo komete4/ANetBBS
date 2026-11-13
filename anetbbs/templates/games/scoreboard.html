@@ -12,7 +12,7 @@
 {% for g, rows in by_game.items() %}
 <div class="card mb-3">
     <div class="card-header"><strong>{{ g.name }}</strong>
-        <small class="text-muted ms-2">{{ g.category }}</small></div>
+        <small class="text-muted ms-2">{{ category_names[g.category] }}</small></div>
     <div class="card-body p-0">
         <ol class="list-group list-group-numbered list-group-flush">
             {% for r in rows %}

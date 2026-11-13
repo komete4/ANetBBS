@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Playing {{ game.name }} — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{{ t('games.launch.playing', 'Playing {name}', name=game.name) }} — {{ config.BBS_NAME }}{% endblock %}
 
 {% block content %}
 <div class="mb-2 d-flex justify-content-between align-items-center">
@@ -7,15 +7,15 @@
         <strong>{{ game.name }}</strong>
     </span>
     <a href="{{ url_for('games.lobby') }}" class="btn btn-sm btn-primary">
-        <i class="bi bi-arrow-left"></i> Back to Game Center
+        <i class="bi bi-arrow-left"></i> {{ t('ui.back_to_game_center', 'Back to Game Center') }}
     </a>
 </div>
 
 {% if is_guest %}
 <div class="alert alert-info d-flex justify-content-between align-items-center flex-wrap gap-2 py-2 mb-2">
-    <span><i class="bi bi-person-badge"></i> Playing as a guest — your score won't be saved.</span>
+    <span><i class="bi bi-person-badge"></i> {{ t('games.launch.guest', "Playing as a guest — your score won't be saved.") }}</span>
     <a href="{{ url_for('auth.register') }}" class="btn btn-sm btn-outline-primary">
-        Create a free account
+        {{ t('games.launch.free_account', 'Create a free account') }}
     </a>
 </div>
 {% endif %}

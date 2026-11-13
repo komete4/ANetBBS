@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ current_language }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -79,15 +79,15 @@ body {
 
 <div id="bar">
     <span>&#9654; {{ game.name }}</span>
-    <span>F11 fullscreen &nbsp;|&nbsp; <a href="javascript:window.close()">&#x2715; Close Tab</a></span>
+    <span>{{ t('games.launch.f11', 'F11 fullscreen') }} &nbsp;|&nbsp; <a href="javascript:window.close()">&#x2715; {{ t('games.launch.close_tab', 'Close Tab') }}</a></span>
 </div>
 <div id="game"></div>
 
 <div id="exit-overlay">
-    <h2>[ GAME OVER ]</h2>
-    <p>{{ game.name }} has exited.</p>
-    <a class="exit-btn" href="javascript:window.close()">&#x2715; Close Tab &amp; Return</a>
-    <button class="resume-btn" onclick="hideOverlay()">&#x25B6; Back to DOS Prompt</button>
+    <h2>{{ t('games.launch.dos_ended', '[ GAME OVER ]') }}</h2>
+    <p>{{ t('games.launch.dos_exited', '{name} has exited.', name=game.name) }}</p>
+    <a class="exit-btn" href="javascript:window.close()">&#x2715; {{ t('games.launch.close_return', 'Close Tab & Return') }}</a>
+    <button class="resume-btn" onclick="hideOverlay()">&#x25B6; {{ t('games.launch.dos_prompt', 'Back to DOS Prompt') }}</button>
 </div>
 
 <script>

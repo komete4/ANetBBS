@@ -7,7 +7,7 @@
         <strong>{{ game.name }}</strong>
     </span>
     <a href="{{ url_for('games.lobby') }}" class="btn btn-sm btn-primary">
-        <i class="bi bi-arrow-left"></i> Back to Game Center
+        <i class="bi bi-arrow-left"></i> {{ t('ui.back_to_game_center', 'Back to Game Center') }}
     </a>
 </div>
 
@@ -19,13 +19,13 @@
     {% if game.description %}
     <p class="text-muted mt-2 mb-4">{{ game.description }}</p>
     {% else %}
-    <p class="text-muted mt-2 mb-4">Classic DOS game via DOSBox</p>
+    <p class="text-muted mt-2 mb-4">{{ t('games.launch.dosbox', 'Classic DOS game via DOSBox') }}</p>
     {% endif %}
     <a href="{{ url_for('games.dos_frame', slug=game.slug) }}"
        target="_blank"
        class="btn btn-lg btn-success">
-        <i class="bi bi-play-fill"></i> Launch {{ game.name }}
+        <i class="bi bi-play-fill"></i> {{ t('games.launch.launch', 'Launch {name}', name=game.name) }}
     </a>
-    <div class="mt-3 text-muted small">Opens in a new tab &mdash; allow pop-ups if prompted</div>
+    <div class="mt-3 text-muted small">{{ t('games.launch.new_tab', 'Opens in a new tab — allow pop-ups if prompted') }}</div>
 </div>
 {% endblock %}

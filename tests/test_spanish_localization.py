@@ -825,6 +825,49 @@ def test_spanish_games_lobby_translates_navigation_and_stock_categories(
     assert scores.select_one('option[value="monthly"]').get_text(strip=True) == 'Este mes'
 
 
+@pytest.mark.parametrize('language, connecting, launch, close, category', [
+    ('es', 'Conectando…', 'Iniciar DOS Fixture', 'Cerrar pestaña y volver', 'Clásicos de DOS'),
+    ('en', 'Connecting…', 'Launch DOS Fixture', 'Close Tab & Return', 'Classic DOS'),
+])
+def test_game_launcher_and_scoreboard_use_account_language(
+        client, localized_app, make_user, language, connecting, launch, close, category):
+    from anetbbs.models import Game, GameCategory, GameScore
+
+    uid, _, _ = make_user(language)
+    _authenticate(client, uid)
+    with localized_app.app_context():
+        custom = GameCategory(slug='fixture-category-' + language, name='Custom category')
+        native = Game(name='Native Fixture', slug='native-fixture-' + language,
+                      category=custom.slug, game_type='door_native', web_enabled=True)
+        dos = Game(name='DOS Fixture', slug='dos-fixture-' + language, category='classic',
+                   game_type='door_dos_browser', web_game_url='/fixture.zip', web_enabled=True)
+        db.session.add_all([custom, native, dos])
+        db.session.flush()
+        db.session.add(GameScore(game_id=dos.id, user_id=uid, score=42))
+        db.session.add(GameScore(game_id=native.id, user_id=uid, score=43))
+        db.session.commit()
+
+    terminal = _soup(client.get(f'/games/native-fixture-{language}/play'))
+    assert terminal.select_one('#conn-status').get_text(strip=True) == connecting
+    dos_page = _soup(client.get(f'/games/dos-fixture-{language}/play'))
+    assert launch in dos_page.get_text(' ', strip=True)
+    dos_frame = _soup(client.get(f'/games/dos-frame/dos-fixture-{language}'))
+    assert dos_frame.html['lang'] == language
+    assert close in dos_frame.select_one('.exit-btn').get_text(' ', strip=True)
+    scores = _soup(client.get('/games/scoreboard'))
+    assert category in scores.get_text(' ', strip=True)
+    assert 'Custom category' in scores.get_text(' ', strip=True)
+
+
+def test_public_watch_uses_visitor_language(client, localized_app, monkeypatch):
+    monkeypatch.setitem(localized_app.config, 'PUBLIC_WATCH_ENABLED', True)
+    _language(client, 'es')
+    page = _soup(client.get('/watch/'))
+    assert page.html['lang'] == 'es'
+    assert 'en directo' in page.h1.get_text(' ', strip=True)
+    assert 'Actividad' in page.thead.get_text(' ', strip=True)
+
+
 def test_spanish_user_tools_render_and_report_validation(client, make_user):
     user_id, _, _ = make_user('es')
     _authenticate(client, user_id)

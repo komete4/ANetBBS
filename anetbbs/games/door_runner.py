@@ -16,6 +16,7 @@ import logging
 import threading
 from datetime import datetime
 
+from ..features.i18n import terminal_label
 from ..models import db, GameSession
 from .dropfile import write_drop_file
 from .node_manager import allocate_node, release_node
@@ -2391,7 +2392,9 @@ async def play_door_game_telnet(game, user, session, bbs_name='ANetBBS',
         live_user = DbUser.query.get(user['id']) if isinstance(user, dict) else user
         live_game = DbGame.query.get(game.id) if hasattr(game, 'id') else None
         if live_game is None:
-            await session.write("\r\nGame not found.\r\n")
+            await session.write(terminal_label(
+                session, 'terminal.games.door_not_found',
+                '\r\nGame not found.\r\n'))
             return False
 
         # Real privilege-escalation bug found in a security audit:
@@ -2420,8 +2423,9 @@ async def play_door_game_telnet(game, user, session, bbs_name='ANetBBS',
             is_admin = bool(getattr(live_user, 'is_admin', False))
             if not (is_ssh and is_admin):
                 await session.write(
-                    "\r\nThe config tool is only available to sysops over "
-                    "SSH.\r\n")
+                    terminal_label(
+                        session, 'terminal.games.door_sysop_ssh',
+                        '\r\nThe config tool is only available to sysops over SSH.\r\n'))
                 return False
 
         # Validate the command BEFORE launching so we can show a clear error.
@@ -2437,8 +2441,12 @@ async def play_door_game_telnet(game, user, session, bbs_name='ANetBBS',
             _build_command(live_game, 1, bbs_name, user=user,
                            temp_files_out=_validate_temp_files)
         except Exception as exc:
-            await session.write(f"\r\nLaunch failed:\r\n  {exc}\r\n")
-            await session.read_line("\r\nPress Enter...")
+            await session.write(terminal_label(
+                session, 'terminal.games.door_command_failed',
+                '\r\nLaunch failed:\r\n  {error}\r\n', error=exc))
+            await session.read_line('\r\n' + terminal_label(
+                session, 'terminal.ui.press_enter_ellipsis',
+                'Press Enter...'))
             return False
         finally:
             for _tf in _validate_temp_files:
@@ -2452,10 +2460,12 @@ async def play_door_game_telnet(game, user, session, bbs_name='ANetBBS',
                                minutes_remaining=minutes_remaining,
                                window_size=getattr(session, 'window_size', None))
         if sid is None:
-            await session.write("\r\nCould not start the game — no free nodes "
-                                "(check Game.max_nodes in /admin/games/) or "
-                                "launch error (see /var/log via journalctl -u anetbbs-telnet).\r\n")
-            await session.read_line("\r\nPress Enter...")
+            await session.write(terminal_label(
+                session, 'terminal.games.door_start_unavailable',
+                '\r\nCould not start the game — no free nodes (check Game.max_nodes in /admin/games/) or launch error (see /var/log via journalctl -u anetbbs-telnet).\r\n'))
+            await session.read_line('\r\n' + terminal_label(
+                session, 'terminal.ui.press_enter_ellipsis',
+                'Press Enter...'))
             return False
 
     # Games.idle_timeout_enabled (default True): a sysop opts specific
@@ -2474,9 +2484,12 @@ async def play_door_game_telnet(game, user, session, bbs_name='ANetBBS',
     else:
         _idle_t = None
     await session.write(
-        f"\r\nLaunching {game.name}...\r\n"
-        f"  - Press Ctrl+] then 'q' to abort\r\n"
-        + (f"  - {_idle_t}s of zero activity will auto-abort the door\r\n\r\n"
+        terminal_label(
+            session, 'terminal.games.door_launching',
+            "\r\nLaunching {name}...\r\n  - Press Ctrl+] then 'q' to abort\r\n", name=game.name)
+        + (terminal_label(
+            session, 'terminal.games.door_idle_warning',
+            '  - {seconds}s of zero activity will auto-abort the door\r\n\r\n', seconds=_idle_t)
            if _idle_t is not None else "\r\n"))
 
     # See _drain_stale_session_input()'s own docstring -- real bug found
@@ -2660,20 +2673,26 @@ async def play_door_game_telnet(game, user, session, bbs_name='ANetBBS',
     # own top-level handler ends the session either way.
     if abort_event.is_set():
         try:
-            await session.write("\r\n\r\n[Door aborted by user — Ctrl+]q]\r\n")
+            await session.write(terminal_label(
+                session, 'terminal.games.door_abort',
+                '\r\n\r\n[Door aborted by user — Ctrl+]q]\r\n'))
         except Exception:
             pass
     elif idle_timeout_hit:
         try:
             await session.write(
-                f"\r\n\r\n[Door auto-aborted — {_idle_t}s of zero activity]\r\n")
+                terminal_label(
+                    session, 'terminal.games.door_inactive',
+                    '\r\n\r\n[Door auto-aborted — {seconds}s of zero activity]\r\n', seconds=_idle_t))
         except Exception:
             pass
     else:
         # Use the wrapped read_line so telnet IAC bytes left in the buffer
         # by the door get stripped and either \r or \n terminates the prompt.
         try:
-            await session.read_line("\r\n\r\nGame ended. Press Enter to continue...")
+            await session.read_line(terminal_label(
+                session, 'terminal.games.door_ended',
+                '\r\n\r\nGame ended. Press Enter to continue...'))
         except Exception:
             pass
     return True
@@ -2942,8 +2961,12 @@ async def play_rlogin_telnet(game, user, session, bbs_name='ANetBBS',
     # Parse executable_path = HOST:PORT
     server_addr = (game.executable_path or '').strip()
     if not server_addr:
-        await session.write("\r\nrlogin door is misconfigured: no server address.\r\n")
-        await session.read_line("Press Enter...")
+        await session.write(terminal_label(
+            session, 'terminal.games.door_no_rlogin',
+            '\r\nrlogin door is misconfigured: no server address.\r\n'))
+        await session.read_line(terminal_label(
+            session, 'terminal.ui.press_enter_ellipsis',
+            'Press Enter...'))
         return False
     if ':' in server_addr:
         host, port_str = server_addr.rsplit(':', 1)
@@ -2959,10 +2982,12 @@ async def play_rlogin_telnet(game, user, session, bbs_name='ANetBBS',
     parts = raw_args.split(None, 2)   # max 3 fields
     if len(parts) < 2:
         await session.write(
-            "\r\nrlogin door is misconfigured: command_line_args needs "
-            "at least USER_TEMPLATE and PASSWORD.\r\n"
-            "Example: @USER@ mySharedPassword\r\n")
-        await session.read_line("Press Enter...")
+            terminal_label(
+                session, 'terminal.games.door_rlogin_args',
+                '\r\nrlogin door is misconfigured: command_line_args needs at least USER_TEMPLATE and PASSWORD.\r\nExample: @USER@ mySharedPassword\r\n'))
+        await session.read_line(terminal_label(
+            session, 'terminal.ui.press_enter_ellipsis',
+            'Press Enter...'))
         return False
     user_template = parts[0]
     password = parts[1]
@@ -2986,15 +3011,19 @@ async def play_rlogin_telnet(game, user, session, bbs_name='ANetBBS',
     _alloc = await _allocate_external_node(game, user)
     if _alloc is None:
         await session.write(
-            "\r\nAll nodes for this door are currently in use — "
-            "try again later.\r\n")
-        await session.read_line("Press Enter...")
+            terminal_label(
+                session, 'terminal.games.door_nodes_busy',
+                '\r\nAll nodes for this door are currently in use — try again later.\r\n'))
+        await session.read_line(terminal_label(
+            session, 'terminal.ui.press_enter_ellipsis',
+            'Press Enter...'))
         return False
     _ext_app, _ext_node, _ext_gs_id = _alloc
 
     await session.write(
-        f"\r\nConnecting to {host}:{port}...\r\n"
-        f"  - Press Ctrl+] then 'q' to abort\r\n\r\n")
+        terminal_label(
+            session, 'terminal.games.door_connecting',
+            "\r\nConnecting to {host}:{port}...\r\n  - Press Ctrl+] then 'q' to abort\r\n\r\n", host=host, port=port))
 
     # Open TCP socket to the rlogin server
     try:
@@ -3002,7 +3031,9 @@ async def play_rlogin_telnet(game, user, session, bbs_name='ANetBBS',
             asyncio.open_connection(host, port),
             timeout=15)
     except (OSError, asyncio.TimeoutError) as exc:
-        await session.write(f"\r\nConnection failed: {exc}\r\n")
+        await session.write(terminal_label(
+            session, 'terminal.games.door_connection_failed',
+            '\r\nConnection failed: {error}\r\n', error=exc))
         # Real gap found in a security/performance audit: releasing the
         # node AFTER read_line() meant a client that's already
         # disconnected at this exact moment (the same network blip that
@@ -3014,7 +3045,9 @@ async def play_rlogin_telnet(game, user, session, bbs_name='ANetBBS',
         # Releasing first means the slot is freed regardless of whether
         # the user is still there to see the message.
         _release_external_node(_ext_app, game, _ext_node, _ext_gs_id, crashed=True)
-        await session.read_line("Press Enter...")
+        await session.read_line(terminal_label(
+            session, 'terminal.ui.press_enter_ellipsis',
+            'Press Enter...'))
         return False
 
     # idle_timeout is computed here (moved ahead of where it's used
@@ -3044,14 +3077,18 @@ async def play_rlogin_telnet(game, user, session, bbs_name='ANetBBS',
         # idle-timeout machinery below even started.
         await asyncio.wait_for(writer.drain(), timeout=idle_timeout)
     except Exception as exc:  # pylint: disable=broad-except
-        await session.write(f"\r\nrlogin handshake failed: {exc}\r\n")
+        await session.write(terminal_label(
+            session, 'terminal.games.door_handshake',
+            '\r\nrlogin handshake failed: {error}\r\n', error=exc))
         try: writer.close()
         except Exception: pass
         # Release before read_line() -- see the connect-failure branch
         # above for why (a disconnected client raises CarrierLost out
         # of read_line() and skips whatever comes after it).
         _release_external_node(_ext_app, game, _ext_node, _ext_gs_id, crashed=True)
-        await session.read_line("Press Enter...")
+        await session.read_line(terminal_label(
+            session, 'terminal.ui.press_enter_ellipsis',
+            'Press Enter...'))
         return False
 
     # See _drain_stale_session_input()'s own docstring -- real bug found
@@ -3171,19 +3208,26 @@ async def play_rlogin_telnet(game, user, session, bbs_name='ANetBBS',
     _release_external_node(_ext_app, game, _ext_node, _ext_gs_id, crashed=False)
 
     if abort_event.is_set():
-        await session.write("\r\n\r\n[Session aborted by user — Ctrl+]q]\r\n")
+        await session.write(terminal_label(
+            session, 'terminal.games.session_abort',
+            '\r\n\r\n[Session aborted by user — Ctrl+]q]\r\n'))
     elif idle_event.is_set():
         await session.write(
-            f"\r\n\r\n[No data from the remote for {idle_timeout}s — "
-            f"disconnecting.]\r\n")
+            terminal_label(
+                session, 'terminal.games.door_remote_idle',
+                '\r\n\r\n[No data from the remote for {seconds}s — disconnecting.]\r\n', seconds=idle_timeout))
         try:
-            await session.read_line("Press Enter to continue...")
+            await session.read_line(terminal_label(
+                session, 'terminal.ui.press_enter_to_continue_ellipsis',
+                'Press Enter to continue...'))
         except Exception:
             pass
     else:
         try:
             await session.read_line(
-                "\r\n\r\nRemote disconnected. Press Enter to continue...")
+                terminal_label(
+                    session, 'terminal.games.door_remote_ended',
+                    '\r\n\r\nRemote disconnected. Press Enter to continue...'))
         except Exception:
             pass
     return True
@@ -3299,8 +3343,12 @@ async def play_telnet_terminal(game, user, session, bbs_name='ANetBBS',
     # Parse executable_path = HOST:PORT
     server_addr = (game.executable_path or '').strip()
     if not server_addr:
-        await session.write("\r\ntelnet door is misconfigured: no server address.\r\n")
-        await session.read_line("Press Enter...")
+        await session.write(terminal_label(
+            session, 'terminal.games.door_no_telnet',
+            '\r\ntelnet door is misconfigured: no server address.\r\n'))
+        await session.read_line(terminal_label(
+            session, 'terminal.ui.press_enter_ellipsis',
+            'Press Enter...'))
         return False
     if ':' in server_addr:
         host, port_str = server_addr.rsplit(':', 1)
@@ -3317,15 +3365,19 @@ async def play_telnet_terminal(game, user, session, bbs_name='ANetBBS',
     _alloc = await _allocate_external_node(game, user)
     if _alloc is None:
         await session.write(
-            "\r\nAll nodes for this door are currently in use — "
-            "try again later.\r\n")
-        await session.read_line("Press Enter...")
+            terminal_label(
+                session, 'terminal.games.door_nodes_busy',
+                '\r\nAll nodes for this door are currently in use — try again later.\r\n'))
+        await session.read_line(terminal_label(
+            session, 'terminal.ui.press_enter_ellipsis',
+            'Press Enter...'))
         return False
     _ext_app, _ext_node, _ext_gs_id = _alloc
 
     await session.write(
-        f"\r\nConnecting to {host}:{port}...\r\n"
-        f"  - Press Ctrl+] then 'q' to abort\r\n\r\n")
+        terminal_label(
+            session, 'terminal.games.door_connecting',
+            "\r\nConnecting to {host}:{port}...\r\n  - Press Ctrl+] then 'q' to abort\r\n\r\n", host=host, port=port))
 
     # Open TCP socket to the telnet server — no handshake to send.
     try:
@@ -3333,13 +3385,17 @@ async def play_telnet_terminal(game, user, session, bbs_name='ANetBBS',
             asyncio.open_connection(host, port),
             timeout=15)
     except (OSError, asyncio.TimeoutError) as exc:
-        await session.write(f"\r\nConnection failed: {exc}\r\n")
+        await session.write(terminal_label(
+            session, 'terminal.games.door_connection_failed',
+            '\r\nConnection failed: {error}\r\n', error=exc))
         # Release before read_line() -- see play_rlogin_terminal()'s
         # matching connect-failure branch for why (a disconnected
         # client raises CarrierLost out of read_line() and skips
         # whatever comes after it, leaking the node slot).
         _release_external_node(_ext_app, game, _ext_node, _ext_gs_id, crashed=True)
-        await session.read_line("Press Enter...")
+        await session.read_line(terminal_label(
+            session, 'terminal.ui.press_enter_ellipsis',
+            'Press Enter...'))
         return False
 
     # See _drain_stale_session_input()'s own docstring -- real bug found
@@ -3461,19 +3517,26 @@ async def play_telnet_terminal(game, user, session, bbs_name='ANetBBS',
     _release_external_node(_ext_app, game, _ext_node, _ext_gs_id, crashed=False)
 
     if abort_event.is_set():
-        await session.write("\r\n\r\n[Session aborted by user — Ctrl+]q]\r\n")
+        await session.write(terminal_label(
+            session, 'terminal.games.session_abort',
+            '\r\n\r\n[Session aborted by user — Ctrl+]q]\r\n'))
     elif idle_event.is_set():
         await session.write(
-            f"\r\n\r\n[No data from the remote for {idle_timeout}s — "
-            f"disconnecting.]\r\n")
+            terminal_label(
+                session, 'terminal.games.door_remote_idle',
+                '\r\n\r\n[No data from the remote for {seconds}s — disconnecting.]\r\n', seconds=idle_timeout))
         try:
-            await session.read_line("Press Enter to continue...")
+            await session.read_line(terminal_label(
+                session, 'terminal.ui.press_enter_to_continue_ellipsis',
+                'Press Enter to continue...'))
         except Exception:
             pass
     else:
         try:
             await session.read_line(
-                "\r\n\r\nRemote disconnected. Press Enter to continue...")
+                terminal_label(
+                    session, 'terminal.games.door_remote_ended',
+                    '\r\n\r\nRemote disconnected. Press Enter to continue...'))
         except Exception:
             pass
     return True

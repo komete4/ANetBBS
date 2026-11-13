@@ -536,7 +536,7 @@ class GameManager:
         if game_dict.get('game_type') == 'builtin_python':
             module_path = game_dict.get('web_game_module', '')
             if not module_path:
-                await self.session.write("\r\nGame has no module configured.\r\n")
+                await self.session.write(self._menu_text('no_module', '\r\nGame has no module configured.\r\n'))
                 return
             try:
                 import importlib
@@ -568,8 +568,8 @@ class GameManager:
                     await fn(self.session, username)
             except Exception as exc:
                 logger.exception('builtin_python game error: %s', exc)
-                await self.session.write(f"\r\nError launching game: {exc}\r\n")
-                await self.session.read_line("\r\nPress Enter...")
+                await self.session.write(self._menu_text('launch_failed', '\r\nError launching game: {error}\r\n', error=exc))
+                await self.session.read_line(self._menu_text('continue', "\r\nPress Enter..."))
             finally:
                 if presence is not None:
                     try:
@@ -600,7 +600,7 @@ class GameManager:
         with transient_app_context(app):
             g = Game.query.get(game_dict['id'])
             if g is None:
-                await self.session.write("\r\nGame disappeared from the catalog.\r\n")
+                await self.session.write(self._menu_text('removed', '\r\nGame disappeared from the catalog.\r\n'))
                 return
 
         # door_rlogin / door_telnet are remote game-server types — no
@@ -622,8 +622,8 @@ class GameManager:
             )
         except Exception as exc:
             logger.exception('Door game error: %s', exc)
-            await self.session.write(f"\r\nError launching game: {exc}\r\n")
-            await self.session.read_line("\r\nPress Enter...")
+            await self.session.write(self._menu_text('launch_failed', '\r\nError launching game: {error}\r\n', error=exc))
+            await self.session.read_line(self._menu_text('continue', "\r\nPress Enter..."))
         finally:
             if presence is not None:
                 try:

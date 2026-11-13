@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ current_language }}">
 <head>
 <meta charset="utf-8">
 <title>{{ bbs_name }} {{ t('web.user.watch_it_live_dash', '— Watch It Live') }}</title>
@@ -179,15 +179,15 @@
 <body>
 
 <header>
-  <h1>&gt;<span class="bbs-name">{{ bbs_name }}</span>_ watch it live</h1>
-  <span class="live-badge"><span class="live-dot"></span>LIVE</span>
+  <h1>&gt;<span class="bbs-name">{{ bbs_name }}</span>_ {{ t('watch.heading', 'watch it live') }}</h1>
+  <span class="live-badge"><span class="live-dot"></span>{{ t('watch.live', 'LIVE') }}</span>
 </header>
 
 <main>
   <div class="counts" id="counts"></div>
   <table id="sessions-table" style="display:none;">
     <thead>
-      <tr><th>{{ t('ui.user', 'User') }}</th><th>{{ t('ui.protocol', 'Protocol') }}</th><th>Doing</th><th>{{ t('ui.since', 'Since') }}</th></tr>
+      <tr><th>{{ t('ui.user', 'User') }}</th><th>{{ t('ui.protocol', 'Protocol') }}</th><th>{{ t('watch.activity', 'Doing') }}</th><th>{{ t('ui.since', 'Since') }}</th></tr>
     </thead>
     <tbody id="sessions-body"></tbody>
   </table>
@@ -208,16 +208,18 @@
   function relTime(iso) {
     var then = new Date(iso).getTime();
     var secs = Math.max(0, Math.round((Date.now() - then) / 1000));
-    if (secs < 60) return secs + 's ago';
+    if (secs < 60) return secs + {{ t('watch.seconds_ago', 's ago') | tojson }};
     var mins = Math.round(secs / 60);
-    return mins + 'm ago';
+    return mins + {{ t('watch.minutes_ago', 'm ago') | tojson }};
   }
 
   function render(data) {
     countsEl.innerHTML = '';
     var totalChip = document.createElement('div');
     totalChip.className = 'count-chip';
-    totalChip.innerHTML = '<strong>' + data.total + '</strong> online';
+    var total = document.createElement('strong');
+    total.textContent = data.total;
+    totalChip.append(total, ' ' + {{ t('watch.online', 'online') | tojson }});
     countsEl.appendChild(totalChip);
     Object.keys(data.counts).sort().forEach(function (proto) {
       var chip = document.createElement('div');
