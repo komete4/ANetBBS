@@ -3,12 +3,12 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-journal-text"></i> Poll History</h1>
+    <h1><i class="bi bi-journal-text"></i> {{ t('ui.heading.poll_history', 'Poll History') }}</h1>
 </div>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <a href="{{ url_for('echomail_admin.dashboard') }}" class="btn btn-primary btn-sm">
-        <i class="bi bi-arrow-left"></i> Dashboard
+        <i class="bi bi-arrow-left"></i> {{ t('ui.dashboard', 'Dashboard') }}
     </a>
     <form method="get" class="d-flex gap-2">
         <select name="network_id" class="form-control form-control-sm" style="width:200px;">
@@ -23,7 +23,7 @@
             <option value="{{ n.id }}" {% if node_filter == n.id %}selected{% endif %}>{{ n.name }}</option>
             {% endfor %}
         </select>
-        <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+        <button type="submit" class="btn btn-primary btn-sm">{{ t('ui.filter', 'Filter') }}</button>
     </form>
 </div>
 
@@ -33,8 +33,8 @@
         <table class="table table-striped mb-0">
             <thead>
                 <tr>
-                    <th>Network</th><th>Node</th><th>Started</th><th>Completed</th>
-                    <th>Type</th><th>Status</th><th>Sent</th><th>Received</th><th>Error</th><th></th>
+                    <th>{{ t('ui.network', 'Network') }}</th><th>{{ t('ui.node', 'Node') }}</th><th>{{ t('ui.started', 'Started') }}</th><th>Completed</th>
+                    <th>{{ t('ui.type', 'Type') }}</th><th>{{ t('ui.status', 'Status') }}</th><th>{{ t('ui.sent', 'Sent') }}</th><th>{{ t('ui.received', 'Received') }}</th><th>{{ t('ui.error', 'Error') }}</th><th></th>
                 </tr>
             </thead>
             <tbody>

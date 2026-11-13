@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Bulk Virus Scan{% endblock %}
+{% block title %}{{ t('ui.heading.bulk_virus_scan', 'Bulk Virus Scan') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-virus"></i> Bulk Virus Scan</h1>
+    <h1><i class="bi bi-virus"></i> {{ t('ui.heading.bulk_virus_scan', 'Bulk Virus Scan') }}</h1>
     <p>Scan every file in every FileArea with ClamAV. Infections are
        quarantined (renamed with .infected suffix).</p>
 </div>
@@ -30,7 +30,7 @@
     <div class="card-body p-0">
         <table class="table table-sm mb-0">
             <thead><tr>
-                <th>Area</th><th>File</th><th>Status</th><th>Signature / Message</th>
+                <th>{{ t('ui.area', 'Area') }}</th><th>{{ t('ui.file', 'File') }}</th><th>{{ t('ui.status', 'Status') }}</th><th>Signature / Message</th>
             </tr></thead>
             <tbody>
             {% for r in results %}

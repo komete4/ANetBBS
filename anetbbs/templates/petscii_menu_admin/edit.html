@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{% if menu %}Edit{% else %}New{% endif %} PETSCII Menu{% endblock %}
+{% block title %}{% if menu %}{{ t('ui.edit', 'Edit') }}{% else %}{{ t('ui.new', 'New') }}{% endif %} PETSCII Menu{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
@@ -19,18 +19,18 @@
   {% endif %}
 
   <div class="mb-3">
-    <label class="form-label">Title</label>
+    <label class="form-label">{{ t('ui.title', 'Title') }}</label>
     <input name="title" class="form-control" value="{{ menu.title if menu else '' }}" required>
   </div>
 
   <div class="mb-3">
-    <label class="form-label">Prompt</label>
+    <label class="form-label">{{ t('ui.prompt', 'Prompt') }}</label>
     <input name="prompt" class="form-control" value="{{ menu.prompt if menu else 'Choice: ' }}">
   </div>
 
   <div class="row">
     <div class="col-md-4 mb-3">
-      <label class="form-label">Min access</label>
+      <label class="form-label">{{ t('ui.min_access', 'Min access') }}</label>
       <input name="min_access" type="number" class="form-control" value="{{ menu.min_access if menu else 0 }}">
       <small class="text-muted">0 = anyone, 100 = sysop</small>
     </div>
@@ -52,15 +52,15 @@
   </div>
 
   <button class="btn btn-primary"><i class="bi bi-save"></i> Save menu</button>
-  <a href="{{ url_for('petscii_menu_admin.list_menus') }}" class="btn btn-outline-secondary">Cancel</a>
+  <a href="{{ url_for('petscii_menu_admin.list_menus') }}" class="btn btn-outline-secondary">{{ t('ui.cancel', 'Cancel') }}</a>
 </form>
 
 {% if menu %}
 <hr>
-<h3>Menu Items</h3>
+<h3>{{ t('ui.heading.menu_items', 'Menu Items') }}</h3>
 
 <table class="table table-dark table-sm align-middle">
-  <thead><tr><th>Hotkey</th><th>Label</th><th>Action</th><th>Args</th><th>Min</th><th>Ord</th><th>Vis</th><th></th></tr></thead>
+  <thead><tr><th>{{ t('ui.hotkey', 'Hotkey') }}</th><th>{{ t('ui.label', 'Label') }}</th><th>{{ t('ui.action', 'Action') }}</th><th>Args</th><th>Min</th><th>Ord</th><th>Vis</th><th></th></tr></thead>
   <tbody>
     {% for it in items %}
     <tr>
@@ -81,7 +81,7 @@
           <div class="col-1"><input name="sort_order" type="number" class="form-control form-control-sm" value="{{ it.sort_order }}"></div>
           <div class="col-1"><input name="is_visible" type="checkbox" class="form-check-input" {% if it.is_visible %}checked{% endif %}></div>
           <div class="col-1 d-flex gap-1">
-            <button class="btn btn-sm btn-success" title="Save"><i class="bi bi-check"></i></button>
+            <button class="btn btn-sm btn-success" title="{{ t('ui.save', 'Save') }}"><i class="bi bi-check"></i></button>
         </form>
         <form method="post" action="{{ url_for('petscii_menu_admin.delete_item', item_id=it.id) }}" class="d-inline" onsubmit="return confirm('Delete this item?')">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -100,7 +100,7 @@
 <form method="post" action="{{ url_for('petscii_menu_admin.add_item', menu_id=menu.id) }}" class="row g-2">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <div class="col-md-1"><input name="hotkey" class="form-control" placeholder="1" required></div>
-  <div class="col-md-3"><input name="label" class="form-control" placeholder="Label" required></div>
+  <div class="col-md-3"><input name="label" class="form-control" placeholder="{{ t('ui.label', 'Label') }}" required></div>
   <div class="col-md-2">
     <select name="action_type" class="form-select">
       {% for v, desc in action_types %}<option value="{{ v }}">{{ v }} — {{ desc }}</option>{% endfor %}
@@ -128,12 +128,12 @@
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="col-md-3"><label class="form-label small">Menu key</label>
             <input name="name" class="form-control form-control-sm" placeholder="files_sub" required></div>
-          <div class="col-md-5"><label class="form-label small">Title</label>
-            <input name="title" class="form-control form-control-sm" placeholder="File Areas" required></div>
-          <div class="col-md-1"><label class="form-label small">Hotkey</label>
+          <div class="col-md-5"><label class="form-label small">{{ t('ui.title', 'Title') }}</label>
+            <input name="title" class="form-control form-control-sm" placeholder="{{ t('ui.file_areas', 'File Areas') }}" required></div>
+          <div class="col-md-1"><label class="form-label small">{{ t('ui.hotkey', 'Hotkey') }}</label>
             <input name="hotkey" class="form-control form-control-sm" placeholder="4" required></div>
           <div class="col-md-3"><label class="form-label small">Item label</label>
-            <input name="label" class="form-control form-control-sm" placeholder="Files"></div>
+            <input name="label" class="form-control form-control-sm" placeholder="{{ t('ui.files', 'Files') }}"></div>
           <div class="col-md-12"><button class="btn btn-success btn-sm"><i class="bi bi-plus-circle"></i> Create sub-menu</button></div>
         </form>
       </div>

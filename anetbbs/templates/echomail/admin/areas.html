@@ -3,22 +3,22 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-chat-square-text"></i> Echo Areas</h1>
+    <h1><i class="bi bi-chat-square-text"></i> {{ t('ui.heading.echo_areas', 'Echo Areas') }}</h1>
 </div>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <a href="{{ url_for('echomail_admin.dashboard') }}" class="btn btn-primary btn-sm">
-        <i class="bi bi-arrow-left"></i> Dashboard
+        <i class="bi bi-arrow-left"></i> {{ t('ui.dashboard', 'Dashboard') }}
     </a>
     <div>
         <a href="{{ url_for('echomail_admin.bad_areas') }}" class="btn btn-warning btn-sm me-2">
-            <i class="bi bi-exclamation-triangle"></i> Bad Areas
+            <i class="bi bi-exclamation-triangle"></i> {{ t('ui.bad_areas', 'Bad Areas') }}
         </a>
         <a href="{{ url_for('echomail_admin.bulk_import') }}" class="btn btn-primary btn-sm me-2">
             <i class="bi bi-upload"></i> Bulk Import
         </a>
         <a href="{{ url_for('echomail_admin.new_area') }}" class="btn btn-primary btn-sm">
-            <i class="bi bi-plus-circle"></i> Add Area
+            <i class="bi bi-plus-circle"></i> {{ t('ui.add_area', 'Add Area') }}
         </a>
     </div>
 </div>
@@ -46,7 +46,7 @@
         {% endif %}
         <strong class="flex-grow-1">{{ net.name }}</strong>
         {% if net.is_active %}
-          <span class="badge bg-success">Active</span>
+          <span class="badge bg-success">{{ t('ui.active', 'Active') }}</span>
         {% else %}
           <span class="badge bg-secondary">Inactive</span>
         {% endif %}
@@ -68,15 +68,15 @@
         <div class="row text-center mt-2">
           <div class="col-4">
             <div class="fw-bold fs-5">{{ s.total }}</div>
-            <div class="small text-muted">Total</div>
+            <div class="small text-muted">{{ t('ui.total', 'Total') }}</div>
           </div>
           <div class="col-4">
             <div class="fw-bold fs-5 text-success">{{ s.active }}</div>
-            <div class="small text-muted">Active</div>
+            <div class="small text-muted">{{ t('ui.active', 'Active') }}</div>
           </div>
           <div class="col-4">
             <div class="fw-bold fs-5 text-info">{{ s.subscribed }}</div>
-            <div class="small text-muted">Subscribed</div>
+            <div class="small text-muted">{{ t('ui.subscribed', 'Subscribed') }}</div>
           </div>
         </div>
         {% if s.sysop_only %}

@@ -107,7 +107,7 @@ def ui_height(session) -> int:
     return max(10, min(100, rows))
 
 
-def load_menu_ansi(slot: str, mode: str = 'ansi'):
+def load_menu_ansi(slot: str, mode: str = 'ansi', *, include_stock: bool = True):
     """Return raw bytes for a menu art file, or None if nothing is found.
 
     Lookup order (mode-aware):
@@ -152,8 +152,9 @@ def load_menu_ansi(slot: str, mode: str = 'ansi'):
     else:
         candidates = [f'{slot}.ans']
 
+    directories = (mods_dir, menus_dir, stock_dir) if include_stock else (mods_dir, menus_dir)
     for fname in candidates:
-        for directory in (mods_dir, menus_dir, stock_dir):
+        for directory in directories:
             f = directory / fname
             try:
                 if f.is_file():
@@ -183,7 +184,13 @@ async def write_menu_art(session, slot: str) -> bool:
         # caller already falls back to correctly -- no new code needed
         # anywhere else.
         return False
-    ansi = load_menu_ansi(slot, session.term_mode)
+    language = (getattr(session, 'user', None) or {}).get('language')
+    if slot == 'game_center' and language == 'es':
+        # The bundled artwork has English labels. Use the translated
+        # generated menu unless the SysOp supplied a replacement.
+        ansi = load_menu_ansi(slot, session.term_mode, include_stock=False)
+    else:
+        ansi = load_menu_ansi(slot, session.term_mode)
     if ansi is None:
         return False
     try:

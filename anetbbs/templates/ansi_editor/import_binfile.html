@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-upload"></i> Import .BIN / .XBin File</h1>
+    <h1><i class="bi bi-upload"></i> {{ t('ui.heading.import_bin_xbin_file', 'Import .BIN / .XBin File') }}</h1>
     <p>Upload a raw <code>.bin</code> or <code>.xb</code>/<code>.xbin</code> file.
        Format is picked from the filename extension. A plain <code>.bin</code>
        has no way to declare its own width — set it below (80 is the
@@ -31,7 +31,7 @@
             <input type="text" name="name" class="form-control" placeholder="(filename used if blank)">
         </div>
         <button class="btn btn-primary"><i class="bi bi-upload"></i> Import &amp; Edit</button>
-        <a href="{{ url_for('ansi_editor.index') }}" class="btn btn-link">Cancel</a>
+        <a href="{{ url_for('ansi_editor.index') }}" class="btn btn-link">{{ t('ui.cancel', 'Cancel') }}</a>
     </div>
 </form>
 {% endblock %}

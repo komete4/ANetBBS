@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-upload"></i> Import .ans File</h1>
+    <h1><i class="bi bi-upload"></i> {{ t('ui.heading.import_ans_file', 'Import .ans File') }}</h1>
     <p>Upload an existing ANSI art file (CP437/latin-1 encoded). Color codes,
        cursor positioning, and clear-screen are honored — anything more exotic
        gets stripped silently.</p>
@@ -33,7 +33,7 @@
             <input type="text" name="name" class="form-control" placeholder="(filename used if blank)">
         </div>
         <button class="btn btn-primary"><i class="bi bi-upload"></i> Import &amp; Edit</button>
-        <a href="{{ url_for('ansi_editor.index') }}" class="btn btn-link">Cancel</a>
+        <a href="{{ url_for('ansi_editor.index') }}" class="btn btn-link">{{ t('ui.cancel', 'Cancel') }}</a>
     </div>
 </form>
 {% endblock %}

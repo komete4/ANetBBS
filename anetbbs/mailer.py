@@ -11,6 +11,7 @@ import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from html import escape
 
 from flask import current_app, has_app_context
 
@@ -100,52 +101,50 @@ def send_email(to_address, subject, body_text, body_html=None):
         return False, str(exc)
 
 
+def _send_account_link(user, url, kind, subject, intro, action, expiry, ignore):
+    from .features.i18n import translate
+
+    bbs_name = current_app.config.get('BBS_NAME', 'This BBS')
+    language = getattr(user, 'language', None) or 'en'
+    prefix = f'mail.{kind}'
+    subject = translate(f'{prefix}.subject', subject, _language=language, bbs=bbs_name)
+    paragraphs = [
+        translate('mail.greeting', 'Hi {name},', _language=language, name=user.username),
+        translate(f'{prefix}.intro', intro, _language=language, bbs=bbs_name),
+        translate(f'{prefix}.action', action, _language=language),
+        url,
+        translate(f'{prefix}.expiry', expiry, _language=language),
+        translate(f'{prefix}.ignore', ignore, _language=language),
+        translate('mail.signature', '— {bbs} Sysop', _language=language, bbs=bbs_name),
+    ]
+    link = escape(url)
+    html = ''.join(
+        f'<p><a href="{link}" style="font-size:1.1em;">{link}</a></p>'
+        if index == 3 else f'<p>{escape(paragraph)}</p>'
+        for index, paragraph in enumerate(paragraphs)
+    )
+    return send_email(user.email, subject, '\n\n'.join(paragraphs), html)
+
+
 def send_verification_email(user, verify_url):
     """Send an email verification link to a newly registered user."""
-    bbs_name = current_app.config.get('BBS_NAME', 'This BBS')
-    subject = f'Verify your email — {bbs_name}'
-    text = (
-        f'Hi {user.username},\n\n'
-        f'Thanks for registering at {bbs_name}!\n\n'
-        f'Please verify your email address by clicking the link below:\n\n'
-        f'{verify_url}\n\n'
-        f'This link expires in 24 hours.\n\n'
-        f'If you did not register, ignore this email.\n\n'
-        f'— {bbs_name} Sysop'
+    return _send_account_link(
+        user, verify_url, 'verify',
+        'Verify your email — {bbs}',
+        'Thanks for registering at {bbs}!',
+        'Please verify your email address by clicking the link below:',
+        'This link expires in 24 hours.',
+        'If you did not register, ignore this email.',
     )
-    html = (
-        f'<p>Hi <strong>{user.username}</strong>,</p>'
-        f'<p>Thanks for registering at <strong>{bbs_name}</strong>!</p>'
-        f'<p>Please verify your email address by clicking the link below:</p>'
-        f'<p><a href="{verify_url}" style="font-size:1.1em;">{verify_url}</a></p>'
-        f'<p>This link expires in <strong>24 hours</strong>.</p>'
-        f'<p>If you did not register, ignore this email.</p>'
-        f'<p>— {bbs_name} Sysop</p>'
-    )
-    return send_email(user.email, subject, text, html)
 
 
 def send_password_reset_email(user, reset_url):
     """Send a password reset link."""
-    from flask import current_app
-    bbs_name = current_app.config.get('BBS_NAME', 'This BBS')
-    subject = f'Password reset — {bbs_name}'
-    text = (
-        f'Hi {user.username},\n\n'
-        f'A password reset was requested for your account at {bbs_name}.\n\n'
-        f'Click the link below to set a new password:\n\n'
-        f'{reset_url}\n\n'
-        f'This link expires in 2 hours.\n\n'
-        f'If you did not request a password reset, ignore this email.\n\n'
-        f'— {bbs_name} Sysop'
+    return _send_account_link(
+        user, reset_url, 'reset',
+        'Password reset — {bbs}',
+        'A password reset was requested for your account at {bbs}.',
+        'Click the link below to set a new password:',
+        'This link expires in 2 hours.',
+        'If you did not request a password reset, ignore this email.',
     )
-    html = (
-        f'<p>Hi <strong>{user.username}</strong>,</p>'
-        f'<p>A password reset was requested for your account at <strong>{bbs_name}</strong>.</p>'
-        f'<p>Click the link below to set a new password:</p>'
-        f'<p><a href="{reset_url}" style="font-size:1.1em;">{reset_url}</a></p>'
-        f'<p>This link expires in <strong>2 hours</strong>.</p>'
-        f'<p>If you did not request a password reset, ignore this email.</p>'
-        f'<p>— {bbs_name} Sysop</p>'
-    )
-    return send_email(user.email, subject, text, html)

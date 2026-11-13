@@ -47,7 +47,7 @@
       Click <strong>Run scan now</strong> to take a snapshot — or wait
       for the daily <code>04:00 UTC</code> tick (the event is seeded
       automatically; manage it under
-      <a href="{{ url_for('events_admin.index') }}">Scheduled Events</a>).
+      <a href="{{ url_for('events_admin.index') }}">{{ t('ui.heading.scheduled_events', 'Scheduled Events') }}</a>).
     </div>
   {% else %}
 
@@ -76,7 +76,7 @@
         {% else %}
         <table class="table table-sm mb-0 align-middle">
           <thead class="table-light">
-            <tr><th>Package</th><th>Current</th><th>Latest</th><th>Source</th><th>Type</th></tr>
+            <tr><th>Package</th><th>Current</th><th>Latest</th><th>{{ t('ui.source', 'Source') }}</th><th>{{ t('ui.type', 'Type') }}</th></tr>
           </thead>
           <tbody>
             {% for u in report.apt %}
@@ -152,7 +152,7 @@
       <div class="card-body p-0">
         <table class="table table-sm mb-0 align-middle">
           <thead class="table-light">
-            <tr><th>Package</th><th>Current</th><th>Latest (ignored)</th><th>Reason</th></tr>
+            <tr><th>Package</th><th>Current</th><th>Latest (ignored)</th><th>{{ t('ui.reason', 'Reason') }}</th></tr>
           </thead>
           <tbody>
             {% for u in report.pip_pinned %}

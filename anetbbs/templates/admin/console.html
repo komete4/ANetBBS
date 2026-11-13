@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Sysop Console{% endblock %}
+{% block title %}{{ t('ui.heading.sysop_console', 'Sysop Console') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-terminal"></i> Sysop Console</h1>
+    <h1><i class="bi bi-terminal"></i> {{ t('ui.heading.sysop_console', 'Sysop Console') }}</h1>
     <p>Quick read-only commands. Type <code>help</code> for the list.</p>
 </div>
 

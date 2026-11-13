@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-clock-history"></i> User Activity Log</h1>
+    <h1><i class="bi bi-clock-history"></i> {{ t('ui.heading.user_activity_log', 'User Activity Log') }}</h1>
 </div>
 <div class="mb-3">
     <a href="{{ url_for('admin.caller_log') }}" class="btn btn-outline-secondary btn-sm">
@@ -22,7 +22,7 @@
         </select>
     </div>
     <div class="col-md-3">
-        <label class="form-label">User ID</label>
+        <label class="form-label">{{ t('ui.user_id', 'User ID') }}</label>
         <input type="text" name="user" value="{{ current_user_filter }}" class="form-control">
     </div>
     <div class="col-md-3">
@@ -30,7 +30,7 @@
         <input type="text" name="ip" value="{{ current_ip }}" class="form-control">
     </div>
     <div class="col-md-2 d-flex align-items-end">
-        <button class="btn btn-primary w-100">Filter</button>
+        <button class="btn btn-primary w-100">{{ t('ui.filter', 'Filter') }}</button>
     </div>
 </form>
 
@@ -38,8 +38,8 @@
     <div class="card-body p-0">
         <table class="table table-sm table-striped mb-0">
             <thead><tr>
-                <th>When</th><th>User</th><th>Type</th><th>Service</th>
-                <th>IP</th><th>Details</th>
+                <th>{{ t('ui.when', 'When') }}</th><th>{{ t('ui.user', 'User') }}</th><th>{{ t('ui.type', 'Type') }}</th><th>{{ t('ui.service', 'Service') }}</th>
+                <th>IP</th><th>{{ t('ui.details', 'Details') }}</th>
             </tr></thead>
             <tbody>
             {% for a in pagination.items %}
@@ -69,11 +69,11 @@
 <nav class="mt-3">
     <ul class="pagination">
         {% if pagination.has_prev %}
-            <li class="page-item"><a class="page-link" href="?page={{ pagination.prev_num }}&type={{ current_type }}&user={{ current_user_filter }}&ip={{ current_ip }}">Prev</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ pagination.prev_num }}&type={{ current_type }}&user={{ current_user_filter }}&ip={{ current_ip }}">{{ t('ui.prev', 'Prev') }}</a></li>
         {% endif %}
-        <li class="page-item disabled"><span class="page-link">Page {{ pagination.page }} of {{ pagination.pages }}</span></li>
+        <li class="page-item disabled"><span class="page-link">{{ t('ui.page', 'Page') }} {{ pagination.page }} of {{ pagination.pages }}</span></li>
         {% if pagination.has_next %}
-            <li class="page-item"><a class="page-link" href="?page={{ pagination.next_num }}&type={{ current_type }}&user={{ current_user_filter }}&ip={{ current_ip }}">Next</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ pagination.next_num }}&type={{ current_type }}&user={{ current_user_filter }}&ip={{ current_ip }}">{{ t('ui.next', 'Next') }}</a></li>
         {% endif %}
     </ul>
 </nav>

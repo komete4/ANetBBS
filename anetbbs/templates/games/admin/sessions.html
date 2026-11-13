@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3><i class="bi bi-people"></i> Active Game Sessions</h3>
+    <h3><i class="bi bi-people"></i> {{ t('ui.heading.active_game_sessions', 'Active Game Sessions') }}</h3>
     <div class="d-flex gap-2">
         {% if sessions %}
         <form method="post" action="{{ url_for('games_admin.clear_stale_sessions') }}"
@@ -15,7 +15,7 @@
         </form>
         {% endif %}
         <a href="{{ url_for('games_admin.dashboard') }}" class="btn btn-primary btn-sm">
-            <i class="bi bi-arrow-left"></i> Dashboard
+            <i class="bi bi-arrow-left"></i> {{ t('ui.dashboard', 'Dashboard') }}
         </a>
     </div>
 </div>
@@ -25,12 +25,12 @@
     <thead>
         <tr>
             <th>ID</th>
-            <th>User</th>
-            <th>Game</th>
-            <th>Node</th>
-            <th>Started</th>
-            <th>Duration</th>
-            <th>Actions</th>
+            <th>{{ t('ui.user', 'User') }}</th>
+            <th>{{ t('ui.game', 'Game') }}</th>
+            <th>{{ t('ui.node', 'Node') }}</th>
+            <th>{{ t('ui.started', 'Started') }}</th>
+            <th>{{ t('ui.duration', 'Duration') }}</th>
+            <th>{{ t('ui.actions', 'Actions') }}</th>
         </tr>
     </thead>
     <tbody>
@@ -51,7 +51,7 @@
                     <button type="submit" class="btn btn-sm"
                             style="background:#330000;border:1px solid #ff0000;color:#ff0000;"
                             onclick="return confirm('Force-disconnect this session?');">
-                        <i class="bi bi-x-circle"></i> Disconnect
+                        <i class="bi bi-x-circle"></i> {{ t('ui.disconnect', 'Disconnect') }}
                     </button>
                 </form>
             </td>

@@ -97,13 +97,13 @@
 </style>
 
 <div class="mb-2 d-flex flex-wrap gap-1 align-items-center">
-    <button id="btnSave" class="btn btn-primary btn-sm"><i class="bi bi-save"></i> Save</button>
+    <button id="btnSave" class="btn btn-primary btn-sm"><i class="bi bi-save"></i> {{ t('ui.save', 'Save') }}</button>
     <button id="btnUndo" class="btn btn-outline-light btn-sm" title="Undo (Ctrl+Z)"><i class="bi bi-arrow-counterclockwise"></i></button>
     <button id="btnRedo" class="btn btn-outline-light btn-sm" title="Redo (Ctrl+Shift+Z)"><i class="bi bi-arrow-clockwise"></i></button>
-    <button id="btnClear" class="btn btn-outline-warning btn-sm" title="Clear canvas"><i class="bi bi-trash"></i> Clear</button>
+    <button id="btnClear" class="btn btn-outline-warning btn-sm" title="Clear canvas"><i class="bi bi-trash"></i> {{ t('ui.clear', 'Clear') }}</button>
     <button id="btnImportImage" class="btn btn-outline-light btn-sm" title="Convert a .jpg/.png/.gif into CP437 art, filling the whole canvas"><i class="bi bi-image"></i> Import Image</button>
     <input type="file" id="importImageInput" accept="image/*" style="display:none;">
-    <button id="btnPreview" class="btn btn-outline-info btn-sm" title="Preview as terminal would render"><i class="bi bi-eye"></i> Preview</button>
+    <button id="btnPreview" class="btn btn-outline-info btn-sm" title="Preview as terminal would render"><i class="bi bi-eye"></i> {{ t('ui.preview', 'Preview') }}</button>
     <span id="saveStatus" class="text-muted small">unsaved</span>
     <span class="ms-3 text-muted small" id="cursorPos">row 0 col 0</span>
 </div>

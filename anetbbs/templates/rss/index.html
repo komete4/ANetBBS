@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}RSS Reader{% endblock %}
+{% block title %}{{ t('ui.heading.rss_reader', 'RSS Reader') }}{% endblock %}
 {% block content %}
 <style>
 .rss-feed-card { transition: box-shadow .15s; }
@@ -10,7 +10,7 @@
 </style>
 
 <div class="bbs-header">
-  <h1><i class="bi bi-rss-fill"></i> RSS Reader</h1>
+  <h1><i class="bi bi-rss-fill"></i> {{ t('ui.heading.rss_reader', 'RSS Reader') }}</h1>
   <p class="mb-0">
     {% if total_unread %}
       <strong>{{ total_unread }}</strong> unread item{{ '' if total_unread == 1 else 's' }}
@@ -34,7 +34,7 @@
   <form method="post" action="{{ url_for('rss.mark_all_read') }}" class="d-inline">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button class="btn btn-outline-secondary">
-      <i class="bi bi-check2-all"></i> Mark all read
+      <i class="bi bi-check2-all"></i> {{ t('ui.mark_all_read', 'Mark all read') }}
     </button>
   </form>
   {% endif %}

@@ -10,23 +10,23 @@
 <div class="card mb-3">
     <div class="card-body">
         <dl class="row mb-0">
-            <dt class="col-sm-3">Status</dt>
+            <dt class="col-sm-3">{{ t('ui.status', 'Status') }}</dt>
             <dd class="col-sm-9">{{ tic.status }}</dd>
-            <dt class="col-sm-3">Area</dt>
+            <dt class="col-sm-3">{{ t('ui.area', 'Area') }}</dt>
             <dd class="col-sm-9"><code>{{ tic.area_tag or '?' }}</code></dd>
-            <dt class="col-sm-3">File</dt>
+            <dt class="col-sm-3">{{ t('ui.file', 'File') }}</dt>
             <dd class="col-sm-9">{{ tic.filename or '?' }}</dd>
-            <dt class="col-sm-3">Size</dt>
+            <dt class="col-sm-3">{{ t('ui.size', 'Size') }}</dt>
             <dd class="col-sm-9">{{ tic.size_bytes or 0 }} bytes</dd>
             <dt class="col-sm-3">CRC32</dt>
             <dd class="col-sm-9"><code>{{ tic.crc32 or '?' }}</code></dd>
-            <dt class="col-sm-3">From</dt>
+            <dt class="col-sm-3">{{ t('ui.from', 'From') }}</dt>
             <dd class="col-sm-9"><code>{{ tic.from_address or '?' }}</code></dd>
             <dt class="col-sm-3">Origin</dt>
             <dd class="col-sm-9"><code>{{ tic.origin or '?' }}</code></dd>
             <dt class="col-sm-3">Stored at</dt>
             <dd class="col-sm-9"><code>{{ tic.stored_path or '(not filed)' }}</code></dd>
-            <dt class="col-sm-3">Received</dt>
+            <dt class="col-sm-3">{{ t('ui.received', 'Received') }}</dt>
             <dd class="col-sm-9">{{ tic.received_at|eastern('%Y-%m-%d %H:%M:%S') }}</dd>
             {% if tic.processed_at %}
             <dt class="col-sm-3">Processed</dt>
@@ -38,14 +38,14 @@
 
 {% if tic.description %}
 <div class="card mb-3">
-    <div class="card-header">Description</div>
+    <div class="card-header">{{ t('ui.description', 'Description') }}</div>
     <div class="card-body"><pre>{{ tic.description }}</pre></div>
 </div>
 {% endif %}
 
 {% if tic.error_message %}
 <div class="card mb-3 border-danger">
-    <div class="card-header text-danger">Error</div>
+    <div class="card-header text-danger">{{ t('ui.error', 'Error') }}</div>
     <div class="card-body"><pre class="text-danger">{{ tic.error_message }}</pre></div>
 </div>
 {% endif %}

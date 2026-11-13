@@ -8,13 +8,13 @@
         {% if b.is_pinned %}<i class="bi bi-pin-fill text-warning"></i>{% endif %}
         {{ b.title }}
     </h1>
-    <p class="text-muted">Posted {{ b.created_at|eastern('%Y-%m-%d %H:%M') }}</p>
+    <p class="text-muted">{{ t('bulletins.posted', 'Posted') }} {{ b.created_at|eastern('%Y-%m-%d %H:%M') }}</p>
 </div>
 
 <div class="card">
     <div class="card-body">
         <button type="button" id="bToggleMd" class="btn btn-link btn-sm p-0 mb-2">
-            <i class="bi bi-code"></i> Toggle raw view
+            <i class="bi bi-code"></i> {{ t('bulletins.toggle_raw', 'Toggle raw view') }}
         </button>
         <div id="bMd">{{ b.content | markdown }}</div>
         <pre id="bPlain" style="white-space:pre-wrap;font-family:inherit;display:none;">{{ b.content }}</pre>
@@ -35,6 +35,6 @@
 </script>
 
 <div class="mt-3">
-    <a href="{{ url_for('bulletins.index') }}" class="btn btn-link">← All bulletins</a>
+    <a href="{{ url_for('bulletins.index') }}" class="btn btn-link">{{ t('bulletins.all', '← All bulletins') }}</a>
 </div>
 {% endblock %}

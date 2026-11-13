@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}ANetBBS Upgrades{% endblock %}
+{% block title %}{{ t('admin.upgrades.anetbbs_upgrades', 'ANetBBS Upgrades') }}{% endblock %}
 
 {% block head %}
 {{ super() if super }}
@@ -56,8 +56,8 @@
 <div class="container py-3">
 
   <div class="upg-banner">
-    <h1><i class="bi bi-arrow-up-circle"></i> ANetBBS Upgrades</h1>
-    <div class="text-white-50 mt-1">Sysop-only. Polls the federation hub for new releases.</div>
+    <h1><i class="bi bi-arrow-up-circle"></i> {{ t('admin.upgrades.anetbbs_upgrades', 'ANetBBS Upgrades') }}</h1>
+    <div class="text-white-50 mt-1">{{ t('admin.upgrades.sysop_only_polls_the_federation_hub_for_new_releases', 'Sysop-only. Polls the federation hub for new releases.') }}</div>
   </div>
 
   <div class="row g-3">
@@ -65,12 +65,12 @@
     <div class="col-md-6">
       <div class="card upg-card h-100">
         <div class="card-header bg-light">
-          <strong>Running version</strong>
+          <strong>{{ t('admin.upgrades.running_version', 'Running version') }}</strong>
         </div>
         <div class="card-body">
           <div class="upg-version upg-current">{{ current }}</div>
           <div class="upg-meta mt-2">
-            From <code>VERSION</code> at the install root.
+            {{ t('admin.upgrades.from', 'From') }} <code>VERSION</code> {{ t('admin.upgrades.at_the_install_root', 'at the install root.') }}
           </div>
         </div>
       </div>
@@ -80,29 +80,28 @@
     <div class="col-md-6">
       <div class="card upg-card h-100">
         <div class="card-header bg-light d-flex justify-content-between align-items-center">
-          <strong>Upstream latest</strong>
+          <strong>{{ t('admin.upgrades.upstream_latest', 'Upstream latest') }}</strong>
           <button id="upg-check-btn" class="btn btn-sm btn-outline-primary">
-            <i class="bi bi-arrow-repeat"></i> Re-check
+            <i class="bi bi-arrow-repeat"></i> {{ t('admin.upgrades.re_check', 'Re-check') }}
           </button>
         </div>
         <div class="card-body" id="upg-upstream-body">
           {% if upstream_error %}
             <div class="text-danger">{{ upstream_error }}</div>
-            <div class="upg-meta mt-2">Tried <code>{{ upstream_url }}</code></div>
+            <div class="upg-meta mt-2">{{ t('admin.upgrades.tried', 'Tried') }} <code>{{ upstream_url }}</code></div>
           {% elif upstream %}
             <div class="upg-version {% if newer %}upg-newer{% else %}upg-current{% endif %}">
               {{ upstream.version }}
-              {% if newer %}<span class="badge bg-success ms-2">newer</span>
-              {% elif upstream.version == current %}<span class="badge bg-secondary ms-2">same</span>
-              {% else %}<span class="badge bg-secondary ms-2">older</span>{% endif %}
+              {% if newer %}<span class="badge bg-success ms-2">{{ t('admin.upgrades.newer', 'newer') }}</span>
+              {% elif upstream.version == current %}<span class="badge bg-secondary ms-2">{{ t('admin.upgrades.same', 'same') }}</span>
+              {% else %}<span class="badge bg-secondary ms-2">{{ t('admin.upgrades.older', 'older') }}</span>{% endif %}
             </div>
             <div class="upg-meta mt-2">
-              {{ (upstream.size / 1024 / 1024) | round(1) }} MB &middot;
-              published {{ upstream.published_at|eastern('%Y-%m-%d %H:%M %Z') }}<br>
+              {{ (upstream.size / 1024 / 1024) | round(1) }} {{ t('admin.upgrades.mb_published', 'MB · published') }} {{ upstream.published_at|eastern('%Y-%m-%d %H:%M %Z') }}<br>
               sha256 <code>{{ upstream.sha256[:16] }}…</code>
             </div>
           {% else %}
-            <div class="text-muted">No data — click "Re-check".</div>
+            <div class="text-muted">{{ t('admin.upgrades.no_data_click_re_check', 'No data — click "Re-check".') }}</div>
           {% endif %}
         </div>
         {% if newer %}
@@ -110,11 +109,10 @@
           <button id="upg-install-btn" class="btn btn-success"
                   data-version="{{ upstream.version }}">
             <i class="bi bi-download"></i>
-            Download &amp; install {{ upstream.version }}
+            {{ t('admin.upgrades.download_install', 'Download & install') }} {{ upstream.version }}
           </button>
           <div class="upg-meta mt-2">
-            Runs <code>update.sh</code>. Web service restarts mid-flight —
-            the log panel below stays accessible after gunicorn comes back.
+            {{ t('admin.upgrades.runs', 'Runs') }} <code>update.sh</code>{{ t('admin.upgrades.restart_help', '. Web service restarts mid-flight — the log panel below stays accessible after gunicorn comes back.') }}
           </div>
         </div>
         {% endif %}
@@ -126,14 +124,14 @@
   <!-- Rollback drawer -->
   <div class="card upg-card mt-3">
     <div class="card-header bg-light">
-      <strong><i class="bi bi-arrow-counterclockwise"></i> Roll back</strong>
-      <span class="upg-meta ms-2">— previous releases on disk</span>
+      <strong><i class="bi bi-arrow-counterclockwise"></i> {{ t('admin.upgrades.roll_back', 'Roll back') }}</strong>
+      <span class="upg-meta ms-2">{{ t('admin.upgrades.previous_releases_on_disk', '— previous releases on disk') }}</span>
     </div>
     <div class="card-body p-0">
       <table class="table table-sm mb-0">
         <thead>
           <tr>
-            <th>Version</th><th>Size</th><th>Built</th>
+            <th>{{ t('admin.upgrades.version', 'Version') }}</th><th>{{ t('admin.upgrades.size', 'Size') }}</th><th>{{ t('admin.upgrades.built', 'Built') }}</th>
             <th class="text-end"></th>
           </tr>
         </thead>
@@ -146,7 +144,7 @@
             <td class="text-end">
               <button class="btn btn-sm btn-outline-warning upg-rollback-btn"
                       data-version="{{ r.version }}">
-                Roll back to {{ r.version }}
+                {{ t('admin.upgrades.roll_back_to', 'Roll back to') }} {{ r.version }}
               </button>
             </td>
           </tr>
@@ -155,8 +153,7 @@
       </table>
     </div>
     <div class="card-footer upg-meta">
-      Reinstalls an older tarball already in <code>data/releases/</code>.
-      Same flow as Install — sha256 verified locally before extract.
+      {{ t('admin.upgrades.reinstalls_an_older_tarball_already_in', 'Reinstalls an older tarball already in') }} <code>data/releases/</code>{{ t('admin.upgrades.same_flow_as_install_sha256_verified_locally_before_extract', '. Same flow as Install — sha256 verified locally before extract.') }}
     </div>
   </div>
   {% endif %}
@@ -164,11 +161,11 @@
   <!-- Install log -->
   <div class="card upg-card mt-3">
     <div class="card-header bg-light d-flex justify-content-between align-items-center">
-      <strong>Install log</strong>
+      <strong>{{ t('admin.upgrades.install_log', 'Install log') }}</strong>
       <span id="upg-log-status" class="upg-meta"></span>
     </div>
     <div class="card-body p-2">
-      <div id="upg-log" class="upg-log">(no install in progress)</div>
+      <div id="upg-log" class="upg-log">{{ t('admin.upgrades.no_install_in_progress', '(no install in progress)') }}</div>
     </div>
   </div>
 </div>
@@ -178,6 +175,29 @@
   const checkBtn = document.getElementById('upg-check-btn');
   const installBtn = document.getElementById('upg-install-btn');
   const logBox = document.getElementById('upg-log');
+  const labels = {
+    installing: {{ t('admin.upgrades.installing', 'Installing…') | tojson }},
+    idle: {{ t('admin.upgrades.idle', 'idle') | tojson }},
+    restarting: {{ t('admin.upgrades.restarting', 'Web service restarting (HTTP {status})…') | tojson }},
+    complete: {{ t('admin.upgrades.complete', 'Installation finished. Reload to see the result.') | tojson }},
+    poll_timeout: {{ t('admin.upgrades.poll_timeout', 'Stopped checking after 30 minutes. Check the server.') | tojson }},
+    install_confirm: {{ t('admin.upgrades.install_confirm', 'Install {version} now? The web service will restart and you may need to reload this page when it comes back up.') | tojson }},
+    install_refused: {{ t('admin.upgrades.install_refused', 'Install refused: {error}') | tojson }},
+    rollback_confirm: {{ t('admin.upgrades.rollback_confirm', 'Roll back to {version}? The web service will restart. Your data is unchanged; only the code reverts.') | tojson }},
+    rolling_back: {{ t('admin.upgrades.rolling_back', 'Rolling back…') | tojson }},
+    rollback_refused: {{ t('admin.upgrades.rollback_refused', 'Rollback refused: {error}') | tojson }},
+    unknown: {{ t('admin.upgrades.unknown', 'unknown') | tojson }},
+    no_install: {{ t('admin.upgrades.no_install_in_progress', '(no install in progress)') | tojson }},
+    download_install: {{ t('admin.upgrades.download_install', 'Download & install') | tojson }},
+    roll_back_to: {{ t('admin.upgrades.roll_back_to', 'Roll back to') | tojson }},
+  };
+  function showLogStatus(classes, text) {
+    const badge = document.createElement('span');
+    badge.className = 'badge ' + classes;
+    badge.textContent = text;
+    logStatus.replaceChildren(badge);
+  }
+
   const logStatus = document.getElementById('upg-log-status');
 
   // Pull the CSRF token rendered into <meta> by base.html. POST routes
@@ -246,9 +266,9 @@
       logBox.innerHTML = lines.map(classifyLine).join('');
     }
     if (running) {
-      logStatus.innerHTML = '<span class="badge bg-warning text-dark">installing…</span>';
-    } else if (logBox.textContent && logBox.textContent !== '(no install in progress)') {
-      logStatus.innerHTML = '<span class="badge bg-secondary">idle</span>';
+      showLogStatus('bg-warning text-dark', labels.installing);
+    } else if (logBox.textContent && logBox.textContent.trim() !== labels.no_install) {
+      showLogStatus('bg-secondary', labels.idle);
     } else {
       logStatus.innerHTML = '';
     }
@@ -271,7 +291,7 @@
           // gunicorn mid-restart returns 502 from nginx, 5xx if it
           // happens to be down outside of nginx, etc. Stay calm,
           // try again in a moment.
-          logStatus.innerHTML = '<span class="badge bg-warning text-dark">web restarting (HTTP ' + status + ')…</span>';
+          showLogStatus('bg-warning text-dark', labels.restarting.replace('{status}', () => status));
           throw new Error('http ' + status);
         }
         const j = JSON.parse(text);
@@ -290,7 +310,7 @@
             /\[upgrade\] FAIL:/.test(log_)
         );
         if (done) {
-          logStatus.innerHTML = '<span class="badge bg-success">install complete — reload to see new version</span>';
+          showLogStatus('bg-success', labels.complete);
           return;  // stop polling
         }
         setTimeout(pollLog, 2000);
@@ -298,7 +318,7 @@
       .catch(_ => {
         // Network or HTTP error — keep retrying until the ceiling.
         if (Date.now() - _pollStart > 30 * 60 * 1000) {
-          logStatus.innerHTML = '<span class="badge bg-danger">gave up polling after 30 min — check the server</span>';
+          showLogStatus('bg-danger', labels.poll_timeout);
           return;
         }
         setTimeout(pollLog, 3000);
@@ -320,19 +340,17 @@
 
   if (installBtn) {
     installBtn.addEventListener('click', async () => {
-      if (!confirm('Install ' + installBtn.dataset.version + ' now? '
-                 + 'The web service will restart and you may need to '
-                 + 'reload this page when it comes back up.')) return;
+      if (!confirm(labels.install_confirm.replace('{version}', () => installBtn.dataset.version))) return;
       installBtn.disabled = true;
-      installBtn.textContent = 'Installing…';
+      installBtn.textContent = labels.installing;
       const fd = new FormData();
       fd.append('version', installBtn.dataset.version);
       const {json: j} = await fetchJson('{{ url_for("upgrades_admin.install") }}',
                                         {method: 'POST', body: fd});
       if (!j.ok) {
-        alert('Install refused: ' + (j.error || 'unknown'));
+        alert(labels.install_refused.replace('{error}', () => j.error || labels.unknown));
         installBtn.disabled = false;
-        installBtn.textContent = 'Download & install';
+        installBtn.textContent = labels.download_install;
         return;
       }
       // Start polling — the request returns immediately and the
@@ -344,19 +362,17 @@
   document.querySelectorAll('.upg-rollback-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       const v = btn.dataset.version;
-      if (!confirm('Roll back to ' + v + '? '
-                 + 'The web service will restart. Your data is unchanged; '
-                 + 'only the code reverts.')) return;
+      if (!confirm(labels.rollback_confirm.replace('{version}', () => v))) return;
       btn.disabled = true;
-      btn.textContent = 'Rolling back…';
+      btn.textContent = labels.rolling_back;
       const fd = new FormData();
       fd.append('version', v);
       const {json: j} = await fetchJson('{{ url_for("upgrades_admin.rollback") }}',
                                         {method: 'POST', body: fd});
       if (!j.ok) {
-        alert('Rollback refused: ' + (j.error || 'unknown'));
+        alert(labels.rollback_refused.replace('{error}', () => j.error || labels.unknown));
         btn.disabled = false;
-        btn.textContent = 'Roll back to ' + v;
+        btn.textContent = labels.roll_back_to + ' ' + v;
         return;
       }
       pollLog();

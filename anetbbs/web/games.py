@@ -12,6 +12,8 @@ from flask import Blueprint, render_template, request, current_app, send_from_di
 from flask_login import login_required, current_user
 from flask_socketio import join_room, emit
 
+from ..features.games import category_label
+from ..features.i18n import translate
 from ..models import db, Game, GameSession, GameScore, GameCategory, WebGameWallet
 from ..web_app import socketio
 
@@ -92,7 +94,7 @@ def lobby():
     # Load categories from DB for display names / as_submenu flags --
     # order no longer matters here, see the comment below.
     db_cats = GameCategory.query.all()
-    cat_names = {c.slug: c.name for c in db_cats}
+    cat_names = {c.slug: category_label(c.slug, c.name, translate) for c in db_cats}
     # Same collapse-to-a-section-card behavior the terminal menu uses
     # (GameManager.show_door_menu in features/games.py) -- but a category
     # is only ever collapsed while browsing ALL categories. Once a sysop
@@ -160,9 +162,12 @@ def detail(slug):
                   .order_by(GameScore.score.desc())
                   .limit(20).all())
     active_sessions = _active_sessions().filter_by(game_id=game.id).all()
+    category = GameCategory.query.filter_by(slug=game.category).first()
+    category_name = category.name if category else (game.category or 'other').capitalize()
     return render_template(
         'games/detail.html',
         game=game,
+        category_name=category_label(game.category, category_name, translate),
         top_scores=top_scores,
         active_sessions=active_sessions,
         is_casino=game.slug in CASINO_SLUGS,

@@ -10,7 +10,7 @@
     <input type="hidden" name="action" value="add">
     <div class="row g-2">
         <div class="col-md-8">
-            <input type="text" name="username" class="form-control" placeholder="Username" required>
+            <input type="text" name="username" class="form-control" placeholder="{{ t('ui.username', 'Username') }}" required>
         </div>
         <div class="col-md-4">
             <button class="btn btn-primary w-100"><i class="bi bi-plus"></i> Add Moderator</button>
@@ -20,7 +20,7 @@
 
 {% if mods %}
 <table class="table table-sm">
-    <thead><tr><th>User</th><th>Since</th><th></th></tr></thead>
+    <thead><tr><th>{{ t('ui.user', 'User') }}</th><th>{{ t('ui.since', 'Since') }}</th><th></th></tr></thead>
     <tbody>
     {% for m in mods %}
     <tr>

@@ -177,9 +177,16 @@ def test_translation_editor_localizes_controls_but_keeps_catalogue_rows(
     assert page.select_one('label[for=translation-lang]').get_text(strip=True) == code
     assert page.select_one('form.card button').get_text(strip=True) == add
     rows = page.select('tbody tr')
-    assert {row.select_one('td:first-child').get_text(strip=True)
-            for row in rows} >= {'es', 'de', 'pt'}
-    assert any(row.select_one('input[name=text]')['value'] == 'Início' for row in rows)
+    codes = {row.select_one('td:first-child').get_text(strip=True) for row in rows}
+    if language == 'es':
+        assert codes == {'es'}
+        assert page.select_one('#translation-filter option[value=es]').has_attr('selected')
+    else:
+        assert codes >= {'es', 'de', 'pt'}
+    all_languages = _soup(client.get('/admin/translations?lang='))
+    assert all_languages.select_one('tbody input[value="Início"]')
+    german = _soup(client.get('/admin/translations?lang=de'))
+    assert {cell.get_text(strip=True) for cell in german.select('tbody td:first-child')} == {'de'}
     assert {button.get_text(strip=True) for button in page.select('tbody button')} == {save, delete}
     assert page.select_one('tbody input[name=text]').get('aria-label')
 
@@ -187,7 +194,7 @@ def test_translation_editor_localizes_controls_but_keeps_catalogue_rows(
 def test_translation_editor_crud_uses_admin_language(client, localized_app, make_user):
     user_id, _, _ = make_user('es', is_admin=True)
     _authenticate(client, user_id)
-    path = '/admin/translations'
+    path = '/admin/translations?lang=pt'
     data = {'action': 'add', 'lang': 'pt', 'key': 'test.editor', 'text': 'Olá'}
     page = _soup(_post(client, path, data, token_path=path, follow_redirects=True))
     assert 'Traducción añadida.' in page.get_text(' ', strip=True)
@@ -714,3 +721,97 @@ def test_one_security_question_uses_count_neutral_wording(
         with localized_app.app_context():
             PasswordRecoverySettings.get().security_questions_enabled = previous
             db.session.commit()
+
+
+@pytest.mark.parametrize('language, headings', [
+    ('es', ('Panel de administración', 'Configuración del relé SMTP', 'Actualizaciones de ANetBBS')),
+    ('en', ('Admin Dashboard', 'SMTP Relay Settings', 'ANetBBS Upgrades')),
+])
+def test_admin_dashboard_smtp_and_upgrades_localization(client, make_user, language, headings):
+    user_id, _, _ = make_user(language, is_admin=True)
+    _authenticate(client, user_id)
+    for path, heading in zip(('/admin/', '/admin/smtp', '/admin/upgrades/'), headings):
+        page = _soup(client.get(path))
+        assert page.h1.get_text(strip=True) == heading
+    dashboard = _soup(client.get('/admin/'))
+    notes = dashboard.select_one('.markdown-body')
+    assert notes is not None
+    expected = 'Revocación de sesiones' if language == 'es' else 'Password-change session revocation'
+    assert expected in notes.get_text(' ', strip=True)
+
+
+def test_spanish_admin_settings_mrc_and_forbidden_page(client, make_user):
+    admin_id, _, _ = make_user('es', is_admin=True)
+    _authenticate(client, admin_id)
+    settings = _soup(client.get('/admin/settings'))
+    assert 'Nombre de la BBS' in settings.get_text(' ', strip=True)
+    board = _soup(client.get('/admin/boards/add'))
+    assert board.h1.get_text(strip=True) == 'Añadir tablón'
+    assert board.select_one('input[name=submit]')['value'] == 'Guardar tablón'
+    mrc = _soup(client.get('/mrc/'))
+    assert mrc.html['lang'] == 'es'
+    assert mrc.select_one('#join-panel h2').get_text(strip=True) == 'Entrar al chat MRC'
+
+    user_id, _, _ = make_user('es')
+    _authenticate(client, user_id)
+    denied = client.get('/admin/')
+    assert denied.status_code == 403
+    assert '403 — Acceso denegado' in BeautifulSoup(denied.data, 'html.parser').h1.get_text(strip=True)
+
+
+@pytest.mark.parametrize('language, verification, reset', [
+    ('es', 'Confirma tu correo electrónico', 'Restablece tu contraseña'),
+    ('en', 'Verify your email', 'Password reset'),
+])
+def test_account_mail_uses_recipient_language_without_a_request(
+        localized_app, monkeypatch, language, verification, reset):
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+    from anetbbs import mailer
+
+    send = Mock(return_value=(True, ''))
+    monkeypatch.setattr(mailer, 'send_email', send)
+    user = SimpleNamespace(username='<Manu>', email='user@example.com', language=language)
+    link = 'https://bbs.example.com/auth/link?a=1&b=2'
+    with localized_app.app_context():
+        assert mailer.send_verification_email(user, link) == (True, '')
+        assert mailer.send_password_reset_email(user, link) == (True, '')
+    for call, expected in zip(send.call_args_list, (verification, reset)):
+        email, subject, plain, html = call.args
+        assert email == user.email and subject.startswith(expected)
+        assert '<Manu>' in plain and '&lt;Manu&gt;' in html
+        assert link in plain and '&amp;b=2' in html
+
+
+def test_spanish_about_bulletins_files_and_online_pages(client, make_user):
+    user_id, _, _ = make_user('es')
+    _authenticate(client, user_id)
+    for path, heading in {
+        '/about': 'Acerca de',
+        '/bulletins/': 'Boletines',
+        '/files/': 'Galería de archivos',
+        '/who/': 'Quién está en línea',
+    }.items():
+        page = _soup(client.get(path))
+        assert heading in page.title.get_text(strip=True)
+
+
+def test_spanish_prelogin_connection_screen_uses_selected_language(
+        client, localized_app, monkeypatch):
+    monkeypatch.setitem(localized_app.config, 'WEB_MATRIX_ENABLED', True)
+    _language(client, 'es')
+    page = _soup(client.get('/'))
+    assert page.html['lang'] == 'es'
+    assert 'Elige cómo quieres conectarte.' in page.get_text(' ', strip=True)
+    assert 'Continuar a la web' in page.get_text(' ', strip=True)
+
+
+def test_spanish_games_lobby_translates_navigation_and_stock_categories(
+        client, localized_app, monkeypatch):
+    monkeypatch.setitem(localized_app.config, 'GAMES_ENABLED', True)
+    _language(client, 'es')
+    page = _soup(client.get('/games/?q=zyx-no-games'))
+    assert 'Juegos' in page.title.get_text(strip=True)
+    assert page.h1.get_text(strip=True) == 'JUEGOS'
+    assert page.select_one('option[value="classic"]').get_text(strip=True) == 'Clásicos de DOS'
+    assert 'No se encontraron juegos.' in page.get_text(' ', strip=True)

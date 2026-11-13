@@ -130,6 +130,12 @@ class _FakeTerminalSession:
     paths this test exercises (closed, wrong invite code), never
     reaching the rest of the real registration flow."""
 
+    from anetbbs.core.session import BBSSession
+
+    _terminal_text = BBSSession._terminal_text
+    config = {'terminal_language': 'en'}
+    user = None
+
     def __init__(self, responses):
         self._responses = list(responses)
         self.written = []

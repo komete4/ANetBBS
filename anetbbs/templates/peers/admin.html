@@ -4,7 +4,7 @@
 {% block content %}
 <div class="container my-4">
   <div class="d-flex align-items-center justify-content-between mb-3">
-    <h2 class="mb-0"><i class="bi bi-gear-fill"></i> BBS Directory Admin</h2>
+    <h2 class="mb-0"><i class="bi bi-gear-fill"></i> {{ t('ui.heading.bbs_directory_admin', 'BBS Directory Admin') }}</h2>
     <a href="{{ url_for('peers.index') }}" class="btn btn-outline-secondary btn-sm">
       <i class="bi bi-arrow-left"></i> Back to Directory
     </a>
@@ -27,7 +27,7 @@
     <div class="card-body p-0">
       <table class="table table-sm mb-0">
         <thead><tr>
-          <th>Name</th><th>Telnet</th><th>Web</th><th>Location</th><th>Software</th><th>Description</th><th></th>
+          <th>{{ t('ui.name', 'Name') }}</th><th>Telnet</th><th>Web</th><th>{{ t('ui.location', 'Location') }}</th><th>{{ t('ui.software', 'Software') }}</th><th>{{ t('ui.description', 'Description') }}</th><th></th>
         </tr></thead>
         <tbody>
         {% for p in pending %}
@@ -43,14 +43,14 @@
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <input type="hidden" name="action" value="approve">
               <input type="hidden" name="peer_id" value="{{ p.id }}">
-              <button class="btn btn-success btn-sm">Approve</button>
+              <button class="btn btn-success btn-sm">{{ t('ui.approve', 'Approve') }}</button>
             </form>
             <form method="post" class="d-inline ms-1">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <input type="hidden" name="action" value="delete">
               <input type="hidden" name="peer_id" value="{{ p.id }}">
               <button class="btn btn-outline-danger btn-sm"
-                      onclick="return confirm('Reject and delete {{ p.name }}?')">Reject</button>
+                      onclick="return confirm('Reject and delete {{ p.name }}?')">{{ t('ui.reject', 'Reject') }}</button>
             </form>
           </td>
         </tr>
@@ -71,8 +71,8 @@
     {% if approved %}
       <table class="table table-sm mb-0">
         <thead><tr>
-          <th>Status</th><th>Name</th><th>Telnet</th><th>Web</th>
-          <th>Location</th><th>Software</th><th>FTN</th><th></th>
+          <th>{{ t('ui.status', 'Status') }}</th><th>{{ t('ui.name', 'Name') }}</th><th>Telnet</th><th>Web</th>
+          <th>{{ t('ui.location', 'Location') }}</th><th>{{ t('ui.software', 'Software') }}</th><th>FTN</th><th></th>
         </tr></thead>
         <tbody>
         {% for p in approved %}
@@ -132,7 +132,7 @@
     <div class="card-header"><i class="bi bi-cloud-download"></i> External Sources</div>
     <div class="card-body p-0">
       <table class="table table-sm mb-0">
-        <thead><tr><th>Source</th><th>Entries</th><th>Last Refreshed</th><th></th></tr></thead>
+        <thead><tr><th>{{ t('ui.source', 'Source') }}</th><th>Entries</th><th>Last Refreshed</th><th></th></tr></thead>
         <tbody>
         {% for src, s in ext_stats.items() %}
         <tr>
@@ -147,7 +147,7 @@
               <input type="hidden" name="action" value="refresh_ext">
               <input type="hidden" name="source" value="{{ src }}">
               <button class="btn btn-outline-primary btn-sm">
-                <i class="bi bi-arrow-clockwise"></i> Refresh
+                <i class="bi bi-arrow-clockwise"></i> {{ t('ui.refresh', 'Refresh') }}
               </button>
             </form>
           </td>
@@ -174,7 +174,7 @@
         </div>
         <div class="modal-body">
           <div class="mb-2">
-            <label class="form-label">Name</label>
+            <label class="form-label">{{ t('ui.name', 'Name') }}</label>
             <input type="text" name="name" id="editName" class="form-control" required maxlength="120">
           </div>
           <div class="row g-2 mb-2">
@@ -193,20 +193,20 @@
           </div>
           <div class="row g-2 mb-2">
             <div class="col-6">
-              <label class="form-label">Location</label>
+              <label class="form-label">{{ t('ui.location', 'Location') }}</label>
               <input type="text" name="location" id="editLocation" class="form-control" maxlength="120">
             </div>
             <div class="col-6">
-              <label class="form-label">Software</label>
+              <label class="form-label">{{ t('ui.software', 'Software') }}</label>
               <input type="text" name="software" id="editSoftware" class="form-control" maxlength="80">
             </div>
           </div>
           <div class="mb-2">
-            <label class="form-label">FTN Address</label>
+            <label class="form-label">{{ t('ui.ftn_address', 'FTN Address') }}</label>
             <input type="text" name="ftn_address" id="editFtnAddress" class="form-control" placeholder="1:1/1" maxlength="60">
           </div>
           <div class="mb-2">
-            <label class="form-label">Description</label>
+            <label class="form-label">{{ t('ui.description', 'Description') }}</label>
             <textarea name="description" id="editDescription" class="form-control" rows="2"></textarea>
           </div>
           <div class="form-check">
@@ -215,8 +215,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Save</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('ui.cancel', 'Cancel') }}</button>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> {{ t('ui.save', 'Save') }}</button>
         </div>
       </form>
     </div>

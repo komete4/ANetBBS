@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Address Book{% endblock %}
+{% block title %}{{ t('ui.heading.address_book', 'Address Book') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-person-rolodex"></i> Address Book</h1>
+    <h1><i class="bi bi-person-rolodex"></i> {{ t('ui.heading.address_book', 'Address Book') }}</h1>
     <p>Saved FTN and email contacts. Used for netmail recipient lookup.</p>
 </div>
 
@@ -14,11 +14,11 @@
         <form method="post" class="row g-2">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="col-md-4">
-                <label class="form-label">Name</label>
+                <label class="form-label">{{ t('ui.name', 'Name') }}</label>
                 <input type="text" name="name" class="form-control" required>
             </div>
             <div class="col-md-3">
-                <label class="form-label">FTN Address</label>
+                <label class="form-label">{{ t('ui.ftn_address', 'FTN Address') }}</label>
                 <input type="text" name="ftn_address" class="form-control"
                        placeholder="1:234/5"
                        pattern="^\d+:\d+/\d+(\.\d+)?$">
@@ -28,10 +28,10 @@
                 <input type="email" name="email" class="form-control">
             </div>
             <div class="col-md-2 d-flex align-items-end">
-                <button class="btn btn-primary w-100">Add</button>
+                <button class="btn btn-primary w-100">{{ t('ui.add', 'Add') }}</button>
             </div>
             <div class="col-md-9">
-                <label class="form-label">Notes</label>
+                <label class="form-label">{{ t('ui.notes', 'Notes') }}</label>
                 <input type="text" name="notes" class="form-control" maxlength="500">
             </div>
             <div class="col-md-3 d-flex align-items-end">
@@ -49,7 +49,7 @@
     {% if entries %}
         <table class="table table-sm mb-0">
             <thead><tr>
-                <th></th><th>Name</th><th>FTN</th><th>Email</th><th>Notes</th><th></th>
+                <th></th><th>{{ t('ui.name', 'Name') }}</th><th>FTN</th><th>{{ t('ui.email', 'Email') }}</th><th>{{ t('ui.notes', 'Notes') }}</th><th></th>
             </tr></thead>
             <tbody>
             {% for e in entries %}

@@ -4,23 +4,23 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-search"></i> Search</h1>
+    <h1><i class="bi bi-search"></i> {{ t('ui.search', 'Search') }}</h1>
 </div>
 
 <form method="get" class="mb-4" autocomplete="off">
     <div class="input-group mb-2 position-relative">
         <input type="text" name="q" id="searchInput" value="{{ q }}" class="form-control" placeholder="Search posts, users, boards...">
-        <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Search</button>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> {{ t('ui.search', 'Search') }}</button>
         <div id="searchSuggest" class="list-group position-absolute w-100"
              style="top:100%;left:0;z-index:1000;display:none;"></div>
     </div>
     <div class="row g-2">
         <div class="col-md-3">
-            <label class="form-label small mb-0">From</label>
+            <label class="form-label small mb-0">{{ t('ui.from', 'From') }}</label>
             <input type="date" name="date_from" value="{{ date_from }}" class="form-control form-control-sm">
         </div>
         <div class="col-md-3">
-            <label class="form-label small mb-0">To</label>
+            <label class="form-label small mb-0">{{ t('ui.to', 'To') }}</label>
             <input type="date" name="date_to" value="{{ date_to }}" class="form-control form-control-sm">
         </div>
         <div class="col-md-3">

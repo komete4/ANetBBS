@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}Daily File Download Quotas{% endblock %}
+{% block title %}{{ t('ui.heading.daily_file_download_quotas', 'Daily File Download Quotas') }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-cloud-download"></i> Daily File Download Quotas</h1>
+    <h1><i class="bi bi-cloud-download"></i> {{ t('ui.heading.daily_file_download_quotas', 'Daily File Download Quotas') }}</h1>
     <p class="small text-muted">
         Caps how much a user can download per day (web + terminal + FTP),
         based on their access level. A user gets whichever tier below

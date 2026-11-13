@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-upload"></i> Import Nodelist</h1>
+    <h1><i class="bi bi-upload"></i> {{ t('ui.heading.import_nodelist', 'Import Nodelist') }}</h1>
     <p>Upload a FidoNet nodelist file (e.g. <code>NODELIST.001</code>).</p>
 </div>
 
@@ -24,7 +24,7 @@
             </div>
 
             <div class="mb-3">
-                <label class="form-label">Domain</label>
+                <label class="form-label">{{ t('ui.domain', 'Domain') }}</label>
                 <input type="text" name="domain" class="form-control" value="fidonet"
                        pattern="[a-z0-9_-]+"
                        title="Lowercase letters, digits, underscore, hyphen">
@@ -35,9 +35,9 @@
             </div>
 
             <button type="submit" class="btn btn-primary">
-                <i class="bi bi-upload"></i> Import
+                <i class="bi bi-upload"></i> {{ t('ui.import', 'Import') }}
             </button>
-            <a href="{{ url_for('nodelist.browse') }}" class="btn btn-link">Cancel</a>
+            <a href="{{ url_for('nodelist.browse') }}" class="btn btn-link">{{ t('ui.cancel', 'Cancel') }}</a>
         </form>
     </div>
 </div>

@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-diagram-3"></i> Federation Registry</h1>
+    <h1><i class="bi bi-diagram-3"></i> {{ t('ui.heading.federation_registry', 'Federation Registry') }}</h1>
     <p class="text-muted mb-0">Sysop approval queue for the <code>anetbbs.lst</code> federation directory.</p>
 </div>
 
@@ -56,7 +56,7 @@
 {% set rejected = rows | selectattr('is_approved', 'equalto', false) | selectattr('is_verified', 'equalto', true) | list %}
 
 <div class="row g-2 mb-3">
-    <div class="col"><div class="card"><div class="card-body p-2 text-center"><strong>{{ rows | length }}</strong><br><small>Total</small></div></div></div>
+    <div class="col"><div class="card"><div class="card-body p-2 text-center"><strong>{{ rows | length }}</strong><br><small>{{ t('ui.total', 'Total') }}</small></div></div></div>
     <div class="col"><div class="card border-warning"><div class="card-body p-2 text-center"><strong>{{ pending_verify | length }}</strong><br><small>Awaiting email verify</small></div></div></div>
     <div class="col"><div class="card border-info"><div class="card-body p-2 text-center"><strong>{{ pending_approve | length }}</strong><br><small>Awaiting your approval</small></div></div></div>
     <div class="col"><div class="card border-success"><div class="card-body p-2 text-center"><strong>{{ listed | length }}</strong><br><small>Listed publicly</small></div></div></div>
@@ -75,10 +75,10 @@
             <tr>
                 <th>Host / Name</th>
                 <th>Sysop / Location</th>
-                <th>Software</th>
+                <th>{{ t('ui.software', 'Software') }}</th>
                 <th>State</th>
                 <th>Heartbeat / Probe</th>
-                <th style="width:160px;">Actions</th>
+                <th style="width:160px;">{{ t('ui.actions', 'Actions') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -154,9 +154,9 @@
                 <td colspan="6">
                     <form method="post" action="{{ url_for('admin.registry_edit', entry_id=e.id) }}" class="row g-2">
                         {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                        <div class="col-md-3"><label class="form-label small">Name</label><input type="text" name="name" class="form-control form-control-sm" value="{{ e.name or '' }}"></div>
+                        <div class="col-md-3"><label class="form-label small">{{ t('ui.name', 'Name') }}</label><input type="text" name="name" class="form-control form-control-sm" value="{{ e.name or '' }}"></div>
                         <div class="col-md-2"><label class="form-label small">Sysop</label><input type="text" name="sysop" class="form-control form-control-sm" value="{{ e.sysop or '' }}"></div>
-                        <div class="col-md-2"><label class="form-label small">Location</label><input type="text" name="location" class="form-control form-control-sm" value="{{ e.location or '' }}"></div>
+                        <div class="col-md-2"><label class="form-label small">{{ t('ui.location', 'Location') }}</label><input type="text" name="location" class="form-control form-control-sm" value="{{ e.location or '' }}"></div>
                         <div class="col-md-1"><label class="form-label small">MSP port</label><input type="text" name="msp_port" class="form-control form-control-sm" value="{{ e.msp_port }}"></div>
                         <div class="col-md-1"><label class="form-label small">SYSTAT port</label><input type="text" name="systat_port" class="form-control form-control-sm" value="{{ e.systat_port }}"></div>
                         <div class="col-md-3"><label class="form-label small">Software / version</label>
@@ -165,8 +165,8 @@
                                 <input type="text" name="software_version" class="form-control" value="{{ e.software_version or '' }}" placeholder="version">
                             </div>
                         </div>
-                        <div class="col-12"><label class="form-label small">Notes</label><textarea name="notes" class="form-control form-control-sm" rows="2">{{ e.notes or '' }}</textarea></div>
-                        <div class="col-12"><button class="btn btn-primary btn-sm">Save</button></div>
+                        <div class="col-12"><label class="form-label small">{{ t('ui.notes', 'Notes') }}</label><textarea name="notes" class="form-control form-control-sm" rows="2">{{ e.notes or '' }}</textarea></div>
+                        <div class="col-12"><button class="btn btn-primary btn-sm">{{ t('ui.save', 'Save') }}</button></div>
                     </form>
                 </td>
             </tr>

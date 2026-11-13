@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Who's Online{% endblock %}
+{% block title %}{{ t('who.title', "Who's Online") }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-people-fill"></i> Who's Online</h1>
-    <p>{{ total }} logged-in user{% if total != 1 %}s{% endif %} across all protocols.</p>
+    <h1><i class="bi bi-people-fill"></i> {{ t('who.title', "Who's Online") }}</h1>
+    <p>{% if total == 1 %}{{ t('who.count_one', '{total} logged-in user across all protocols.', total=total) }}{% else %}{{ t('who.count_many', '{total} logged-in users across all protocols.', total=total) }}{% endif %}</p>
 </div>
 
 {% if counts %}
@@ -21,9 +21,9 @@
     {% if rows %}
         <table class="table table-sm table-hover mb-0">
             <thead><tr>
-                <th>User</th><th>Protocol</th><th>Where</th>
+                <th>{{ t('who.user', 'User') }}</th><th>{{ t('who.protocol', 'Protocol') }}</th><th>{{ t('who.where', 'Where') }}</th>
                 {% if current_user.is_authenticated and current_user.is_admin %}<th>IP</th>{% endif %}
-                <th>Last Seen</th>
+                <th>{{ t('who.last_seen', 'Last Seen') }}</th>
             </tr></thead>
             <tbody>
             {% for r in rows %}
@@ -51,7 +51,7 @@
             </tbody>
         </table>
     {% else %}
-        <div class="p-3 text-muted">No one is online right now.</div>
+        <div class="p-3 text-muted">{{ t('who.empty', 'No one is online right now.') }}</div>
     {% endif %}
     </div>
 </div>

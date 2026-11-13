@@ -6,16 +6,16 @@
 
   <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
     <div>
-      <h2 class="mb-0"><i class="bi bi-globe2"></i> BBS Directory</h2>
+      <h2 class="mb-0"><i class="bi bi-globe2"></i> {{ t('ui.heading.bbs_directory', 'BBS Directory') }}</h2>
       <p class="text-muted small mb-0">Browse local and worldwide BBS listings</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
       <a href="{{ url_for('peers.submit') }}" class="btn btn-success btn-sm">
-        <i class="bi bi-plus-circle"></i> Add Your BBS
+        <i class="bi bi-plus-circle"></i> {{ t('ui.heading.add_your_bbs', 'Add Your BBS') }}
       </a>
       {% if current_user.is_admin %}
       <a href="{{ url_for('peers.admin') }}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-gear"></i> Manage
+        <i class="bi bi-gear"></i> {{ t('ui.manage', 'Manage') }}
         {% if pending_count %}<span class="badge bg-warning text-dark ms-1">{{ pending_count }}</span>{% endif %}
       </a>
       {% endif %}
@@ -29,8 +29,8 @@
       <span class="input-group-text"><i class="bi bi-search"></i></span>
       <input type="text" name="q" value="{{ q }}"
              class="form-control" placeholder="Search BBS name, host, location, software…">
-      <button class="btn btn-outline-primary" type="submit">Search</button>
-      {% if q %}<a href="{{ url_for('peers.index', tab=tab) }}" class="btn btn-outline-secondary">Clear</a>{% endif %}
+      <button class="btn btn-outline-primary" type="submit">{{ t('ui.search', 'Search') }}</button>
+      {% if q %}<a href="{{ url_for('peers.index', tab=tab) }}" class="btn btn-outline-secondary">{{ t('ui.clear', 'Clear') }}</a>{% endif %}
     </div>
   </form>
 
@@ -100,7 +100,7 @@
               {% endif %}
               {% endif %}
               <a href="{{ url_for('peers.view', peer_id=p.id) }}" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-info-circle"></i> Details
+                <i class="bi bi-info-circle"></i> {{ t('ui.details', 'Details') }}
               </a>
             </div>
           </div>

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ title }} - Admin{% endblock %}
+{% block title %}{{ title }} {{ t('admin.board_form.admin', '- Admin') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
@@ -38,12 +38,12 @@
                         <div class="col-md-6">
                             {{ form.min_access_level.label(class="form-label") }}
                             {{ form.min_access_level(class="form-control", min=0, max=255) }}
-                            <small class="text-muted">0=everyone, 10=registered (default), 50=VIP, 100=sysop</small>
+                            <small class="text-muted">{{ t('admin.board_form.0_everyone_10_registered_default_50_vip_100_sysop', '0=everyone, 10=registered (default), 50=VIP, 100=sysop') }}</small>
                         </div>
                         <div class="col-md-6">
                             {{ form.min_write_level.label(class="form-label") }}
                             {{ form.min_write_level(class="form-control", min=0, max=255) }}
-                            <small class="text-muted">Leave blank to use the read level for posting too</small>
+                            <small class="text-muted">{{ t('admin.board_form.leave_blank_to_use_the_read_level_for_posting_too', 'Leave blank to use the read level for posting too') }}</small>
                         </div>
                     </div>
 
@@ -54,7 +54,7 @@
 
                     <div class="d-flex gap-2">
                         {{ form.submit(class="btn btn-primary") }}
-                        <a href="{{ url_for('admin.boards') }}" class="btn btn-secondary">Cancel</a>
+                        <a href="{{ url_for('admin.boards') }}" class="btn btn-secondary">{{ t('admin.board_form.cancel', 'Cancel') }}</a>
                     </div>
                 </form>
             </div>

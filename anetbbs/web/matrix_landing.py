@@ -21,6 +21,8 @@ caller in main.py) never shown to an already-authenticated visitor.
 from flask import make_response, redirect, url_for
 from markupsafe import escape
 
+from ..features.i18n import current_language, translate
+
 SKIP_COOKIE = 'anetbbs_matrix_seen'
 SKIP_PARAM = 'mtx'
 
@@ -38,27 +40,33 @@ def render_stock_web_matrix(request):
 
     from ..features.bbs_ui import _app
     cfg = _app().config
-    bbs_name = cfg.get('BBS_NAME', 'ANetBBS')
+    bbs_name = escape(cfg.get('BBS_NAME', 'ANetBBS'))
     domain = (cfg.get('BBS_DOMAIN', '') or '').strip()
 
-    ways = []
-    if cfg.get('TELNET_ENABLED', True):
-        ways.append(f"Telnet &mdash; port {cfg.get('TELNET_PORT', 2233)}")
-    if cfg.get('SSH_ENABLED', True):
-        ways.append(f"SSH &mdash; port {cfg.get('SSH_PORT', 2234)}")
-    if cfg.get('RLOGIN_ENABLED', False):
-        ways.append(f"Rlogin &mdash; port {cfg.get('RLOGIN_PORT', 513)}")
+    ways = [
+        (protocol, cfg.get(setting + '_PORT', port))
+        for protocol, setting, port, enabled in (
+            ('Telnet', 'TELNET', 2233, True),
+            ('SSH', 'SSH', 2234, True),
+            ('Rlogin', 'RLOGIN', 513, False),
+        )
+        if cfg.get(setting + '_ENABLED', enabled)
+    ]
     connect_host = escape(domain or request.host.split(':')[0])
-    ways_html = ''.join(f'<li>{w} to <code>{connect_host}</code></li>' for w in ways)
+    ways_html = ''.join(
+        f'<li>{escape(translate("matrix.connection", "{protocol} — port {port} to", protocol=protocol, port=port))}'
+        f' <code>{connect_host}</code></li>'
+        for protocol, port in ways
+    )
 
     continue_url = url_for('main.index', **{SKIP_PARAM: 'skip'})
 
     html = f"""<!doctype html>
-<html lang="en">
+<html lang="{escape(current_language())}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{bbs_name} &mdash; Connect</title>
+<title>{bbs_name} &mdash; {escape(translate('matrix.connect', 'Connect'))}</title>
 <style>
   body {{ background:#0b0b12; color:#c8ffd4; font-family: 'Courier New', monospace;
           display:flex; align-items:center; justify-content:center;
@@ -80,10 +88,10 @@ def render_stock_web_matrix(request):
 <body>
   <div class="card">
     <h1>{bbs_name}</h1>
-    <p class="tagline">Choose how you'd like to connect.</p>
-    <a class="opt primary" href="/terminal/">Connect in the Browser (ANSI terminal)</a>
-    <a class="opt secondary" href="{continue_url}">Continue to the website &rarr;</a>
-    <p>Prefer a real terminal client? Connect directly:</p>
+    <p class="tagline">{escape(translate('matrix.choose', "Choose how you'd like to connect."))}</p>
+    <a class="opt primary" href="/terminal/">{escape(translate('matrix.browser', 'Connect in the Browser (ANSI terminal)'))}</a>
+    <a class="opt secondary" href="{continue_url}">{escape(translate('matrix.continue', 'Continue to the website'))} &rarr;</a>
+    <p>{escape(translate('matrix.direct', 'Prefer a real terminal client? Connect directly:'))}</p>
     <ul>{ways_html}</ul>
   </div>
 </body>

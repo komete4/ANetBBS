@@ -1,19 +1,19 @@
 {% extends "base.html" %}
-{% block title %}Pending User Approvals{% endblock %}
+{% block title %}{{ t('admin.pending_users.pending_user_approvals', 'Pending User Approvals') }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-person-check"></i> Pending User Approvals</h1>
+    <h1><i class="bi bi-person-check"></i> {{ t('admin.pending_users.pending_user_approvals', 'Pending User Approvals') }}</h1>
     <p class="small text-muted">
-        Users awaiting NUV sysop approval. Set
-        <code>NUV_ENABLED=true</code> to require approval for new accounts.
+        {{ t('admin.pending_users.users_awaiting_nuv_sysop_approval_set', 'Users awaiting NUV sysop approval. Set') }}
+        <code>NUV_ENABLED=true</code> {{ t('admin.pending_users.to_require_approval_for_new_accounts', 'to require approval for new accounts.') }}
     </p>
 </div>
 
 {% if not rows %}
-<div class="card"><div class="card-body text-muted">No pending users.</div></div>
+<div class="card"><div class="card-body text-muted">{{ t('admin.pending_users.no_pending_users', 'No pending users.') }}</div></div>
 {% else %}
 <table class="table table-sm">
-    <thead><tr><th>User</th><th>Email</th><th>Registered</th><th>Actions</th></tr></thead>
+    <thead><tr><th>{{ t('admin.pending_users.user', 'User') }}</th><th>{{ t('admin.pending_users.email', 'Email') }}</th><th>{{ t('admin.pending_users.registered', 'Registered') }}</th><th>{{ t('admin.pending_users.actions', 'Actions') }}</th></tr></thead>
     <tbody>
     {% for u in rows %}
     <tr>
@@ -23,13 +23,13 @@
         <td class="text-nowrap">
             <form method="post" action="{{ url_for('admin.pending_user_action', user_id=u.id, action='approve') }}" class="d-inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="btn btn-sm btn-success"><i class="bi bi-check"></i> Approve</button>
+                <button class="btn btn-sm btn-success"><i class="bi bi-check"></i> {{ t('admin.pending_users.approve', 'Approve') }}</button>
             </form>
             <form method="post" action="{{ url_for('admin.pending_user_action', user_id=u.id, action='reject') }}" class="d-inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="btn btn-sm btn-warning"><i class="bi bi-x"></i> Reject</button>
+                <button class="btn btn-sm btn-warning"><i class="bi bi-x"></i> {{ t('admin.pending_users.reject', 'Reject') }}</button>
             </form>
-            <form method="post" action="{{ url_for('admin.pending_user_action', user_id=u.id, action='delete') }}" class="d-inline" onsubmit="return confirm('Permanently delete {{ u.username }}?');">
+            <form method="post" action="{{ url_for('admin.pending_user_action', user_id=u.id, action='delete') }}" class="d-inline" data-confirm="{{ t('admin.pending_users.reject_confirm', 'Permanently delete {name}?', name=u.username) }}" onsubmit="return confirm(this.dataset.confirm);">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
             </form>

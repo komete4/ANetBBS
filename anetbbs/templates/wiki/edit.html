@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{% if is_new %}Create{% else %}Edit{% endif %} {{ title }} — Wiki{% endblock %}
+{% block title %}{% if is_new %}{{ t('ui.create', 'Create') }}{% else %}{{ t('ui.edit', 'Edit') }}{% endif %} {{ title }} — Wiki{% endblock %}
 {% block content %}
 {% include "wiki/_layout.html" %}
 
@@ -15,7 +15,7 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
     <div class="mb-3">
-        <label class="form-label">Title</label>
+        <label class="form-label">{{ t('ui.title', 'Title') }}</label>
         <input type="text" name="title" class="form-control" required
                value="{{ title }}" autofocus>
     </div>
@@ -23,13 +23,13 @@
     <ul class="nav nav-tabs" role="tablist">
         <li class="nav-item">
             <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#editTab" type="button">
-                <i class="bi bi-pencil"></i> Source
+                <i class="bi bi-pencil"></i> {{ t('ui.source', 'Source') }}
             </button>
         </li>
         <li class="nav-item">
             <button class="nav-link" data-bs-toggle="tab" data-bs-target="#previewTab" type="button"
                     onclick="loadPreview()">
-                <i class="bi bi-eye"></i> Preview
+                <i class="bi bi-eye"></i> {{ t('ui.preview', 'Preview') }}
             </button>
         </li>
         <li class="nav-item">
@@ -97,8 +97,8 @@ def hello():
     </div>
 
     <div class="d-flex gap-2">
-        <button class="btn btn-primary"><i class="bi bi-check2"></i> Save</button>
-        <a href="{{ url_for('wiki.view', slug=slug) }}" class="btn btn-outline-secondary">Cancel</a>
+        <button class="btn btn-primary"><i class="bi bi-check2"></i> {{ t('ui.save', 'Save') }}</button>
+        <a href="{{ url_for('wiki.view', slug=slug) }}" class="btn btn-outline-secondary">{{ t('ui.cancel', 'Cancel') }}</a>
         {% if not is_new %}
             <a href="{{ url_for('wiki.history', slug=slug) }}" class="btn btn-outline-secondary ms-auto">
                <i class="bi bi-clock-history"></i> History</a>

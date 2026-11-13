@@ -39,7 +39,7 @@
 <div class="dl-hero">
     <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
         <div>
-            <h1><i class="bi bi-cloud-download"></i> Release Downloads</h1>
+            <h1><i class="bi bi-cloud-download"></i> {{ t('ui.heading.release_downloads', 'Release Downloads') }}</h1>
             <p>Releases, updates, and utilities from {{ bbs_name }}. Files are listed newest-first.</p>
         </div>
         {% if current_user.is_authenticated and current_user.is_admin %}
@@ -69,8 +69,8 @@
     <table class="table">
         <thead>
             <tr>
-                <th>File</th>
-                <th class="text-end">Size</th>
+                <th>{{ t('ui.file', 'File') }}</th>
+                <th class="text-end">{{ t('ui.size', 'Size') }}</th>
                 <th>Modified</th>
                 <th class="text-end" style="width:1%;">&nbsp;</th>
             </tr>
@@ -90,7 +90,7 @@
                 <td class="text-end text-nowrap">
                     <a class="btn btn-success dl-btn"
                        href="{{ url_for('downloads.serve', filename=e.name) }}">
-                        <i class="bi bi-download"></i> Download
+                        <i class="bi bi-download"></i> {{ t('ui.download', 'Download') }}
                     </a>
                     <a class="btn btn-outline-secondary dl-btn"
                        href="{{ url_for('downloads.sha256_for', filename=e.name) }}"

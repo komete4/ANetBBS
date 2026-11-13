@@ -15,7 +15,7 @@
 </style>
 
 <div class="bbs-header">
-    <h1><i class="bi bi-mortarboard"></i> New Sysop Tutorial</h1>
+    <h1><i class="bi bi-mortarboard"></i> {{ t('ui.heading.new_sysop_tutorial', 'New Sysop Tutorial') }}</h1>
     <p class="lead">A 10-step walkthrough — use the arrows to navigate.</p>
 </div>
 
@@ -37,7 +37,7 @@
         <div class="carousel-item active">
             <div class="slide text-center">
                 <span class="step-badge">Step 0 / 10</span>
-                <h2><i class="bi bi-rocket-takeoff"></i> Welcome, sysop.</h2>
+                <h2><i class="bi bi-rocket-takeoff"></i> {{ t('ui.heading.welcome_sysop', 'Welcome, sysop.') }}</h2>
                 <p class="lead">This tour walks you through the
                 first ten things to do after installing ANetBBS.</p>
                 <p>Use ←/→ keys, swipe, or the arrows to navigate.
@@ -51,7 +51,7 @@
         <div class="carousel-item">
             <div class="slide">
                 <span class="step-badge">Step 1 / 10</span>
-                <h2><i class="bi bi-key"></i> Change the seeded admin password</h2>
+                <h2><i class="bi bi-key"></i> {{ t('ui.heading.change_the_seeded_admin_password', 'Change the seeded admin password') }}</h2>
                 <p>The first start auto-generates a random admin password
                 and writes it to <code>data/admin_password.txt</code>
                 (mode <code>0600</code>). The web log also banner-prints
@@ -71,8 +71,8 @@
         <div class="carousel-item">
             <div class="slide">
                 <span class="step-badge">Step 2 / 10</span>
-                <h2><i class="bi bi-pencil-square"></i> Brand the BBS</h2>
-                <p>Edit <code>/opt/anetbbs/.env</code>
+                <h2><i class="bi bi-pencil-square"></i> {{ t('ui.heading.brand_the_bbs', 'Brand the BBS') }}</h2>
+                <p>{{ t('ui.edit', 'Edit') }} <code>/opt/anetbbs/.env</code>
                 and set:</p>
                 <pre>BBS_NAME=My Awesome BBS
 BBS_DESCRIPTION=Where the cool kids hang out
@@ -88,7 +88,7 @@ BBS_NODES=8</pre>
         <div class="carousel-item">
             <div class="slide">
                 <span class="step-badge">Step 3 / 10</span>
-                <h2><i class="bi bi-palette"></i> Pick a theme + draw a welcome banner</h2>
+                <h2><i class="bi bi-palette"></i> {{ t('ui.heading.pick_a_theme_draw_a_welcome_banner', 'Pick a theme + draw a welcome banner') }}</h2>
                 <ul>
                     <li><strong>Profile → Themes</strong> — pick from 9 built-in
                         themes (Modern Dark / Classic Green / Amber / Blue Ice /
@@ -105,11 +105,11 @@ BBS_NODES=8</pre>
         <div class="carousel-item">
             <div class="slide">
                 <span class="step-badge">Step 4 / 10</span>
-                <h2><i class="bi bi-chat-left-text"></i> Customize message boards</h2>
+                <h2><i class="bi bi-chat-left-text"></i> {{ t('ui.heading.customize_message_boards', 'Customize message boards') }}</h2>
                 <p>Default install seeds 4 boards. Make them yours:</p>
                 <ul>
                     <li><strong>Admin → Boards → Add Board</strong></li>
-                    <li>Group with <strong>Category</strong> field
+                    <li>Group with <strong>{{ t('ui.category', 'Category') }}</strong> field
                         ("General", "Tech", "FidoNet")</li>
                     <li>Assign <strong>per-board moderators</strong> from the
                         boards admin list (the badge icon)</li>
@@ -121,7 +121,7 @@ BBS_NODES=8</pre>
         <div class="carousel-item">
             <div class="slide">
                 <span class="step-badge">Step 5 / 10</span>
-                <h2><i class="bi bi-list-nested"></i> Edit the BBS menu (telnet/SSH)</h2>
+                <h2><i class="bi bi-list-nested"></i> {{ t('ui.heading.edit_the_bbs_menu_telnet_ssh', 'Edit the BBS menu (telnet/SSH)') }}</h2>
                 <p>Everything is data-driven and customizable:</p>
                 <ul>
                     <li><strong>Admin → BBS Menus</strong></li>
@@ -139,7 +139,7 @@ BBS_NODES=8</pre>
         <div class="carousel-item">
             <div class="slide">
                 <span class="step-badge">Step 6 / 10</span>
-                <h2><i class="bi bi-envelope-arrow-up"></i> Plug into FidoNet (echomail)</h2>
+                <h2><i class="bi bi-envelope-arrow-up"></i> {{ t('ui.heading.plug_into_fidonet_echomail', 'Plug into FidoNet (echomail)') }}</h2>
                 <p>Want your BBS to share messages with the wider FidoNet?</p>
                 <ul>
                     <li><strong>Admin → Echomail Networks</strong></li>
@@ -155,7 +155,7 @@ BBS_NODES=8</pre>
         <div class="carousel-item">
             <div class="slide">
                 <span class="step-badge">Step 7 / 10</span>
-                <h2><i class="bi bi-sliders"></i> Sysop control panel</h2>
+                <h2><i class="bi bi-sliders"></i> {{ t('ui.heading.sysop_control_panel', 'Sysop control panel') }}</h2>
                 <p><strong>Admin → Control Panel</strong> is your daily ops view:</p>
                 <ul>
                     <li>Service status + Start / Stop / Restart buttons
@@ -182,7 +182,7 @@ sudo chmod 0440 /etc/sudoers.d/anetbbs</pre>
         <div class="carousel-item">
             <div class="slide">
                 <span class="step-badge">Step 8 / 10</span>
-                <h2><i class="bi bi-shield-check"></i> Spam &amp; abuse control</h2>
+                <h2><i class="bi bi-shield-check"></i> {{ t('ui.heading.spam_abuse_control', 'Spam & abuse control') }}</h2>
                 <ul>
                     <li><strong>NUV</strong> — set <code>NUV_ENABLED=true</code> so
                         every new user needs your approval (Admin → Pending Users)</li>
@@ -202,7 +202,7 @@ sudo chmod 0440 /etc/sudoers.d/anetbbs</pre>
         <div class="carousel-item">
             <div class="slide">
                 <span class="step-badge">Step 9 / 10</span>
-                <h2><i class="bi bi-controller"></i> Door games + external programs</h2>
+                <h2><i class="bi bi-controller"></i> {{ t('ui.heading.door_games_external_programs', 'Door games + external programs') }}</h2>
                 <ul>
                     <li><strong>Admin → Door Games</strong> — register existing
                         DOS / Synchronet / Mystic / native doors</li>
@@ -220,7 +220,7 @@ sudo chmod 0440 /etc/sudoers.d/anetbbs</pre>
         <div class="carousel-item">
             <div class="slide text-center">
                 <span class="step-badge">Step 10 / 10</span>
-                <h2><i class="bi bi-flag-fill"></i> You're set</h2>
+                <h2><i class="bi bi-flag-fill"></i> {{ t('ui.heading.you_re_set', "You're set") }}</h2>
                 <p class="lead">That's the high-level tour. Everything else
                 is in the docs.</p>
                 <p>
@@ -243,10 +243,10 @@ sudo chmod 0440 /etc/sudoers.d/anetbbs</pre>
     </div>
 
     <button class="carousel-control-prev" type="button" data-bs-target="#sysopTutorial" data-bs-slide="prev">
-        <span class="carousel-control-prev-icon"></span><span class="visually-hidden">Previous</span>
+        <span class="carousel-control-prev-icon"></span><span class="visually-hidden">{{ t('ui.previous', 'Previous') }}</span>
     </button>
     <button class="carousel-control-next" type="button" data-bs-target="#sysopTutorial" data-bs-slide="next">
-        <span class="carousel-control-next-icon"></span><span class="visually-hidden">Next</span>
+        <span class="carousel-control-next-icon"></span><span class="visually-hidden">{{ t('ui.next', 'Next') }}</span>
     </button>
 </div>
 {% endblock %}

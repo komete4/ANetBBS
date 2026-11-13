@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}Board Management - Admin{% endblock %}
+{% block title %}{{ t('admin.boards.board_management_admin', 'Board Management - Admin') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-collection"></i> Board Management</h1>
+    <h1><i class="bi bi-collection"></i> {{ t('admin.boards.board_management', 'Board Management') }}</h1>
 </div>
 
 <div class="text-end mb-3">
-    <a href="{{ url_for('admin.add_board') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Add Board</a>
+    <a href="{{ url_for('admin.add_board') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> {{ t('admin.boards.add_board', 'Add Board') }}</a>
 </div>
 
 <div class="card">
@@ -16,12 +16,12 @@
         <table class="table mb-0">
             <thead>
                 <tr>
-                    <th>Order</th>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>Posts</th>
-                    <th>Active</th>
-                    <th>Actions</th>
+                    <th>{{ t('admin.boards.order', 'Order') }}</th>
+                    <th>{{ t('admin.boards.name', 'Name') }}</th>
+                    <th>{{ t('admin.boards.description', 'Description') }}</th>
+                    <th>{{ t('admin.boards.posts', 'Posts') }}</th>
+                    <th>{{ t('admin.boards.active', 'Active') }}</th>
+                    <th>{{ t('admin.boards.actions', 'Actions') }}</th>
                 </tr>
             </thead>
             <tbody>

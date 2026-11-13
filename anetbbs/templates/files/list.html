@@ -1,18 +1,18 @@
 {% extends "base.html" %}
-{% block title %}File Gallery - {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{{ t('files.gallery_prefix', 'File Gallery -') }} {{ config.BBS_NAME }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-folder"></i> File Gallery</h1>
+    <h1><i class="bi bi-folder"></i> {{ t('files.gallery', 'File Gallery') }}</h1>
 </div>
 {% if current_user.is_authenticated and config.get('FILE_UPLOADS_ENABLED', true) %}
 <div class="text-end mb-3">
-    <a href="{{ url_for('files.upload') }}" class="btn btn-primary"><i class="bi bi-upload"></i> Upload File</a>
+    <a href="{{ url_for('files.upload') }}" class="btn btn-primary"><i class="bi bi-upload"></i> {{ t('files.upload', 'Upload File') }}</a>
 </div>
 {% endif %}
 <div class="card">
     <div class="card-body p-0">
         <table class="table mb-0">
-            <thead><tr><th>Filename</th><th>Uploader</th><th>Size</th><th>Type</th><th>Downloads</th><th>Date</th><th>Actions</th></tr></thead>
+            <thead><tr><th>{{ t('files.filename', 'Filename') }}</th><th>{{ t('files.uploader', 'Uploader') }}</th><th>{{ t('files.size', 'Size') }}</th><th>{{ t('files.type', 'Type') }}</th><th>{{ t('files.downloads', 'Downloads') }}</th><th>{{ t('files.date', 'Date') }}</th><th>{{ t('files.actions', 'Actions') }}</th></tr></thead>
             <tbody>
                 {% for f in uploads %}
                 <tr>
@@ -33,7 +33,7 @@
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="7" class="text-center">No files uploaded yet.</td></tr>
+                <tr><td colspan="7" class="text-center">{{ t('files.empty', 'No files uploaded yet.') }}</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -41,12 +41,12 @@
 </div>
 
 {% if pagination and pagination.pages > 1 %}
-<nav aria-label="File gallery pages">
+<nav aria-label="{{ t('files.pagination', 'File gallery pages') }}">
     <ul class="pagination justify-content-center">
         {% if pagination.has_prev %}
-        <li class="page-item"><a class="page-link" href="{{ url_for('files.list_files', page=pagination.prev_num) }}">‹ Prev</a></li>
+        <li class="page-item"><a class="page-link" href="{{ url_for('files.list_files', page=pagination.prev_num) }}">{{ t('files.prev', '‹ Prev') }}</a></li>
         {% else %}
-        <li class="page-item disabled"><span class="page-link">‹ Prev</span></li>
+        <li class="page-item disabled"><span class="page-link">{{ t('files.prev', '‹ Prev') }}</span></li>
         {% endif %}
         {% for p in pagination.iter_pages() %}
             {% if p %}
@@ -58,12 +58,12 @@
             {% endif %}
         {% endfor %}
         {% if pagination.has_next %}
-        <li class="page-item"><a class="page-link" href="{{ url_for('files.list_files', page=pagination.next_num) }}">Next ›</a></li>
+        <li class="page-item"><a class="page-link" href="{{ url_for('files.list_files', page=pagination.next_num) }}">{{ t('files.next', 'Next ›') }}</a></li>
         {% else %}
-        <li class="page-item disabled"><span class="page-link">Next ›</span></li>
+        <li class="page-item disabled"><span class="page-link">{{ t('files.next', 'Next ›') }}</span></li>
         {% endif %}
     </ul>
-    <p class="text-center text-muted small">Page {{ pagination.page }} of {{ pagination.pages }} — {{ pagination.total }} file{{ '' if pagination.total == 1 else 's' }} total</p>
+    <p class="text-center text-muted small">{% if pagination.total == 1 %}{{ t('files.page_one', 'Page {page} of {pages} — {total} file total', page=pagination.page, pages=pagination.pages, total=pagination.total) }}{% else %}{{ t('files.page_many', 'Page {page} of {pages} — {total} files total', page=pagination.page, pages=pagination.pages, total=pagination.total) }}{% endif %}</p>
 </nav>
 {% endif %}
 {% endblock %}

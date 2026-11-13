@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Send Telegram{% endblock %}
+{% block title %}{{ t('ui.send_telegram', 'Send Telegram') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-lightning-fill"></i> Send a Telegram</h1>
+    <h1><i class="bi bi-lightning-fill"></i> {{ t('ui.heading.send_a_telegram', 'Send a Telegram') }}</h1>
     <p>One-line attention message — delivered crash + immediate.</p>
 </div>
 
@@ -33,8 +33,8 @@
             <textarea name="body" rows="4" maxlength="1000" required
                       class="form-control" style="font-family:monospace;">{{ form.body or '' }}</textarea>
         </div>
-        <button class="btn btn-warning"><i class="bi bi-lightning"></i> Send Telegram</button>
-        <a href="{{ url_for('telegram.index') }}" class="btn btn-link">Cancel</a>
+        <button class="btn btn-warning"><i class="bi bi-lightning"></i> {{ t('ui.send_telegram', 'Send Telegram') }}</button>
+        <a href="{{ url_for('telegram.index') }}" class="btn btn-link">{{ t('ui.cancel', 'Cancel') }}</a>
     </div>
 </form>
 {% endblock %}

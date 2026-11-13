@@ -2,7 +2,7 @@
 {% block title %}ANSI Screens{% endblock %}
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-tv"></i> Login / Logoff ANSI Screens</h1>
+    <h1><i class="bi bi-tv"></i> {{ t('ui.heading.login_logoff_ansi_screens', 'Login / Logoff ANSI Screens') }}</h1>
     <p class="small text-muted">
         These are the raw CP437/ANSI screens shown by the telnet/SSH/rlogin
         BBS at lifecycle events. Welcome is shown to telnet visitors before
@@ -29,7 +29,7 @@
     {% for slot, desc in missing_builtins %}
         <li class="list-group-item d-flex justify-content-between align-items-center">
             <span><strong><code>{{ slot }}</code></strong> &mdash; {{ desc }}</span>
-            <a href="{{ url_for('menu_admin.edit_screen', slot=slot) }}" class="btn btn-sm btn-outline-primary">Create</a>
+            <a href="{{ url_for('menu_admin.edit_screen', slot=slot) }}" class="btn btn-sm btn-outline-primary">{{ t('ui.create', 'Create') }}</a>
         </li>
     {% endfor %}
     </ul>
@@ -39,7 +39,7 @@
 {% if rows %}
 <table class="table table-sm">
     <thead>
-        <tr><th>Slot</th><th>Title</th><th>Active</th><th>Pause</th><th>Updated</th><th></th></tr>
+        <tr><th>Slot</th><th>{{ t('ui.title', 'Title') }}</th><th>{{ t('ui.active', 'Active') }}</th><th>Pause</th><th>{{ t('ui.updated', 'Updated') }}</th><th></th></tr>
     </thead>
     <tbody>
     {% for r in rows %}

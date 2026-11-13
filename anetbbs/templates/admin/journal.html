@@ -6,7 +6,7 @@
 </div>
 <div class="mb-2">
     <a href="{{ url_for('control.index') }}" class="btn btn-sm btn-secondary">← Back</a>
-    <a href="{{ url_for('control.service_journal', unit=unit) }}" class="btn btn-sm btn-outline-primary">Refresh</a>
+    <a href="{{ url_for('control.service_journal', unit=unit) }}" class="btn btn-sm btn-outline-primary">{{ t('ui.refresh', 'Refresh') }}</a>
 </div>
 <pre style="background:#000;color:#0f0;padding:10px;font-size:0.8rem;
             white-space: pre-wrap; max-height:75vh; overflow:auto;">{{ log }}</pre>

@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}File-Echo Subscriptions{% endblock %}
+{% block title %}{{ t('ui.heading.file_echo_subscriptions', 'File-Echo Subscriptions') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-share"></i> File-Echo Subscriptions</h1>
+    <h1><i class="bi bi-share"></i> {{ t('ui.heading.file_echo_subscriptions', 'File-Echo Subscriptions') }}</h1>
     <p>Downstream peers that receive each file area's hatched files.</p>
 </div>
 {% if peer_filter %}
@@ -35,7 +35,7 @@
                        pattern="^\d+:\d+/\d+(\.\d+)?$" required>
             </div>
             <div class="col-md-2">
-                <button class="btn btn-primary w-100">Subscribe</button>
+                <button class="btn btn-primary w-100">{{ t('ui.subscribe', 'Subscribe') }}</button>
             </div>
         </form>
     </div>
@@ -46,7 +46,7 @@
     {% if subs %}
         <table class="table table-sm mb-0">
             <thead><tr>
-                <th>Area</th><th>Peer</th><th>Active</th><th>Created</th><th></th>
+                <th>{{ t('ui.area', 'Area') }}</th><th>Peer</th><th>{{ t('ui.active', 'Active') }}</th><th>{{ t('ui.created', 'Created') }}</th><th></th>
             </tr></thead>
             <tbody>
             {% for s in subs %}

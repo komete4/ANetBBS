@@ -4,11 +4,11 @@
 {% block content %}
 <div class="bbs-header d-flex justify-content-between align-items-center flex-wrap gap-2">
     <div>
-        <h1><i class="bi bi-clock-history"></i> Hold Queue</h1>
+        <h1><i class="bi bi-clock-history"></i> {{ t('ui.heading.hold_queue', 'Hold Queue') }}</h1>
         <p>Outbound echomail queued for delivery to downstream BinkP nodes.</p>
     </div>
     <a href="{{ url_for('hub_admin.index') }}" class="btn btn-secondary">
-        <i class="bi bi-arrow-left"></i> Hub Overview
+        <i class="bi bi-arrow-left"></i> {{ t('ui.hub_overview', 'Hub Overview') }}
     </a>
 </div>
 
@@ -16,15 +16,15 @@
 <form method="GET" class="card mb-3">
     <div class="card-body d-flex gap-2 flex-wrap align-items-end">
         <div>
-            <label class="form-label">Status</label>
+            <label class="form-label">{{ t('ui.status', 'Status') }}</label>
             <select name="status" class="form-select form-select-sm">
-                <option value="pending" {% if status=='pending' %}selected{% endif %}>Pending</option>
-                <option value="sent" {% if status=='sent' %}selected{% endif %}>Sent</option>
-                <option value="failed" {% if status=='failed' %}selected{% endif %}>Failed</option>
+                <option value="pending" {% if status=='pending' %}selected{% endif %}>{{ t('ui.pending', 'Pending') }}</option>
+                <option value="sent" {% if status=='sent' %}selected{% endif %}>{{ t('ui.sent', 'Sent') }}</option>
+                <option value="failed" {% if status=='failed' %}selected{% endif %}>{{ t('ui.failed', 'Failed') }}</option>
             </select>
         </div>
         <div>
-            <label class="form-label">Node</label>
+            <label class="form-label">{{ t('ui.node', 'Node') }}</label>
             <select name="node_id" class="form-select form-select-sm">
                 <option value="">All nodes</option>
                 {% for n in nodes %}
@@ -32,7 +32,7 @@
                 {% endfor %}
             </select>
         </div>
-        <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+        <button type="submit" class="btn btn-primary btn-sm">{{ t('ui.filter', 'Filter') }}</button>
     </div>
 </form>
 
@@ -43,12 +43,12 @@
             <thead>
                 <tr>
                     <th>#</th>
-                    <th>Node</th>
-                    <th>Message</th>
-                    <th>Area</th>
-                    <th>Status</th>
-                    <th>Queued</th>
-                    <th>Sent</th>
+                    <th>{{ t('ui.node', 'Node') }}</th>
+                    <th>{{ t('ui.message', 'Message') }}</th>
+                    <th>{{ t('ui.area', 'Area') }}</th>
+                    <th>{{ t('ui.status', 'Status') }}</th>
+                    <th>{{ t('ui.queued', 'Queued') }}</th>
+                    <th>{{ t('ui.sent', 'Sent') }}</th>
                 </tr>
             </thead>
             <tbody>

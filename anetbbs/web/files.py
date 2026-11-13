@@ -15,6 +15,7 @@ from werkzeug.utils import secure_filename
 
 from ..models import db, FileUpload, FileArea, UserActivity
 from ..features.archive_meta import extract_archive_description
+from ..features.i18n import FormTranslations, translate
 from ..features.access_control import evaluate_access
 from .list_pagination import ListPagination
 
@@ -44,6 +45,16 @@ def _visible_to(user, area):
 
 
 class UploadForm(FlaskForm):
+    class Meta(FlaskForm.Meta):
+        def get_translations(self, form):
+            return FormTranslations()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ('file_area_id', 'description', 'file', 'submit'):
+            label = getattr(self, name).label
+            label.text = translate(f'files.form.{name}', label.text)
+
     file_area_id = SelectField('File Area', coerce=int, validators=[Optional()])
     description = TextAreaField('Description', validators=[Optional()])
     file = FileField('File', validators=[FileRequired()])
@@ -94,13 +105,13 @@ def upload():
     form = UploadForm()
     # Build the file-area picker. (0, '— Top-level —') means no area scoping.
     areas = FileArea.query.filter_by(is_active=True).order_by(FileArea.name).all()
-    form.file_area_id.choices = [(0, '— Top-level (no area) —')] + [
+    form.file_area_id.choices = [(0, translate('files.top_level', '— Top-level (no area) —'))] + [
         (a.id, f'{a.name or a.tag}') for a in areas]
 
     if form.validate_on_submit():
         f = form.file.data
         if not f or not f.filename:
-            flash('No file selected.', 'danger')
+            flash(translate('files.no_file', 'No file selected.'), 'danger')
             return render_template('files/upload.html', form=form)
 
         # Per-area access control. upload_permission values:
@@ -111,7 +122,7 @@ def upload():
         if form.file_area_id.data:
             chosen_area = FileArea.query.get(form.file_area_id.data)
             if chosen_area is None or not chosen_area.is_active:
-                flash('That file area no longer exists.', 'danger')
+                flash(translate('files.area_missing', 'That file area no longer exists.'), 'danger')
                 return render_template('files/upload.html', form=form)
             perm = (chosen_area.upload_permission or 'users').lower()
             if perm == 'none':
@@ -123,7 +134,7 @@ def upload():
                 return render_template('files/upload.html', form=form)
 
         if not allowed_file(f.filename):
-            flash('File type not allowed.', 'danger')
+            flash(translate('files.type_not_allowed', 'File type not allowed.'), 'danger')
             return render_template('files/upload.html', form=form)
 
         # Check file size
@@ -225,7 +236,7 @@ def upload():
         db.session.add(upload_obj)
         db.session.commit()
 
-        flash('File uploaded successfully!', 'success')
+        flash(translate('files.upload_success', 'File uploaded successfully!'), 'success')
         return redirect(url_for('files.list_files'))
 
     return render_template('files/upload.html', form=form)
@@ -304,5 +315,5 @@ def delete_file(file_id):
     db.session.delete(upload_obj)
     db.session.commit()
 
-    flash('File deleted.', 'success')
+    flash(translate('files.deleted', 'File deleted.'), 'success')
     return redirect(url_for('files.list_files'))

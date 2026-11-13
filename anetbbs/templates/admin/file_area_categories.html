@@ -3,27 +3,27 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3><i class="bi bi-tags"></i> File Area Categories</h3>
+    <h3><i class="bi bi-tags"></i> {{ t('ui.heading.file_area_categories', 'File Area Categories') }}</h3>
     <div class="d-flex gap-2">
         <a href="{{ url_for('admin.add_file_area_category') }}" class="btn btn-primary btn-sm">
-            <i class="bi bi-plus-circle"></i> Add Category
+            <i class="bi bi-plus-circle"></i> {{ t('ui.add_category', 'Add Category') }}
         </a>
         <form method="post" action="{{ url_for('admin.renumber_file_area_categories') }}" style="display:inline;"
               onsubmit="return confirm('Renumber every category to a clean 1/2/3/... sequence?');">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-sm btn-primary" title="Auto-renumber all categories">
-                <i class="bi bi-sort-numeric-down"></i> Renumber
+                <i class="bi bi-sort-numeric-down"></i> {{ t('ui.renumber', 'Renumber') }}
             </button>
         </form>
         <a href="{{ url_for('admin.file_areas_admin') }}" class="btn btn-primary btn-sm">
-            <i class="bi bi-arrow-left"></i> File Areas
+            <i class="bi bi-arrow-left"></i> {{ t('ui.file_areas', 'File Areas') }}
         </a>
     </div>
 </div>
 
 <p class="small text-muted">
     <i class="bi bi-info-circle"></i>
-    For a category shown as a <strong>submenu section</strong>, <code>Sort Order</code> is the
+    For a category shown as a <strong>submenu section</strong>, <code>{{ t('ui.sort_order', 'Sort Order') }}</code> is the
     number a caller types to enter it. Drag the <i class="bi bi-grip-vertical"></i> handle to
     reorder; dropping renumbers the submenu categories cleanly, starting at 1.
 </p>
@@ -40,11 +40,11 @@
     <thead>
         <tr>
             <th style="width:2em;"></th>
-            <th>Name</th>
-            <th>Slug</th>
-            <th>Sort Order</th>
+            <th>{{ t('ui.name', 'Name') }}</th>
+            <th>{{ t('ui.slug', 'Slug') }}</th>
+            <th>{{ t('ui.sort_order', 'Sort Order') }}</th>
             <th>Menu</th>
-            <th>Actions</th>
+            <th>{{ t('ui.actions', 'Actions') }}</th>
         </tr>
     </thead>
     <tbody>
@@ -63,7 +63,7 @@
             </td>
             <td>
                 <a href="{{ url_for('admin.edit_file_area_category', cat_id=cat.id) }}"
-                   class="btn btn-sm btn-primary" title="Edit">
+                   class="btn btn-sm btn-primary" title="{{ t('ui.edit', 'Edit') }}">
                     <i class="bi bi-pencil"></i>
                 </a>
                 <form method="post"
@@ -73,7 +73,7 @@
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-sm"
                             style="background:#330000;border:1px solid #ff0000;color:#ff0000;"
-                            title="Delete">
+                            title="{{ t('ui.delete', 'Delete') }}">
                         <i class="bi bi-trash"></i>
                     </button>
                 </form>

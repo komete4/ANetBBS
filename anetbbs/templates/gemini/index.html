@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}Gemini Capsules{% endblock %}
+{% block title %}{{ t('ui.heading.gemini_capsules', 'Gemini Capsules') }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-stars"></i> Gemini Capsules</h1>
+    <h1><i class="bi bi-stars"></i> {{ t('ui.heading.gemini_capsules', 'Gemini Capsules') }}</h1>
     <p>User-published gemtext pages. <a href="{{ url_for('gemini.edit') }}">Edit your own.</a></p>
 </div>
 <div class="card">

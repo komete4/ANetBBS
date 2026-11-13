@@ -15,11 +15,11 @@
         </div>
         <div>
             <a href="{{ url_for('imsg.directory') }}" class="btn btn-secondary btn-sm">
-                <i class="bi bi-arrow-left"></i> Directory
+                <i class="bi bi-arrow-left"></i> {{ t('ui.directory', 'Directory') }}
             </a>
             <a href="{{ url_for('imsg.send', host=entry.hostname) }}"
                class="btn btn-success btn-sm">
-                <i class="bi bi-send"></i> Send IM
+                <i class="bi bi-send"></i> {{ t('ui.send_im', 'Send IM') }}
             </a>
         </div>
     </div>

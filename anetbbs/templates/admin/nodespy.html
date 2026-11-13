@@ -51,7 +51,7 @@
 
 <div class="mt-2 d-flex gap-2">
     <a href="{{ url_for('control.index') }}" class="btn btn-sm btn-secondary">← Back</a>
-    <a href="{{ url_for('control.nodespy_view', slot=node.slot) }}" class="btn btn-sm btn-outline-primary">Refresh</a>
+    <a href="{{ url_for('control.nodespy_view', slot=node.slot) }}" class="btn btn-sm btn-outline-primary">{{ t('ui.refresh', 'Refresh') }}</a>
     <form method="post" action="{{ url_for('control.nodespy_kick', slot=node.slot) }}"
           onsubmit="return confirm('Kick {{ node.username }} from slot {{ node.slot }}?\nThis drops the connection — they can reconnect immediately. Use IP bans to prevent reconnect.');"
           class="d-inline d-flex gap-1">

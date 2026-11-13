@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ current_language }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-  <title>MRC Chat - ANetBBS</title>
+  <title>{{ t('mrc.web.title', 'MRC Chat') }} - ANetBBS</title>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     
@@ -640,20 +640,20 @@
   <div class="logo-wrap">
     <img src="https://a-net.online/mrc.png" class="logo">
   </div>
-  <a href="#" id="return-link">Return to BBS</a>
-  <button id="leave-btn-mobile" title="Leave the current room">Leave</button>
+  <a href="#" id="return-link">{{ t('mrc.web.return', 'Return to BBS') }}</a>
+  <button id="leave-btn-mobile" title="{{ t('mrc.web.leave_room', 'Leave the current room') }}">{{ t('mrc.web.leave', 'Leave') }}</button>
 </div>
 
   <div class="status" id="status">
     <div class="status-left">
-      Status: <span id="status-text">Connecting...</span>
+      {{ t('mrc.web.status', 'Status:') }} <span id="status-text">{{ t('mrc.web.connecting', 'Connecting...') }}</span>
     </div>
     <div class="status-right">
       <div class="latency-wrap" id="status-latency-wrap" style="display:none;">
         <span id="status-latency-text">-</span>
       </div>
       <div class="topic-wrap">
-        Topic: <span id="topic-text" class="topic-text">-</span>
+        {{ t('mrc.web.topic', 'Topic:') }} <span id="topic-text" class="topic-text">-</span>
       </div>
     </div>
   </div>
@@ -671,26 +671,25 @@
       <div class="messages" id="messages"></div>
       <div class="input-area">
         <div id="join-panel" class="join-panel">
-          <h2>Join MRC Chat</h2>
-          <div><input type="text" id="handle-input" placeholder="Your handle" value="{{ suggested_handle }}" /></div>
-          <div><input type="text" id="room-input" placeholder="Room (default: lobby)" value="lobby" /></div>
-          <div><button id="join-btn">Join Chat</button></div>
+          <h2>{{ t('mrc.web.join_title', 'Join MRC Chat') }}</h2>
+          <div><input type="text" id="handle-input" placeholder="{{ t('mrc.web.handle_placeholder', 'Your handle') }}" value="{{ suggested_handle }}" /></div>
+          <div><input type="text" id="room-input" placeholder="{{ t('mrc.web.room_placeholder', 'Room (default: lobby)') }}" value="lobby" /></div>
+          <div><button id="join-btn">{{ t('mrc.web.join_chat', 'Join Chat') }}</button></div>
         </div>
         <div id="chat-panel" style="display:none;">
           <div class="input-group">
             <input type="text" id="message-input" maxlength="280"
-              placeholder="Type a message, /command, or !helper..."
+              placeholder="{{ t('mrc.web.message_placeholder', 'Type a message, /command, or !helper...') }}"
               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" 
               inputmode="text" />
-            <button id="send-btn">Send</button>
-            <button id="leave-btn">Leave</button>
+            <button id="send-btn">{{ t('mrc.web.send', 'Send') }}</button>
+            <button id="leave-btn">{{ t('mrc.web.leave', 'Leave') }}</button>
           </div>
           <div class="help-hint">
-            Tip: /help, /whoon, /chatters, /join &lt;room&gt;, /identify &lt;pass&gt;,
-            /register &lt;pass&gt; [email], /t user msg, /me action, /ctcp target command, and helpers like !list
+            {{ t('mrc.web.commands_hint', 'Tip: /help, /whoon, /chatters, /join <room>, /identify <pass>, /register <pass> [email], /t user msg, /me action, /ctcp target command, and helpers like !list') }}
             <div style="margin-top:4px;">
-              Shortcuts: <code>Alt+H</code> history, <code>Alt+T</code> sticky DM toggle,
-              <code>Alt+M</code> macros, <code>↑/↓</code> cycle recent inputs
+              {{ t('mrc.web.shortcuts', 'Shortcuts:') }} <code>Alt+H</code> {{ t('mrc.web.shortcut_history', 'history,') }} <code>Alt+T</code> {{ t('mrc.web.shortcut_dm', 'sticky DM toggle,') }}
+              <code>Alt+M</code> macros, <code>↑/↓</code> {{ t('mrc.web.shortcut_inputs', 'cycle recent inputs') }}
             </div>
           </div>
         </div>
@@ -698,16 +697,16 @@
     </div>
 
     <div class="sidebar">
-      <h3>Information</h3>
-      <div class="sidebar-item">Room: <span id="current-room">-</span></div>
-      <div class="sidebar-item">Handle: <span id="current-handle">-</span></div>
-      <div class="sidebar-item">Server: <span id="server-info">-</span></div>
-      <div class="sidebar-item">Latency: <span id="latency-info">-</span></div>
-      <div class="sidebar-item">Clock: <span id="clock-info">-</span></div>
+      <h3>{{ t('mrc.web.information', 'Information') }}</h3>
+      <div class="sidebar-item">{{ t('mrc.web.room', 'Room:') }} <span id="current-room">-</span></div>
+      <div class="sidebar-item">{{ t('mrc.web.handle', 'Handle:') }} <span id="current-handle">-</span></div>
+      <div class="sidebar-item">{{ t('mrc.web.server', 'Server:') }} <span id="server-info">-</span></div>
+      <div class="sidebar-item">{{ t('mrc.web.latency', 'Latency:') }} <span id="latency-info">-</span></div>
+      <div class="sidebar-item">{{ t('mrc.web.clock', 'Clock:') }} <span id="clock-info">-</span></div>
 
       <div class="panel" id="helpers-panel" style="display:none;">
         <div class="panel-header" id="helpers-header">
-          <span>Helpers</span>
+          <span>{{ t('mrc.web.helpers', 'Helpers') }}</span>
           <span class="chev" id="helpers-chev">[+]</span>
         </div>
         <div class="panel-body" id="helpers-body">
@@ -720,40 +719,40 @@
             <button id="btn-chatters">/chatters</button>
           </div>
           <div style="height:8px;"></div>
-          <label>Quick Join</label>
+          <label>{{ t('mrc.web.quick_join', 'Quick Join') }}</label>
           <div class="panel-row">
-            <input type="text" id="quick-join-room" placeholder="room name (e.g. ddial)" />
-            <button id="btn-quick-join">Join</button>
+            <input type="text" id="quick-join-room" placeholder="{{ t('mrc.web.quick_join_placeholder', 'room name (e.g. ddial)') }}" />
+            <button id="btn-quick-join">{{ t('mrc.web.join', 'Join') }}</button>
           </div>
           <div style="height:10px;"></div>
-          <label>Session History (Alt+H)</label>
+          <label>{{ t('mrc.web.session_history', 'Session History (Alt+H)') }}</label>
           <div class="mentions-list" id="history-list" style="max-height:160px;"></div>
           <div class="panel-row" style="margin-top:8px;">
-            <button id="history-clear">Clear History</button>
+            <button id="history-clear">{{ t('mrc.web.clear_history', 'Clear History') }}</button>
           </div>
           <div style="height:10px;"></div>
-          <label>Sticky DM (Alt+T)</label>
+          <label>{{ t('mrc.web.sticky_dm', 'Sticky DM (Alt+T)') }}</label>
           <div class="panel-row">
-            <button id="sticky-toggle">Toggle</button>
+            <button id="sticky-toggle">{{ t('mrc.web.toggle', 'Toggle') }}</button>
             <span id="sticky-status" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
           </div>
           <div style="height:10px;"></div>
           <label>Macros (Alt+M)</label>
-          <div class="help-hint">Set up to 12 macros. Click to send. Use {room} and {handle} placeholders.</div>
+          <div class="help-hint">{{ t('mrc.web.macros_hint', 'Set up to 12 macros. Click to send. Use {room} and {handle} placeholders.') }}</div>
           <div id="macros-list"></div>
           <div class="panel-row" style="margin-top:8px;">
-            <button id="macros-edit">Edit Macros</button>
+            <button id="macros-edit">{{ t('mrc.web.edit_macros', 'Edit Macros') }}</button>
           </div>
           <div id="macros-editor" style="display:none;margin-top:8px;">
-            <textarea id="macros-json" spellcheck="false" placeholder='Example:
+            <textarea id="macros-json" spellcheck="false" placeholder='{{ t('mrc.web.example', 'Example:') }}
 [
   {"name":"BJ 50","text":"/t johnny5 play blackjack 50"},
   {"name":"Hit","text":"/t johnny5 hit"},
   {"name":"Stand","text":"/t johnny5 stand"}
 ]'></textarea>
             <div class="panel-row" style="margin-top:6px;">
-              <button id="macros-save">Save</button>
-              <button id="macros-cancel">Cancel</button>
+              <button id="macros-save">{{ t('mrc.web.save', 'Save') }}</button>
+              <button id="macros-cancel">{{ t('mrc.web.cancel', 'Cancel') }}</button>
             </div>
           </div>
         </div>
@@ -761,169 +760,168 @@
 
       <div class="panel" id="style-panel" style="display:none;">
         <div class="panel-header" id="style-header">
-          <span>Handle Style</span>
+          <span>{{ t('mrc.web.handle_style', 'Handle Style') }}</span>
           <span class="chev" id="style-chev">[+]</span>
         </div>
         <div class="panel-body" id="style-body">
-          <label>Theme</label>
+          <label>{{ t('mrc.web.theme', 'Theme') }}</label>
           <div class="panel-row">
             <select id="theme-select">
-              <option value="theme-green">Classic Green</option>
-              <option value="theme-amber">Amber</option>
+              <option value="theme-green">{{ t('mrc.web.classic_green', 'Classic Green') }}</option>
+              <option value="theme-amber">{{ t('mrc.web.amber', 'Amber') }}</option>
               <option value="theme-cyan">Cyan</option>
-              <option value="theme-ibmblue">IBM Blue</option>
-              <option value="theme-mono">Mono</option>
+              <option value="theme-ibmblue">{{ t('mrc.web.ibm_blue', 'IBM Blue') }}</option>
+              <option value="theme-mono">{{ t('mrc.web.mono', 'Mono') }}</option>
               <option value="theme-original">Original (Mystic)</option>
-              <option value="theme-minimal">Minimal (Mystic)</option>
+              <option value="theme-minimal">{{ t('mrc.web.minimal', 'Minimal (Mystic)') }}</option>
               <option value="theme-bitchx">BitchX (Mystic)</option>
               <option value="theme-2leet4u">2Leet4U (Mystic)</option>
               <option value="theme-least">Least (Mystic)</option>
             </select>
           </div>
           <div style="opacity:0.6; font-size:0.85em; margin-top:2px;">
-            Mystic themes inspired by StackFault's MRC client for Mystic BBS
-            (The Bottomless Abyss)
+            {{ t('mrc.web.themes_credit', "Mystic themes inspired by StackFault's MRC client for Mystic BBS (The Bottomless Abyss)") }}
           </div>
           <div class="toggle-row">
             <input type="checkbox" id="crt-toggle" />
-            <label for="crt-toggle" style="margin:0;">CRT effect (scanlines + glow)</label>
+            <label for="crt-toggle" style="margin:0;">{{ t('mrc.web.crt', 'CRT effect (scanlines + glow)') }}</label>
           </div>
-          <label>Font size</label>
+          <label>{{ t('mrc.web.font_size', 'Font size') }}</label>
           <div class="panel-row">
             <input type="range" id="font-size-range" min="11" max="20" step="1" />
             <span id="font-size-label" style="min-width:64px;text-align:right;"></span>
           </div>
-          <label>Line spacing</label>
+          <label>{{ t('mrc.web.line_spacing', 'Line spacing') }}</label>
           <div class="panel-row">
             <input type="range" id="line-height-range" min="1.1" max="1.9" step="0.05" />
             <span id="line-height-label" style="min-width:64px;text-align:right;"></span>
           </div>
           <div class="toggle-row">
             <input type="checkbox" id="pipe-theme-toggle" />
-            <label for="pipe-theme-toggle" style="margin:0;">Theme-colored pipe palette</label>
+            <label for="pipe-theme-toggle" style="margin:0;">{{ t('mrc.web.pipe_palette', 'Theme-colored pipe palette') }}</label>
           </div>
           <div class="panel-row" style="margin-top:8px;">
-            <button id="ui-reset">Reset UI</button>
+            <button id="ui-reset">{{ t('mrc.web.reset_ui', 'Reset UI') }}</button>
           </div>
           <hr style="border:0;border-top:1px solid var(--border);opacity:.35;margin:10px 0;">
-          <label>Prefix Color (00-15)</label>
+          <label>{{ t('mrc.web.prefix_color', 'Prefix Color (00-15)') }}</label>
           <div class="panel-row"><select id="style-prefix-color"></select></div>
-          <label>Handle Color (00-15)</label>
+          <label>{{ t('mrc.web.handle_color', 'Handle Color (00-15)') }}</label>
           <div class="panel-row"><select id="style-handle-color"></select></div>
-          <label>Suffix Color (00-15)</label>
+          <label>{{ t('mrc.web.suffix_color', 'Suffix Color (00-15)') }}</label>
           <div class="panel-row"><select id="style-suffix-color"></select></div>
-          <label for="style-prefix">Prefix</label>
+          <label for="style-prefix">{{ t('mrc.web.prefix', 'Prefix') }}</label>
           <div class="panel-row">
-            <input type="text" id="style-prefix" maxlength="16" placeholder="e.g. !" />
+            <input type="text" id="style-prefix" maxlength="16" placeholder="{{ t('mrc.web.prefix_example', 'e.g. !') }}" />
           </div>
-          <label for="style-suffix">Suffix</label>
+          <label for="style-suffix">{{ t('mrc.web.suffix', 'Suffix') }}</label>
           <div class="panel-row">
-            <input type="text" id="style-suffix" maxlength="32" placeholder="e.g. |12>" />
+            <input type="text" id="style-suffix" maxlength="32" placeholder="{{ t('mrc.web.suffix_example', 'e.g. |12>') }}" />
           </div>
-          <label>Typing Color (local + optional outgoing)</label>
+          <label>{{ t('mrc.web.typing_color', 'Typing Color (local + optional outgoing)') }}</label>
           <div class="panel-row"><select id="style-typing-color"></select></div>
           <div class="toggle-row">
             <input type="checkbox" id="outgoing-color-toggle" />
-            <label for="outgoing-color-toggle" style="margin:0;">Colorize outgoing chat</label>
+            <label for="outgoing-color-toggle" style="margin:0;">{{ t('mrc.web.outgoing_color', 'Colorize outgoing chat') }}</label>
           </div>
           <div class="toggle-row">
             <input type="checkbox" id="mention-sound-toggle" />
-            <label for="mention-sound-toggle" style="margin:0;">Ding on mention/DM</label>
+            <label for="mention-sound-toggle" style="margin:0;">{{ t('mrc.web.mention_sound', 'Ding on mention/DM') }}</label>
           </div>
           <div class="panel-row" style="margin-top:8px;">
-            <button id="style-apply">Apply</button>
-            <button id="style-test">Test (local)</button>
-            <button id="style-reset">Reset</button>
+            <button id="style-apply">{{ t('mrc.web.apply', 'Apply') }}</button>
+            <button id="style-test">{{ t('mrc.web.test', 'Test (local)') }}</button>
+            <button id="style-reset">{{ t('mrc.web.reset', 'Reset') }}</button>
           </div>
-          <div class="style-preview">Preview: <span id="style-preview">-</span></div>
+          <div class="style-preview">{{ t('mrc.web.preview', 'Preview:') }} <span id="style-preview">-</span></div>
         </div>
       </div>
 
       <div class="panel" id="prefs-panel" style="display:none;">
         <div class="panel-header" id="prefs-header">
-          <span>Chat Prefs</span>
+          <span>{{ t('mrc.web.chat_preferences', 'Chat Prefs') }}</span>
           <span class="chev" id="prefs-chev">[+]</span>
         </div>
         <div class="panel-body" id="prefs-body">
           <div class="toggle-row">
             <input type="checkbox" id="shield-toggle" />
-            <label for="shield-toggle" style="margin:0;">Broadcast shield</label>
+            <label for="shield-toggle" style="margin:0;">{{ t('mrc.web.broadcast_shield', 'Broadcast shield') }}</label>
           </div>
           <div class="help-hint" style="padding-bottom:6px;">
-            Blocks outgoing broadcasts and hides incoming ones
-            (<span id="shield-blocked-count">0</span> blocked this session).
+            {{ t('mrc.web.shield_hint', 'Blocks outgoing broadcasts and hides incoming ones') }}
+            (<span id="shield-blocked-count">0</span> {{ t('mrc.web.blocked_count', 'blocked this session') }}).
           </div>
-          <label for="twit-input">Twit / ignore list</label>
+          <label for="twit-input">{{ t('mrc.web.ignore_list', 'Twit / ignore list') }}</label>
           <div class="panel-row">
-            <input type="text" id="twit-input" maxlength="32" placeholder="username" />
-            <button id="twit-add">Add</button>
+            <input type="text" id="twit-input" maxlength="32" placeholder="{{ t('mrc.web.username', 'username') }}" />
+            <button id="twit-add">{{ t('mrc.web.add', 'Add') }}</button>
           </div>
           <div class="twit-list" id="twit-list"></div>
           <div class="help-hint" style="padding-top:4px;padding-bottom:6px;">
-            Messages from twitted users are hidden, not deleted
-            (<span id="twit-blocked-count">0</span> blocked this session).
+            {{ t('mrc.web.ignore_hint', 'Messages from twitted users are hidden, not deleted') }}
+            (<span id="twit-blocked-count">0</span> {{ t('mrc.web.blocked_count', 'blocked this session') }}).
           </div>
           <hr style="border:0;border-top:1px solid var(--border);opacity:.35;margin:10px 0;">
           <div class="toggle-row">
             <input type="checkbox" id="ticker-toggle" checked />
-            <label for="ticker-toggle" style="margin:0;">Scrolling ticker/banner</label>
+            <label for="ticker-toggle" style="margin:0;">{{ t('mrc.web.ticker', 'Scrolling ticker/banner') }}</label>
           </div>
-          <label for="clockformat-select">Clock format</label>
+          <label for="clockformat-select">{{ t('mrc.web.clock_format', 'Clock format') }}</label>
           <div class="panel-row">
             <select id="clockformat-select">
-              <option value="24">24-hour</option>
-              <option value="12">12-hour</option>
+              <option value="24">{{ t('mrc.web.24_hour', '24-hour') }}</option>
+              <option value="12">{{ t('mrc.web.12_hour', '12-hour') }}</option>
             </select>
           </div>
-          <label for="tzoffset-input">Timezone offset (minutes from UTC, e.g. -300 for US Eastern)</label>
+          <label for="tzoffset-input">{{ t('mrc.web.timezone', 'Timezone offset (minutes from UTC, e.g. -300 for US Eastern)') }}</label>
           <div class="panel-row">
             <input type="number" id="tzoffset-input" step="1" min="-720" max="840" placeholder="0" />
-            <button id="tzoffset-apply">Apply</button>
+            <button id="tzoffset-apply">{{ t('mrc.web.apply', 'Apply') }}</button>
           </div>
-          <label for="entermsg-input">Enter-chat message (<code>{handle}</code> placeholder)</label>
+          <label for="entermsg-input">{{ t('mrc.web.enter_message', 'Enter-chat message') }} (<code>{handle}</code> {{ t('mrc.web.placeholder_label', 'placeholder') }})</label>
           <div class="panel-row">
-            <input type="text" id="entermsg-input" maxlength="200" placeholder="e.g. - {handle} has arrived." />
+            <input type="text" id="entermsg-input" maxlength="200" placeholder="{{ t('mrc.web.enter_example', 'e.g. - {handle} has arrived.') }}" />
           </div>
-          <label for="leavemsg-input">Leave-chat message (<code>{handle}</code> placeholder)</label>
+          <label for="leavemsg-input">{{ t('mrc.web.leave_message', 'Leave-chat message') }} (<code>{handle}</code> {{ t('mrc.web.placeholder_label', 'placeholder') }})</label>
           <div class="panel-row">
-            <input type="text" id="leavemsg-input" maxlength="200" placeholder="e.g. - {handle} has left chat." />
+            <input type="text" id="leavemsg-input" maxlength="200" placeholder="{{ t('mrc.web.leave_example', 'e.g. - {handle} has left chat.') }}" />
           </div>
-          <label for="quitmsg-input">Quit message (appended in parens on /quit)</label>
+          <label for="quitmsg-input">{{ t('mrc.web.quit_message', 'Quit message (appended in parens on /quit)') }}</label>
           <div class="panel-row">
-            <input type="text" id="quitmsg-input" maxlength="200" placeholder="e.g. gone fishing" />
+            <input type="text" id="quitmsg-input" maxlength="200" placeholder="{{ t('mrc.web.quit_example', 'e.g. gone fishing') }}" />
           </div>
           <div class="panel-row" style="margin-top:4px;">
-            <button id="prefs-msgs-apply">Apply</button>
+            <button id="prefs-msgs-apply">{{ t('mrc.web.apply', 'Apply') }}</button>
           </div>
           <hr style="border:0;border-top:1px solid var(--border);opacity:.35;margin:10px 0;">
           <div class="panel-row">
-            <button id="dlchatlog-btn">Download chat log</button>
+            <button id="dlchatlog-btn">{{ t('mrc.web.download_log', 'Download chat log') }}</button>
           </div>
         </div>
       </div>
 
-      <h3>Users</h3>
+      <h3>{{ t('mrc.web.users', 'Users') }}</h3>
       <div class="sidebar-item" style="padding:0;margin:0 0 6px 0;color:#555;">
-        Click a name to DM-sticky toggle (<code>/t user</code>). Click again to stop. Tab autocompletes.
+        {{ t('mrc.web.dm_hint', 'Click a name to DM-sticky toggle') }} (<code>/t user</code>{{ t('mrc.web.dm_keys', '). Click again to stop. Tab autocompletes.') }}
       </div>
       <div class="userlist" id="userlist"></div>
 
       <div class="panel" id="mentions-panel" style="display:none;">
         <div class="panel-header" id="mentions-header">
-          <span>Mentions <span id="mentions-count" class="mention-meta"></span></span>
+          <span>{{ t('mrc.web.mentions', 'Mentions') }} <span id="mentions-count" class="mention-meta"></span></span>
           <span class="chev" id="mentions-chev">[+]</span>
         </div>
         <div class="panel-body" id="mentions-body">
           <div class="panel-row" style="justify-content:space-between;">
-            <button id="mentions-clear">Clear</button>
-            <button id="mentions-test">Test ding</button>
+            <button id="mentions-clear">{{ t('mrc.web.clear', 'Clear') }}</button>
+            <button id="mentions-test">{{ t('mrc.web.test_sound', 'Test ding') }}</button>
           </div>
           <div style="height:8px;"></div>
           <div class="mentions-list" id="mentions-list">
-            <div class="mention-empty">No mentions yet.</div>
+            <div class="mention-empty">{{ t('mrc.web.no_mentions', 'No mentions yet.') }}</div>
           </div>
           <div class="help-hint" style="padding-top:8px;">
-            Mentions include <code>@you</code> and DMs. Click to jump to scrollback.
+            {{ t('mrc.web.mentions_include', 'Mentions include') }} <code>@you</code> {{ t('mrc.web.mentions_hint', 'and DMs. Click to jump to scrollback.') }}
           </div>
         </div>
       </div>
@@ -1113,7 +1111,7 @@
       }
       const active = getSelectedServerChoice();
       if (serverSelectHint) {
-        serverSelectHint.textContent = 'Selected network: ' + (active.label || 'MRC');
+        serverSelectHint.textContent = {{ t('mrc.web.selected_network', 'Selected network: {network}') | tojson }}.replace('{network}', () => (active.label || 'MRC'));
       }
     }
 
@@ -1537,14 +1535,14 @@
         div.addEventListener('click', () => {
           if (stickyDmUser && stickyDmUser.toLowerCase() === key) {
             clearStickyDm();
-            addMessage('ℹ Sticky DM off', 'notice');
+            addMessage({{ t('mrc.web.sticky_off', 'ℹ Sticky DM off') | tojson }}, 'notice');
             return;
           }
           clearStickyDm();
           stickyDmUser = u;
           div.classList.add('selected');
           renderStickyStatus();
-          addMessage('ℹ Sticky DM → ' + u + ' (click again to stop)', 'notice');
+          addMessage({{ t('mrc.web.sticky_on', 'ℹ Sticky DM → {user} (click again to stop)') | tojson }}.replace('{user}', () => u), 'notice');
           messageInput.focus();
         });
         userListDiv.appendChild(div);
@@ -1678,7 +1676,7 @@
       const count = mentionItems.length;
       mentionsCount.textContent = count ? '(' + count + ')' : '';
       mentionsHeader.classList.toggle('attn', count > 0);
-      if (!count) { mentionsList.innerHTML = '<div class="mention-empty">No mentions yet.</div>'; return; }
+      if (!count) { mentionsList.innerHTML = '<div class="mention-empty">' + escapeHtml({{ t('mrc.web.no_mentions', 'No mentions yet.') | tojson }}) + '</div>'; return; }
       mentionsList.innerHTML = '';
       for (const item of mentionItems.slice().reverse()) {
         const div = document.createElement('div');
@@ -1700,7 +1698,7 @@
     function addMention(fromUser, line, msgIndex) {
       mentionItems.push({
         idx:     msgIndex,
-        from:    fromUser || 'someone',
+        from:    fromUser || {{ t('mrc.web.somebody', 'someone') | tojson }},
         preview: stripPipeCodes(line || '').trim().slice(0, 160),
         ts:      Date.now()
       });
@@ -1732,7 +1730,7 @@
     function renderHistoryList() {
       if (!historyList) return;
       if (!sentHistory.length) {
-        historyList.innerHTML = '<div class="mention-empty">No sent messages this session.</div>';
+        historyList.innerHTML = '<div class="mention-empty">' + escapeHtml({{ t('mrc.web.no_history', 'No sent messages this session.') | tojson }}) + '</div>';
         return;
       }
       historyList.innerHTML = '';
@@ -1783,7 +1781,7 @@
 
     function renderMacros() {
       macrosList.innerHTML = '';
-      if (!macros.length) { macrosList.innerHTML = '<div class="help-hint">No macros set.</div>'; return; }
+      if (!macros.length) { macrosList.innerHTML = '<div class="help-hint">' + escapeHtml({{ t('mrc.web.no_macros', 'No macros set.') | tojson }}) + '</div>'; return; }
       for (const m of macros) {
         const row = document.createElement('div'); row.className = 'panel-row';
         const b   = document.createElement('button');
@@ -1929,8 +1927,7 @@
 
       if (rawLine.length > MRC_MAX_LINE_LEN) {
         // Left in the box so the user can shorten it.
-        addMessage('✗ Line is ' + rawLine.length + ' characters; the limit is ' +
-                   MRC_MAX_LINE_LEN + '. Shorten it and send again.', 'error');
+        addMessage({{ t('mrc.web.length_error', '✗ Line is {length} characters; the limit is {limit}. Shorten it and send again.') | tojson }}.replace('{length}', () => rawLine.length).replace('{limit}', () => MRC_MAX_LINE_LEN), 'error');
         return;
       }
 
@@ -1963,7 +1960,7 @@
 
       if (parsed.kind === 'server_cmd') {
         if (broadcastShield && /^broadcast\b/i.test(parsed.value)) {
-          addMessage('Broadcast shield is on -- disable it in Chat Prefs to send one.', 'error', true);
+          addMessage({{ t('mrc.web.shield_error', 'Broadcast shield is on -- disable it in Chat Prefs to send one.') | tojson }}, 'error', true);
           messageInput.value = ''; secureMode = null; return;
         }
         addMessage('> ' + maskSensitiveCommandForEcho(parsed.value), 'info');
@@ -2296,30 +2293,30 @@
         // ---- Reconnect lifecycle (events emitted by client.js) ----------
         case 'reconnecting':
           stopWsKeepalive();
-          updateStatus('Reconnecting… (attempt ' + data.attempt + ')', 'var(--error)');
-          addMessage('⚠ Connection lost — reconnecting in ' +
-            Math.round((data.delayMs || 0) / 1000) + 's (attempt ' + data.attempt + ')…', 'error');
+          updateStatus({{ t('mrc.web.reconnecting', 'Reconnecting… (attempt {attempt})') | tojson }}
+            .replace('{attempt}', () => data.attempt), 'var(--error)');
+          addMessage({{ t('mrc.web.reconnect_countdown', '⚠ Connection lost — reconnecting in {seconds}s (attempt {attempt})…') | tojson }}.replace('{seconds}', () => Math.round((data.delayMs || 0) / 1000)).replace('{attempt}', () => data.attempt), 'error');
           chatPanel.style.opacity       = '0.5';
           chatPanel.style.pointerEvents = 'none';
           break;
 
         case 'rejoining':
-          addMessage('↺ Reconnected — rejoining ' + data.room + ' as ' + data.handle + '…', 'system');
-          updateStatus('Rejoining ' + data.room + '…', '');
+          addMessage({{ t('mrc.web.rejoined', '↺ Reconnected — rejoining {room} as {handle}…') | tojson }}.replace('{room}', () => data.room).replace('{handle}', () => data.handle), 'system');
+          updateStatus({{ t('mrc.web.rejoining', 'Rejoining {room}…') | tojson }}.replace('{room}', () => data.room), '');
           break;
         // ---------------------------------------------------------------
 
         case 'welcome':
           addMessage('✓ ' + data.message, 'system');
-          updateStatus('Connected', '');
+          updateStatus({{ t('mrc.web.connected', 'Connected') | tojson }}, '');
           document.getElementById('server-info').textContent = (getSelectedServerChoice().label || data.server || 'MRC');
           break;
 
         case 'bridge_status':
           if (data.status === 'upstream_connected')
-            addMessage('✓ MRC upstream connected', 'system');
+            addMessage({{ t('mrc.web.upstream_connected', '✓ MRC upstream connected') | tojson }}, 'system');
           if (data.status === 'upstream_disconnected')
-            addMessage('✗ MRC upstream disconnected (reconnecting…)', 'error');
+            addMessage({{ t('mrc.web.upstream_disconnected', '✗ MRC upstream disconnected (reconnecting…)') | tojson }}, 'error');
           break;
 
         case 'room_changed': {
@@ -2327,7 +2324,7 @@
           currentRoom = r;
           document.getElementById('current-room').textContent = data.room || '-';
           setTopic('-');
-          addMessage('ℹ Room changed to ' + data.room, 'notice');
+          addMessage({{ t('mrc.web.room_changed', 'ℹ Room changed to {room}') | tojson }}.replace('{room}', () => data.room), 'notice');
           break;
         }
 
@@ -2359,7 +2356,7 @@
           document.getElementById('current-room').textContent   = data.room;
           document.getElementById('current-handle').textContent = data.handle;
           addMessage('✓ ' + data.message, 'system');
-          updateStatus('Ready as ' + data.handle, '');
+          updateStatus({{ t('mrc.web.ready', 'Ready as {handle}') | tojson }}.replace('{handle}', () => data.handle), '');
 
           _setInRoomUi(true);
 
@@ -2411,13 +2408,13 @@
           _handleOverheadChars = (typeof data.handle_overhead === 'number') ? data.handle_overhead : _handleOverheadChars;
           _dmOverheadChars     = (typeof data.dm_overhead     === 'number') ? data.dm_overhead     : _dmOverheadChars;
           updateStylePreview();
-          addMessage('✓ ' + (data.message || 'Style updated'), 'system');
+          addMessage('✓ ' + (data.message || {{ t('mrc.web.style_updated', 'Style updated') | tojson }}), 'system');
           break;
         }
 
         case 'prefs_updated': {
           applyPrefs(data.prefs);
-          addMessage('✓ ' + (data.message || 'Preferences updated'), 'system');
+          addMessage('✓ ' + (data.message || {{ t('mrc.web.preferences_updated', 'Preferences updated') | tojson }}), 'system');
           break;
         }
 
@@ -2498,8 +2495,8 @@
           stopClockTimer();
           stopTickerRotation();
           if (tickerBar) tickerBar.style.display = 'none';
-          addMessage('✓ ' + (data.message || 'Left'), 'system');
-          updateStatus('Connected (not in room)', '');
+          addMessage('✓ ' + (data.message || {{ t('mrc.web.left', 'Left') | tojson }}), 'system');
+          updateStatus({{ t('mrc.web.connected_no_room', 'Connected (not in room)') | tojson }}, '');
           currentHandle        = '';
           currentRoom          = '';
           _handleOverheadChars = 0;
@@ -2512,7 +2509,7 @@
           break;
 
         case 'error':
-          addMessage('✗ Error: ' + data.message, 'error');
+          addMessage({{ t('mrc.web.chat_error', '✗ Error: {error}') | tojson }}.replace('{error}', () => data.message), 'error');
           flashNotice('✗ ' + data.message);
           break;
 
@@ -2522,8 +2519,8 @@
             stopClockTimer();
             stopTickerRotation();
             if (tickerBar) tickerBar.style.display = 'none';
-            updateStatus('Disconnected', '');
-            addMessage('✗ Disconnected from server', 'error');
+            updateStatus({{ t('mrc.web.disconnected', 'Disconnected') | tojson }}, '');
+            addMessage({{ t('mrc.web.disconnected_from_server', '✗ Disconnected from server') | tojson }}, 'error');
             _handleOverheadChars = 0;
             _dmOverheadChars     = 0;
             _actionOverheadChars = 0;
@@ -2550,8 +2547,8 @@
         setTimeout(startWsKeepalive, 250);
       } catch (e) {
         stopWsKeepalive();
-        updateStatus('Connection failed', '');
-        addMessage('✗ Failed to connect: ' + (e.message || e), 'error');
+        updateStatus({{ t('mrc.web.connection_failed', 'Connection failed') | tojson }}, '');
+        addMessage({{ t('mrc.web.connect_error', '✗ Failed to connect: {error}') | tojson }}.replace('{error}', () => (e.message || e)), 'error');
       }
     }
 
@@ -2564,14 +2561,14 @@
       const choice = getSelectedServerChoice();
       client = new window.MRCClient(getSelectedWsUrl());
       client.addMessageHandler(handleIncomingMessage);
-      if (showNotice) addMessage('ℹ Switching to ' + (choice.label || 'MRC') + '…', 'notice');
+      if (showNotice) addMessage({{ t('mrc.web.switching', 'ℹ Switching to {server}…') | tojson }}.replace('{server}', () => (choice.label || 'MRC')), 'notice');
       try {
         await client.connect();
         document.getElementById('server-info').textContent = choice.label || 'MRC';
         setTimeout(startWsKeepalive, 250);
       } catch (e) {
-        updateStatus('Connection failed', '');
-        addMessage('✗ Failed to connect: ' + (e.message || e), 'error');
+        updateStatus({{ t('mrc.web.connection_failed', 'Connection failed') | tojson }}, '');
+        addMessage({{ t('mrc.web.connect_error', '✗ Failed to connect: {error}') | tojson }}.replace('{error}', () => (e.message || e)), 'error');
       }
     }
 
@@ -2606,7 +2603,7 @@
       serverSelect.addEventListener('change', async () => {
         const nextId = serverSelect.value || 'primary';
         if (currentHandle || currentRoom) {
-          addMessage('✗ Leave the current room before switching servers.', 'error');
+          addMessage({{ t('mrc.web.leave_before_switch', '✗ Leave the current room before switching servers.') | tojson }}, 'error');
           populateServerSelect();
           return;
         }
@@ -2638,7 +2635,7 @@
       const name = twitInput.value.trim().toLowerCase();
       if (!name) return;
       if (['server', 'client', 'notme'].includes(name)) {
-        addMessage('Cannot twit a reserved name.', 'error', true);
+        addMessage({{ t('mrc.web.ignore_reserved', 'Cannot twit a reserved name.') | tojson }}, 'error', true);
         return;
       }
       const next = new Set(twitList);
@@ -2731,15 +2728,15 @@
       sentHistoryIdx     = -1;
       sentHistoryDraft   = '';
       renderHistoryList();
-      addMessage('ℹ Session history cleared', 'notice');
+      addMessage({{ t('mrc.web.history_cleared', 'ℹ Session history cleared') | tojson }}, 'notice');
     });
 
     stickyToggleBtn.addEventListener('click', () => {
       if (stickyDmUser) {
         clearStickyDm();
-        addMessage('ℹ Sticky DM off', 'notice');
+        addMessage({{ t('mrc.web.sticky_off', 'ℹ Sticky DM off') | tojson }}, 'notice');
       } else {
-        addMessage('ℹ Sticky DM is OFF. Click a user in the userlist to turn it on.', 'notice');
+        addMessage({{ t('mrc.web.sticky_help', 'ℹ Sticky DM is OFF. Click a user in the userlist to turn it on.') | tojson }}, 'notice');
       }
     });
 
@@ -2758,7 +2755,7 @@
     macrosSave.addEventListener('click', () => {
       try {
         const parsed = JSON.parse(macrosJson.value || '[]');
-        if (!Array.isArray(parsed)) throw new Error('Macros JSON must be an array.');
+        if (!Array.isArray(parsed)) throw new Error({{ t('mrc.web.macros_array', 'Macros JSON must be an array.') | tojson }});
         const cleaned = parsed
           .filter(x => x && typeof x === 'object')
           .map(x => ({ name: String(x.name || '').trim(), text: String(x.text || '').trim() }))
@@ -2766,9 +2763,9 @@
           .slice(0, MACROS_MAX);
         saveMacros(cleaned);
         macrosEditor.style.display = 'none';
-        addMessage('ℹ Macros saved', 'notice');
+        addMessage({{ t('mrc.web.macros_saved', 'ℹ Macros saved') | tojson }}, 'notice');
       } catch (e) {
-        addMessage('✗ Macro save failed: ' + (e.message || e), 'error');
+        addMessage({{ t('mrc.web.macro_save_error', '✗ Macro save failed: {error}') | tojson }}.replace('{error}', () => (e.message || e)), 'error');
       }
     });
 
@@ -2787,7 +2784,7 @@
       // never matched a single room broadcast again. Matching the
       // hub's own case here, not a general case-fold.
       const room   = roomInput.value.trim() || 'lobby';
-      if (!handle) return addMessage('✗ Please enter a handle', 'error');
+      if (!handle) return addMessage({{ t('mrc.web.handle_required', '✗ Please enter a handle') | tojson }}, 'error');
       client.joinRoom(handle, room);
     });
 
@@ -2967,9 +2964,9 @@
         e.preventDefault();
         if (stickyDmUser) {
           clearStickyDm();
-          addMessage('ℹ Sticky DM off', 'notice');
+          addMessage({{ t('mrc.web.sticky_off', 'ℹ Sticky DM off') | tojson }}, 'notice');
         } else {
-          addMessage('ℹ Sticky DM is OFF. Click a user in the userlist to turn it on.', 'notice');
+          addMessage({{ t('mrc.web.sticky_help', 'ℹ Sticky DM is OFF. Click a user in the userlist to turn it on.') | tojson }}, 'notice');
         }
       }
       if (e.key === 'm' || e.key === 'M') {

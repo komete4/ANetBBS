@@ -18,13 +18,13 @@
     </div>
     <div class="card-body">
         <dl class="row mb-0">
-            <dt class="col-sm-2">From</dt>
+            <dt class="col-sm-2">{{ t('ui.from', 'From') }}</dt>
             <dd class="col-sm-10">{{ m.from_name }} &lt;<code>{{ m.from_address }}</code>&gt;</dd>
-            <dt class="col-sm-2">To</dt>
+            <dt class="col-sm-2">{{ t('ui.to', 'To') }}</dt>
             <dd class="col-sm-10">{{ m.to_name }} &lt;<code>{{ m.to_address }}</code>&gt;</dd>
-            <dt class="col-sm-2">Subject</dt>
+            <dt class="col-sm-2">{{ t('ui.subject', 'Subject') }}</dt>
             <dd class="col-sm-10">{{ m.subject or '(no subject)' }}</dd>
-            <dt class="col-sm-2">Date</dt>
+            <dt class="col-sm-2">{{ t('ui.date', 'Date') }}</dt>
             <dd class="col-sm-10">{{ m.created_at|eastern('%Y-%m-%d %H:%M:%S %Z') }}</dd>
             {% if m.msgid %}
             <dt class="col-sm-2">MSGID</dt>
@@ -91,7 +91,7 @@
 
 <div class="mt-3">
     <a href="{{ url_for('netmail.compose', reply_to=m.id) }}" class="btn btn-primary">
-        <i class="bi bi-reply"></i> Reply
+        <i class="bi bi-reply"></i> {{ t('ui.reply', 'Reply') }}
     </a>
     <button type="button" class="btn btn-outline-info copy-permalink-btn"
             data-kind="netmail" data-id="{{ m.id }}" title="Copy permalink">
@@ -102,13 +102,13 @@
         <input type="hidden" name="kind" value="netmail">
         <input type="hidden" name="target_id" value="{{ m.id }}">
         <button class="btn btn-outline-warning" title="Bookmark this message">
-            <i class="bi bi-bookmark-star"></i> Save
+            <i class="bi bi-bookmark-star"></i> {{ t('ui.save', 'Save') }}
         </button>
     </form>
     <form method="post" action="{{ url_for('netmail.delete', msg_id=m.id) }}" style="display:inline;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="btn btn-outline-danger" onclick="return confirm('Delete this message from your view?')">
-            <i class="bi bi-trash"></i> Delete
+            <i class="bi bi-trash"></i> {{ t('ui.delete', 'Delete') }}
         </button>
     </form>
     <a href="{{ url_for('netmail.inbox' if m.direction == 'inbound' else 'netmail.sent') }}" class="btn btn-link">← Back</a>

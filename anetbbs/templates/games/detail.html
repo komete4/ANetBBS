@@ -4,7 +4,7 @@
 {% block content %}
 <div class="mb-3">
     <a href="{{ url_for('games.lobby') }}" class="btn btn-primary btn-sm">
-        <i class="bi bi-arrow-left"></i> Back to Game Center
+        <i class="bi bi-arrow-left"></i> {{ t('ui.back_to_game_center', 'Back to Game Center') }}
     </a>
 </div>
 
@@ -17,35 +17,35 @@
                 </h3>
             </div>
             <div class="card-body">
-                <p>{{ game.description or 'No description available.' }}</p>
+                <p>{{ game.description or t('games.no_description', 'No description available.') }}</p>
                 <dl class="row small">
-                    <dt class="col-sm-4">Category</dt>
-                    <dd class="col-sm-8">{{ game.category | capitalize }}</dd>
-                    <dt class="col-sm-4">Type</dt>
+                    <dt class="col-sm-4">{{ t('ui.category', 'Category') }}</dt>
+                    <dd class="col-sm-8">{{ category_name }}</dd>
+                    <dt class="col-sm-4">{{ t('ui.type', 'Type') }}</dt>
                     <dd class="col-sm-8">
-                        {% if game.game_type == 'builtin_web' %}Built-in Web Game
-                        {% elif game.game_type == 'door_dos' %}Classic DOS Door
-                        {% elif game.game_type == 'door_native' %}Native Door
+                        {% if game.game_type == 'builtin_web' %}{{ t("games.builtin_web", "Built-in Web Game") }}
+                        {% elif game.game_type == 'door_dos' %}{{ t("games.classic_dos", "Classic DOS Door") }}
+                        {% elif game.game_type == 'door_native' %}{{ t('ui.native_door', 'Native Door') }}
                         {% elif game.game_type == 'door_mystic' %}Mystic BBS Python
                         {% elif game.game_type == 'door_synchronet' %}Synchronet JS
                         {% else %}{{ game.game_type }}{% endif %}
                     </dd>
-                    <dt class="col-sm-4">Total Plays</dt>
+                    <dt class="col-sm-4">{{ t('ui.total_plays', 'Total Plays') }}</dt>
                     <dd class="col-sm-8">{{ game.play_count or 0 }}</dd>
-                    <dt class="col-sm-4">Active Now</dt>
+                    <dt class="col-sm-4">{{ t('ui.active_now', 'Active Now') }}</dt>
                     <dd class="col-sm-8">{{ active_sessions | length }}</dd>
                 </dl>
                 {% if current_user.is_authenticated or game.guest_playable %}
                 <a href="{{ url_for('games.play', slug=game.slug) }}"
                    class="btn btn-primary mt-2">
-                    <i class="bi bi-play-fill"></i> Play Now
+                    <i class="bi bi-play-fill"></i> {{ t('ui.play_now', 'Play Now') }}
                 </a>
                 {% if not current_user.is_authenticated %}
-                <span class="badge bg-success ms-1"><i class="bi bi-unlock"></i> No login needed</span>
+                <span class="badge bg-success ms-1"><i class="bi bi-unlock"></i> {{ t('ui.no_login_needed', 'No login needed') }}</span>
                 {% endif %}
                 {% else %}
                 <a href="{{ url_for('auth.login') }}" class="btn btn-primary mt-2">
-                    <i class="bi bi-box-arrow-in-right"></i> Login to Play
+                    <i class="bi bi-box-arrow-in-right"></i> {{ t('ui.login_to_play', 'Login to Play') }}
                 </a>
                 {% endif %}
             </div>
@@ -54,15 +54,15 @@
 
     <div class="col-md-4">
         <div class="card">
-            <div class="card-header"><i class="bi bi-trophy"></i> Top Scores</div>
+            <div class="card-header"><i class="bi bi-trophy"></i> {{ t('ui.top_scores', 'Top Scores') }}</div>
             <div class="card-body p-0">
                 {% if top_scores %}
                 <table class="table table-sm mb-0">
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th>Player</th>
-                            <th>Score</th>
+                            <th>{{ t('ui.player', 'Player') }}</th>
+                            <th>{{ t('ui.score', 'Score') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -80,7 +80,7 @@
                     </tbody>
                 </table>
                 {% else %}
-                <p class="p-3 mb-0 small" style="color:#007700;">No scores yet. Be the first!</p>
+                <p class="p-3 mb-0 small" style="color:#007700;">{{ t('ui.no_scores_yet_be_the_first', 'No scores yet. Be the first!') }}</p>
                 {% endif %}
             </div>
         </div>

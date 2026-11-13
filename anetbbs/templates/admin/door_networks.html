@@ -2,7 +2,7 @@
 {% block title %}Door Networks Admin{% endblock %}
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-diagram-3-fill"></i> Door Networks</h1>
+    <h1><i class="bi bi-diagram-3-fill"></i> {{ t('ui.heading.door_networks', 'Door Networks') }}</h1>
 </div>
 <p class="text-muted">
     Shared multi-BBS door catalogs — join one instead of hosting every
@@ -45,7 +45,7 @@
             This secret is only ever checked between ANetBBS and your
             own local connector daemon — never sent to DoorParty itself.
         </div>
-        <button type="submit" class="btn btn-sm btn-primary">Save</button>
+        <button type="submit" class="btn btn-sm btn-primary">{{ t('ui.save', 'Save') }}</button>
     </form>
 </div>
 
@@ -76,14 +76,14 @@
             <code>xtrn=&lt;code&gt;</code> direct launch — unconfirmed,
             test it before relying on it.
         </div>
-        <button type="submit" class="btn btn-sm btn-primary" {{ 'disabled' if not configured }}>Add</button>
+        <button type="submit" class="btn btn-sm btn-primary" {{ 'disabled' if not configured }}>{{ t('ui.add', 'Add') }}</button>
     </form>
 </div>
 
 <div class="card p-3">
     <h6 class="mb-2">Your DoorParty games</h6>
     <table class="table table-striped table-sm mb-0">
-        <thead><tr><th>Name</th><th>Command line</th><th></th></tr></thead>
+        <thead><tr><th>{{ t('ui.name', 'Name') }}</th><th>Command line</th><th></th></tr></thead>
         <tbody>
             {% for game in games %}
             <tr>

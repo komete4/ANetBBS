@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}ANSI Art Library{% endblock %}
+{% block title %}{{ t('ui.heading.ansi_art_library', 'ANSI Art Library') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-easel-fill"></i> ANSI Art Library</h1>
+    <h1><i class="bi bi-easel-fill"></i> {{ t('ui.heading.ansi_art_library', 'ANSI Art Library') }}</h1>
     <p>Build CP437 ANSI screens for your BBS menus, welcome banners, and more.</p>
 </div>
 
 <div class="mb-3">
     <a href="{{ url_for('ansi_editor.create') }}" class="btn btn-primary">
-        <i class="bi bi-plus-square"></i> New ANSI Art
+        <i class="bi bi-plus-square"></i> {{ t('ui.heading.new_ansi_art', 'New ANSI Art') }}
     </a>
     <a href="{{ url_for('ansi_editor.import_ans') }}" class="btn btn-outline-secondary">
         <i class="bi bi-upload"></i> Import .ans
@@ -28,7 +28,7 @@
     {% if arts %}
         <table class="table table-sm table-hover mb-0">
             <thead><tr>
-                <th>Name</th><th>Size</th><th>Updated</th><th>By</th><th></th>
+                <th>{{ t('ui.name', 'Name') }}</th><th>{{ t('ui.size', 'Size') }}</th><th>{{ t('ui.updated', 'Updated') }}</th><th>{{ t('ui.by', 'By') }}</th><th></th>
             </tr></thead>
             <tbody>
             {% for a in arts %}

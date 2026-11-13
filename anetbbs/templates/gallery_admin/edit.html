@@ -42,14 +42,14 @@
         file area's storage path), or a mix of both.</div>
 </div>
 <div class="mb-3">
-    <label class="form-label">Description (optional)</label>
+    <label class="form-label">{{ t('ui.description_optional', 'Description (optional)') }}</label>
     <input type="text" name="description" class="form-control"
            value="{{ g.description if g else '' }}"
            placeholder="One-line description shown to users">
 </div>
 <div class="row">
     <div class="col-md-6 mb-3">
-        <label class="form-label">Sort Order</label>
+        <label class="form-label">{{ t('ui.sort_order', 'Sort Order') }}</label>
         <input type="number" name="sort_order" class="form-control"
                value="{{ g.sort_order if g else 100 }}">
         <div class="form-text">Lower numbers appear first.</div>
@@ -63,9 +63,9 @@
     </div>
 </div>
 <button type="submit" class="btn btn-primary">
-    <i class="bi bi-check-circle"></i> Save
+    <i class="bi bi-check-circle"></i> {{ t('ui.save', 'Save') }}
 </button>
-<a href="{{ url_for('gallery_admin.index') }}" class="btn btn-sm">Cancel</a>
+<a href="{{ url_for('gallery_admin.index') }}" class="btn btn-sm">{{ t('ui.cancel', 'Cancel') }}</a>
 </form>
 </div>
 </div>

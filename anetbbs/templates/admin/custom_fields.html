@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-card-list"></i> Profile Fields</h1>
+    <h1><i class="bi bi-card-list"></i> {{ t('ui.heading.profile_fields', 'Profile Fields') }}</h1>
 </div>
 
 <!-- Built-in fields -->
@@ -15,7 +15,7 @@
             <thead>
                 <tr>
                     <th>Field</th>
-                    <th>Status</th>
+                    <th>{{ t('ui.status', 'Status') }}</th>
                     <th></th>
                 </tr>
             </thead>
@@ -25,16 +25,16 @@
                     <td>{{ label }}</td>
                     <td>
                         {% if builtin_config[field_name] %}
-                            <span class="badge bg-success">Enabled</span>
+                            <span class="badge bg-success">{{ t('ui.enabled', 'Enabled') }}</span>
                         {% else %}
-                            <span class="badge bg-secondary">Disabled</span>
+                            <span class="badge bg-secondary">{{ t('ui.disabled', 'Disabled') }}</span>
                         {% endif %}
                     </td>
                     <td>
                         <form method="post" action="{{ url_for('admin.toggle_builtin_field', field_name=field_name) }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm {% if builtin_config[field_name] %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
-                                {% if builtin_config[field_name] %}Disable{% else %}Enable{% endif %}
+                                {% if builtin_config[field_name] %}{{ t('ui.disable', 'Disable') }}{% else %}{{ t('ui.enable', 'Enable') }}{% endif %}
                             </button>
                         </form>
                     </td>
@@ -61,11 +61,11 @@
                 <tr>
                     <th>Order</th>
                     <th>Name (slug)</th>
-                    <th>Label</th>
-                    <th>Type</th>
-                    <th>Required</th>
-                    <th>Public</th>
-                    <th>Actions</th>
+                    <th>{{ t('ui.label', 'Label') }}</th>
+                    <th>{{ t('ui.type', 'Type') }}</th>
+                    <th>{{ t('ui.required', 'Required') }}</th>
+                    <th>{{ t('ui.public', 'Public') }}</th>
+                    <th>{{ t('ui.actions', 'Actions') }}</th>
                 </tr>
             </thead>
             <tbody>

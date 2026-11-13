@@ -36,20 +36,20 @@
     </div>
   </section>
 
-  <section class="pulse-grid pulse-summary" aria-label="Summary">
+  <section class="pulse-grid pulse-summary" aria-label="{{ t('ui.summary', 'Summary') }}">
     <article class="pulse-card"><span>Callers</span><strong id="total-online">--</strong><small>terminal + web</small></article>
-    <article class="pulse-card"><span>Services</span><strong id="healthy-services">--</strong><small id="service-ratio">checking</small></article>
+    <article class="pulse-card"><span>{{ t('ui.heading.services', 'Services') }}</span><strong id="healthy-services">--</strong><small id="service-ratio">checking</small></article>
     <article class="pulse-card"><span>Disk</span><strong id="disk-used">--</strong><small id="disk-free">checking</small></article>
     <article class="pulse-card"><span>Host uptime</span><strong id="host-uptime">--</strong><small id="pulse-version">ANetBBS</small></article>
   </section>
 
   <section class="pulse-section">
-    <div class="pulse-section-heading"><h2>Live callers</h2><span id="caller-count" class="pulse-pill">0</span></div>
+    <div class="pulse-section-heading"><h2>{{ t('ui.heading.live_callers', 'Live callers') }}</h2><span id="caller-count" class="pulse-pill">0</span></div>
     <div id="live-callers" class="pulse-list"><p class="pulse-empty">Loading callers...</p></div>
   </section>
 
   <section class="pulse-section">
-    <div class="pulse-section-heading"><h2>Services</h2><span class="pulse-caption">process + listener health</span></div>
+    <div class="pulse-section-heading"><h2>{{ t('ui.heading.services', 'Services') }}</h2><span class="pulse-caption">process + listener health</span></div>
     <div id="pulse-services" class="pulse-list"><p class="pulse-empty">Loading services...</p></div>
   </section>
 
@@ -61,7 +61,7 @@
   </section>
 
   <section class="pulse-section">
-    <div class="pulse-section-heading"><h2>Recent callers</h2><span class="pulse-caption">latest 8 logins</span></div>
+    <div class="pulse-section-heading"><h2>{{ t('ui.heading.recent_callers', 'Recent callers') }}</h2><span class="pulse-caption">latest 8 logins</span></div>
     <div id="recent-callers" class="pulse-list"><p class="pulse-empty">Loading caller history...</p></div>
   </section>
 

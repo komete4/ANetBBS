@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}My Postcards{% endblock %}
+{% block title %}{{ t('ui.heading.my_postcards', 'My Postcards') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-postcard"></i> My Postcards</h1>
+    <h1><i class="bi bi-postcard"></i> {{ t('ui.heading.my_postcards', 'My Postcards') }}</h1>
     <p class="text-muted">Retro ANSI/PETSCII art with a public link + image, ready to share anywhere.</p>
 </div>
 
 <div class="mb-3">
     <a href="{{ url_for('postcards.create') }}" class="btn btn-primary">
-        <i class="bi bi-plus-square"></i> New Postcard
+        <i class="bi bi-plus-square"></i> {{ t('ui.heading.new_postcard', 'New Postcard') }}
     </a>
 </div>
 
@@ -19,7 +19,7 @@
     {% if postcards %}
         <table class="table table-sm table-hover mb-0">
             <thead><tr>
-                <th>Name</th><th>Size</th><th>Updated</th><th></th>
+                <th>{{ t('ui.name', 'Name') }}</th><th>{{ t('ui.size', 'Size') }}</th><th>{{ t('ui.updated', 'Updated') }}</th><th></th>
             </tr></thead>
             <tbody>
             {% for c in postcards %}

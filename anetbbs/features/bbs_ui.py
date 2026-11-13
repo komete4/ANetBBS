@@ -20,6 +20,7 @@ import logging
 import re
 from datetime import datetime, timedelta
 from ..core.tz import fmt_eastern
+from .i18n import terminal_label
 
 logger = logging.getLogger(__name__)
 
@@ -241,7 +242,7 @@ class BBSMenuUI:
         _where_w = max(22, _w - 46)
         _sep_w   = max(60, _w - 4)
         await self.session.write('\x1b[2J\x1b[H')
-        await self.session.write(banner("Who's Online", _w))
+        await self.session.write(banner(terminal_label(self.session, 'terminal.ui.who_s_online', "Who's Online"), _w))
         if not rows:
             await self.session.write(
                 f"  {FG['gry']}(no one is online right now){RESET}\r\n")
@@ -303,8 +304,8 @@ class BBSMenuUI:
                 for b in boards]
 
         if not board_list_default:
-            await self.session.write("\r\nNo boards configured yet.\r\n")
-            await self.session.read_line("\r\nPress Enter...")
+            await self.session.write(('\r\n' + terminal_label(self.session, 'terminal.ui.no_boards_configured_yet', 'No boards configured yet.') + '\r\n'))
+            await self.session.read_line(('\r\n' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
             return
 
         sort_by_activity = False
@@ -330,7 +331,7 @@ class BBSMenuUI:
             _desc_w = max(0, _budget - _name_w)
 
             async def render_header():
-                await self.session.write(banner('Message Boards', _w))
+                await self.session.write(banner(terminal_label(self.session, 'terminal.ui.message_boards', 'Message Boards'), _w))
                 sort_label = 'Recent Activity' if sort_by_activity else 'Category'
                 await self.session.write(
                     f"  {FG['gry']}Sort: {sort_label} (A to toggle){RESET}\r\n"
@@ -461,10 +462,10 @@ class BBSMenuUI:
         _w = ui_width(self.session)
         if not results:
             await self.session.write('\x1b[2J\x1b[H')
-            await self.session.write(banner('Search Results', _w))
+            await self.session.write(banner(terminal_label(self.session, 'terminal.ui.search_results', 'Search Results'), _w))
             await self.session.write(
                 f"  {FG['gry']}No matches for \"{term}\".{RESET}\r\n")
-            await self.session.read_line("\r\nPress Enter...")
+            await self.session.read_line(('\r\n' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
             return
 
         sel = 0
@@ -536,8 +537,8 @@ class BBSMenuUI:
                                b.created_at, b.is_pinned, b.content))
 
         if not b_list:
-            await self.session.write("\r\nNo bulletins.\r\n")
-            await self.session.read_line("\r\nPress Enter...")
+            await self.session.write(('\r\n' + terminal_label(self.session, 'terminal.ui.no_bulletins', 'No bulletins.') + '\r\n'))
+            await self.session.read_line(('\r\n' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
             return
 
         from .ansi_ui import banner, footer, prompt as _prompt, FG, RESET, BOLD, ui_width
@@ -545,7 +546,7 @@ class BBSMenuUI:
             _w = ui_width(self.session)
             _title_w = max(40, _w - 34)
             await self.session.write('\x1b[2J\x1b[H')
-            await self.session.write(banner('Bulletins', _w))
+            await self.session.write(banner(terminal_label(self.session, 'terminal.ui.bulletins', 'Bulletins'), _w))
             for i, (_, title, who, when, pinned, _) in enumerate(b_list, 1):
                 ts = fmt_eastern(when, '%m-%d', '?')
                 pin = (FG['yel'] + '*' + RESET) if pinned else ' '
@@ -633,7 +634,7 @@ class BBSMenuUI:
         if not lb_rows:
             await self.session.write('\x1b[2J\x1b[H')
             await self.session.write(
-                banner('ANSI/File Bulletins', _ui_width(self.session)))
+                banner(terminal_label(self.session, 'terminal.ui.ansi_file_bulletins', 'ANSI/File Bulletins'), _ui_width(self.session)))
             await self.session.write(
                 f"  {FG['gry']}(no file bulletins available){RESET}\r\n")
             await self.session.read_line(
@@ -644,7 +645,7 @@ class BBSMenuUI:
         _title_w = max(30, _w - 20)
 
         async def render_header():
-            await self.session.write(banner('ANSI/File Bulletins', _w))
+            await self.session.write(banner(terminal_label(self.session, 'terminal.ui.ansi_file_bulletins', 'ANSI/File Bulletins'), _w))
             await self.session.write(
                 f"  {FG['cyan']}{BOLD}{'#':>3}  {'Title':<{_title_w}} {'File':<12}{RESET}\r\n"
                 f"  {FG['gry']}{'─' * max(50, _w - 4)}{RESET}\r\n")
@@ -686,7 +687,7 @@ class BBSMenuUI:
         except OSError:
             await self.session.write(
                 '\r\n\x1b[31mCould not read that file (it may have been removed).\x1b[0m\r\n')
-            await self.session.read_line('\r\nPress Enter...')
+            await self.session.read_line(('\r\n' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
             return
         await launch_aneview(self.session, body, subject=title or '(untitled)')
 
@@ -797,14 +798,14 @@ class BBSMenuUI:
 
             if not i_list:
                 await self.session.write('\x1b[2J\x1b[H')
-                await self.session.write(banner('PM Inbox', _w))
+                await self.session.write(banner(terminal_label(self.session, 'terminal.ui.pm_inbox', 'PM Inbox'), _w))
                 await self.session.write(
                     f"  {FG['gry']}Your inbox is empty.{RESET}\r\n")
-                await self.session.read_line("\r\nPress Enter...")
+                await self.session.read_line(('\r\n' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
                 return
 
             async def render_header():
-                await self.session.write(banner('PM Inbox', _w))
+                await self.session.write(banner(terminal_label(self.session, 'terminal.ui.pm_inbox', 'PM Inbox'), _w))
                 await self.session.write(
                     f"  {FG['cyan']}{BOLD}{'':2}{'Subject':<{_subj_w}}  "
                     f"{'From':<12}  {'When':<12}{RESET}\r\n"
@@ -879,7 +880,7 @@ class BBSMenuUI:
                     await self.session.write(
                         f"\r\n{FG['red']}Can't reply -- sender no longer "
                         f"exists.{RESET}\r\n")
-                    await self.session.read_line("Press Enter...")
+                    await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
                     continue
                 reply_subj = subj if subj and subj.lower().startswith('re:') \
                     else ('Re: ' + subj if subj else 'Re: (no subject)')
@@ -897,7 +898,7 @@ class BBSMenuUI:
                         db.session.commit()
                     await self.session.write(
                         f"\r\n{FG['grn']}{BOLD}[OK]{RESET} Reply sent to {who}.\r\n")
-                    await self.session.read_line("Press Enter...")
+                    await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             elif view_result == 'new':
                 await self.send_pm()
 
@@ -940,7 +941,7 @@ class BBSMenuUI:
             await self.session.write(banner('Inter-BBS Instant Messages', ui_width(self.session)))
             await self.session.write(
                 f"  {FG['gry']}No InterBBS instant messages.{RESET}\r\n")
-            await self.session.read_line("\r\nPress Enter...")
+            await self.session.read_line(('\r\n' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
             return
 
         sel = 0
@@ -1036,7 +1037,7 @@ class BBSMenuUI:
                 )
                 await self.session.write(
                     "\r\nSent.\r\n" if ok else "\r\nDelivery failed.\r\n")
-                await self.session.read_line("Press Enter...")
+                await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 
     async def _msp_pick_directory_bbs(self):
         """BBS directory lightbar picker. Returns the picked dict (with
@@ -1179,7 +1180,7 @@ class BBSMenuUI:
             await self.session.write(
                 f"{FG['dim']}No reply, or nobody online there -- "
                 f"switching to manual entry.{RESET}\r\n")
-            await self.session.read_line("Press Enter...")
+            await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             return 'MANUAL'
 
         MANUAL = object()  # sentinel row for the injected manual-entry option
@@ -1442,7 +1443,7 @@ class BBSMenuUI:
         )
         await self.session.write(
             f"\r\n{'Delivered' if ok else 'Delivery failed'}.\r\n")
-        await self.session.read_line("\r\nPress Enter...")
+        await self.session.read_line(('\r\n' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
 
     # ------------------------------------------------------------------
     # Echomail areas
@@ -1499,7 +1500,7 @@ class BBSMenuUI:
                     f"{FG['cyan']}S{RESET}=Search messages  "
                     f"{FG['cyan']}Q{RESET}=Back\r\n")
                 choice = (await self.session.read_line(
-                    _prompt('Choice: ')) or '').strip().upper()
+                    _prompt((terminal_label(self.session, 'terminal.ui.choice_label', 'Choice:') + ' '))) or '').strip().upper()
                 if choice == 'A':
                     await self._apply_qwk_node()
                 elif choice == 'S':
@@ -1699,7 +1700,7 @@ class BBSMenuUI:
             await self.session.write(
                 f"\r\n  {FG['red']}This BBS hasn't configured a hub to apply "
                 f"to (REGISTRY_URL is blank) -- contact your sysop.{RESET}\r\n")
-            await self.session.read_line(_prompt('Press Enter to continue...'))
+            await self.session.read_line(_prompt(terminal_label(self.session, 'terminal.ui.press_enter_to_continue_ellipsis', 'Press Enter to continue...')))
             return
 
         _w = ui_width(self.session)
@@ -1793,7 +1794,7 @@ class BBSMenuUI:
             await self.session.write(
                 f"  {FG['gry']}Application cancelled.{RESET}\r\n")
             await self.session.read_line(
-                _prompt('Press Enter to continue...'))
+                _prompt(terminal_label(self.session, 'terminal.ui.press_enter_to_continue_ellipsis', 'Press Enter to continue...')))
             return
 
         if is_hub:
@@ -1827,7 +1828,7 @@ class BBSMenuUI:
                 f"  {FG['wht']}Review it under Admin -> Echomail -> Hub -> "
                 f"Node Requests.{RESET}\r\n\r\n"
             )
-            await self.session.read_line(_prompt('Press Enter to continue...'))
+            await self.session.read_line(_prompt(terminal_label(self.session, 'terminal.ui.press_enter_to_continue_ellipsis', 'Press Enter to continue...')))
             return
 
         # Peer install -- actually POST to the real hub instead of
@@ -1850,14 +1851,14 @@ class BBSMenuUI:
             await self.session.write(
                 f"\r\n  {FG['red']}Could not reach the hub ({registry_url}): "
                 f"{exc}{RESET}\r\n  {FG['wht']}Try again later.{RESET}\r\n\r\n")
-            await self.session.read_line(_prompt('Press Enter to continue...'))
+            await self.session.read_line(_prompt(terminal_label(self.session, 'terminal.ui.press_enter_to_continue_ellipsis', 'Press Enter to continue...')))
             return
 
         if resp.status_code != 200 or not body.get('ok'):
             err = body.get('error') or f'HTTP {resp.status_code}'
             await self.session.write(
                 f"\r\n  {FG['red']}Hub rejected the application: {err}{RESET}\r\n\r\n")
-            await self.session.read_line(_prompt('Press Enter to continue...'))
+            await self.session.read_line(_prompt(terminal_label(self.session, 'terminal.ui.press_enter_to_continue_ellipsis', 'Press Enter to continue...')))
             return
 
         # Cache locally so _show_qwk_request_status can look this up on
@@ -1884,7 +1885,7 @@ class BBSMenuUI:
             f"  {FG['wht']}The hub sysop will review your request.{RESET}\r\n"
             f"  {FG['wht']}Return to this menu to check your status.{RESET}\r\n\r\n"
         )
-        await self.session.read_line(_prompt('Press Enter to continue...'))
+        await self.session.read_line(_prompt(terminal_label(self.session, 'terminal.ui.press_enter_to_continue_ellipsis', 'Press Enter to continue...')))
 
     async def _show_qwk_request_status(self, req_id, is_hub=True, registry_url=''):
         """Show the applicant their application status (pending/approved/denied).
@@ -1919,7 +1920,7 @@ class BBSMenuUI:
             if req is None:
                 await self.session.write(
                     f"\r\n  {FG['red']}That application no longer exists.{RESET}\r\n")
-                await self.session.read_line(_prompt('\r\nPress Enter to continue...'))
+                await self.session.read_line(_prompt(('\r\n' + terminal_label(self.session, 'terminal.ui.press_enter_to_continue_ellipsis', 'Press Enter to continue...'))))
                 return
 
             if not is_hub and registry_url and req.request_token:
@@ -2001,7 +2002,7 @@ class BBSMenuUI:
                 f"\r\n  {FG['gry']}You may apply again with a different packet ID.{RESET}\r\n"
             )
 
-        await self.session.read_line(_prompt('\r\nPress Enter to continue...'))
+        await self.session.read_line(_prompt(('\r\n' + terminal_label(self.session, 'terminal.ui.press_enter_to_continue_ellipsis', 'Press Enter to continue...'))))
 
     async def read_echo_area(self, area_id, tag, jump_to_msg_id=None):
         """jump_to_msg_id: pre-select a specific message (by id) instead
@@ -2700,7 +2701,7 @@ class BBSMenuUI:
                         await self.session.write(
                             f"\r\n{FG['red']}No files marked -- press "
                             f"Space to mark files first.{RESET}\r\n")
-                        await self.session.read_line("Press Enter...")
+                        await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
                 elif key == 'U' and can_upload and protos:
                     await self._upload_terminal_file(
                         area_id, uploads_dir, protos, storage_path)
@@ -2772,7 +2773,7 @@ class BBSMenuUI:
             await self.session.write(
                 f"\r\n{FG['red']}lrzsz not installed - "
                 f"cannot batch download.{RESET}\r\n")
-            await self.session.read_line("Press Enter...")
+            await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             return
 
         labels = {'zmodem': 'Z=ZMODEM', 'ymodem': 'Y=YMODEM', 'xmodem': 'X=XMODEM'}
@@ -2887,7 +2888,7 @@ class BBSMenuUI:
                 await self.session.write(
                     f"\r\n{FG['red']}No transfer protocols "
                     f"(install lrzsz) and no web URL for this file.{RESET}\r\n")
-            await self.session.read_line("\r\nPress Enter...")
+            await self.session.read_line(('\r\n' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
             return
 
         # File not on disk - fall back gracefully
@@ -2899,7 +2900,7 @@ class BBSMenuUI:
             else:
                 await self.session.write(
                     f"\r\n{FG['red']}File not found on server disk.{RESET}\r\n")
-            await self.session.read_line("\r\nPress Enter...")
+            await self.session.read_line(('\r\n' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
             return
 
         labels = {'zmodem': 'Z=ZMODEM', 'ymodem': 'Y=YMODEM', 'xmodem': 'X=XMODEM'}
@@ -2918,7 +2919,7 @@ class BBSMenuUI:
         if proto_choice == 'W' and web_url:
             await self.session.write(
                 f"\r\n{FG['yel']}Web URL:{RESET}\r\n  {web_url}\r\n")
-            await self.session.read_line("\r\nPress Enter...")
+            await self.session.read_line(('\r\n' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
             return
 
         protocol = proto_map.get(proto_choice)
@@ -2941,7 +2942,7 @@ class BBSMenuUI:
             quota_ok, quota_msg = check_quota(self.session.user, quota_size)
         if not quota_ok:
             await self.session.write(f"\r\n{FG['red']}{quota_msg}{RESET}\r\n")
-            await self.session.read_line("\r\nPress Enter...")
+            await self.session.read_line(('\r\n' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
             return
 
         # Real gap found live (2026-09-29, building anetbbs-monitor's stats
@@ -2993,7 +2994,7 @@ class BBSMenuUI:
                     break
         except (asyncio.TimeoutError, Exception):
             pass
-        await self.session.read_line("Press Enter...")
+        await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 
     async def _upload_terminal_file(self, area_id, uploads_dir, protos,
                                     storage_path=''):
@@ -3048,7 +3049,7 @@ class BBSMenuUI:
 
         if not received:
             await self.session.write("\r\n[Upload failed or no file received.]\r\n")
-            await self.session.read_line("Press Enter...")
+            await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             return
 
         # Disk-backed area (has its own storage_path): save the file
@@ -3139,7 +3140,7 @@ class BBSMenuUI:
         if saved:
             await self.session.write(
                 f"\r\n[Uploaded: {', '.join(saved)}]\r\n")
-        await self.session.read_line("Press Enter...")
+        await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 
     # ------------------------------------------------------------------
     # User profile
@@ -4507,7 +4508,7 @@ class BBSMenuUI:
             await self.session.write(
                 "\r\n  No file-transfer protocol available on this server "
                 "(sysop needs to install lrzsz).\r\n")
-            await self.session.read_line("  Press Enter...")
+            await self.session.read_line(('  ' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
             return
         safe_title = BBSMenuUI._sanitize_cp437(
             re.sub(r'[^A-Za-z0-9 _-]', '', title or 'book')).strip() or 'book'
@@ -4542,7 +4543,7 @@ class BBSMenuUI:
                 if book is None:
                     await self.session.write(
                         f"  {FG['red']}No readable text format for this book.{RESET}\r\n")
-                    await self.session.read_line("  Press Enter...")
+                    await self.session.read_line(('  ' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
                     return
                 # Gutenberg text is full Unicode (smart quotes, em-dashes,
                 # etc.) -- sanitize for CP437 terminals the same way the
@@ -4564,7 +4565,7 @@ class BBSMenuUI:
                     _ch['title'] = BBSMenuUI._sanitize_cp437(_ch.get('title') or '')
         except Exception as exc:
             await self.session.write(f"  {FG['red']}Could not fetch book: {exc}{RESET}\r\n")
-            await self.session.read_line("  Press Enter...")
+            await self.session.read_line(('  ' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
             return
 
         chapter_idx = 0
@@ -4636,24 +4637,24 @@ class BBSMenuUI:
             with _app().app_context():
                 u = User.query.get(self.session.user['id'])
                 if not u:
-                    await self.session.write("\r\nProfile not found.\r\n")
-                    await self.session.read_line("\r\nPress Enter...")
+                    await self.session.write(('\r\n' + terminal_label(self.session, 'terminal.ui.profile_not_found', 'Profile not found.') + '\r\n'))
+                    await self.session.read_line(('\r\n' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
                     return
 
             from .ansi_ui import banner, footer, FG, RESET, ui_width
             _w = ui_width(self.session)
             await self.session.write('\x1b[2J\x1b[H')
-            await self.session.write(banner('Your Profile', _w))
+            await self.session.write(banner(terminal_label(self.session, 'terminal.ui.your_profile', 'Your Profile'), _w))
             for label, value in [
-                ('Username', u.username),
-                ('Display name', u.display_name or '-'),
-                ('Email', u.email or '-'),
-                ('Joined', fmt_eastern(u.created_at, '%Y-%m-%d', '?')),
-                ('Last login', fmt_eastern(u.last_login, '%Y-%m-%d %H:%M', 'never')),
-                ('Login count', str(u.login_count or 0)),
-                ('Admin', 'yes' if u.is_admin else 'no'),
-                ('Location', u.location or '-'),
-                ('Bio', (u.bio or '-')[:max(60, _w - 20)]),
+                (terminal_label(self.session, 'terminal.ui.username', 'Username'), u.username),
+                (terminal_label(self.session, 'terminal.ui.display_name', 'Display name'), u.display_name or '-'),
+                (terminal_label(self.session, 'terminal.ui.email', 'Email'), u.email or '-'),
+                (terminal_label(self.session, 'terminal.ui.joined', 'Joined'), fmt_eastern(u.created_at, '%Y-%m-%d', '?')),
+                (terminal_label(self.session, 'terminal.ui.last_login', 'Last login'), fmt_eastern(u.last_login, '%Y-%m-%d %H:%M', 'never')),
+                (terminal_label(self.session, 'terminal.ui.login_count', 'Login count'), str(u.login_count or 0)),
+                (terminal_label(self.session, 'terminal.ui.admin', 'Admin'), 'yes' if u.is_admin else 'no'),
+                (terminal_label(self.session, 'terminal.ui.location', 'Location'), u.location or '-'),
+                (terminal_label(self.session, 'terminal.ui.bio', 'Bio'), (u.bio or '-')[:max(60, _w - 20)]),
             ]:
                 await self.session.write(
                     f"  {FG['cyan']}{label:<14}{RESET} "
@@ -4661,9 +4662,9 @@ class BBSMenuUI:
                     f"{FG['grn']}{value}{RESET}\r\n")
             await self.session.write('\r\n' + footer(_w) + '\r\n')
             choice = (await self.session.read_line(
-                f"\r\n{FG['cyan']}E{RESET}=Edit Profile  "
-                f"{FG['cyan']}W{RESET}=Change Password  "
-                f"{FG['cyan']}Q{RESET}=Back  > ") or '').strip().upper()
+                f"\r\n{FG['cyan']}E{RESET}={terminal_label(self.session, 'terminal.ui.edit_profile', 'Edit Profile')}  "
+                f"{FG['cyan']}W{RESET}={terminal_label(self.session, 'terminal.ui.change_password', 'Change Password')}  "
+                f"{FG['cyan']}Q{RESET}={terminal_label(self.session, 'terminal.ui.back', 'Back')}  > ") or '').strip().upper()
             if choice == 'Q' or not choice:
                 return
             elif choice == 'E':
@@ -4796,14 +4797,14 @@ async def _post_compose(self, board_id, board_name, parent_id=None):
             if int(user.get('access_level', 0) or 0) < write_lvl:
                 await self.session.write(
                     f"\r\n  {FG['red']}You don't have permission to post here.{RESET}\r\n")
-                await self.session.read_line("  Press Enter...")
+                await self.session.read_line(('  ' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
                 return
         if parent_id and not is_admin:
             root = Post.query.get(parent_id)
             if root is not None and root.is_locked:
                 await self.session.write(
                     f"\r\n  {FG['red']}This thread is locked.{RESET}\r\n")
-                await self.session.read_line("  Press Enter...")
+                await self.session.read_line(('  ' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
                 return
 
     # Gather quote text when replying
@@ -4833,7 +4834,7 @@ async def _post_compose(self, board_id, board_name, parent_id=None):
         subject = subject_default
     if not subject:
         await self.session.write(f"  {FG['gry']}Cancelled (empty subject).{RESET}\r\n")
-        await self.session.read_line("  Press Enter...")
+        await self.session.read_line(('  ' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
         return
 
     username = self.session.user.get('username', 'guest')
@@ -4842,7 +4843,7 @@ async def _post_compose(self, board_id, board_name, parent_id=None):
                                tagline_picker=lambda: _maybe_prompt_tagline(self))
     if body is None:
         await self.session.write(f"\r\n  {FG['gry']}Aborted.{RESET}\r\n")
-        await self.session.read_line("  Press Enter...")
+        await self.session.read_line(('  ' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
         return
 
     with _app().app_context():
@@ -4872,7 +4873,7 @@ async def _post_compose(self, board_id, board_name, parent_id=None):
             pass
     await self.session.write(
         f"\r\n  {FG['grn']}{BOLD}[OK]{RESET} Posted (#{p.id}).\r\n")
-    await self.session.read_line("\r\n  Press Enter...")
+    await self.session.read_line(('\r\n  ' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
 BBSMenuUI._post_compose = _post_compose
 
 
@@ -4891,7 +4892,7 @@ async def _send_pm(self):
             db.func.lower(User.username) == to_username.lower()).first()
         if not recipient:
             await self.session.write(f"\r\nNo such user '{to_username}'.\r\n")
-            await self.session.read_line("Press Enter...")
+            await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             return
         recipient_id = recipient.id
     subject = (await self.session.read_line(f"  {FG['cyan']}Subject:{RESET} ") or '').strip()
@@ -4903,7 +4904,7 @@ async def _send_pm(self):
                                tagline_picker=lambda: _maybe_prompt_tagline(self))
     if body is None:
         await self.session.write(f"\r\n  {FG['gry']}Aborted.{RESET}\r\n")
-        await self.session.read_line("  Press Enter...")
+        await self.session.read_line(('  ' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
         return
     with _app().app_context():
         pm = PrivateMessage(sender_id=self.session.user['id'], recipient_id=recipient_id,
@@ -4915,7 +4916,7 @@ async def _send_pm(self):
     # stance as every other activity_type's `details` in this codebase.
     self.session._log_activity('pm_sent', f'To {to_username}: {subject[:100]}')
     await self.session.write(f"\r\n  {FG['grn']}{BOLD}[OK]{RESET} Sent to {to_username}.\r\n")
-    await self.session.read_line("  Press Enter...")
+    await self.session.read_line(('  ' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
 BBSMenuUI.send_pm = _send_pm
 
 
@@ -5248,7 +5249,7 @@ async def _edit_profile_field(self, kind, attr, label):
                 db.session.commit()
             except ValueError:
                 await self.session.write(f"\r\n{FG['red']}Bad date -- use YYYY-MM-DD.{RESET}\r\n")
-                await self.session.read_line("Press Enter...")
+                await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 
     elif kind == 'theme':
         with _app().app_context():
@@ -5289,7 +5290,7 @@ async def _edit_profile_field(self, kind, attr, label):
                 db.session.commit()
             await self.session.write(
                 f"\r\n{FG['cyan']}Takes effect next time you connect.{RESET}\r\n")
-            await self.session.read_line("Press Enter...")
+            await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 
     elif kind == 'echomail_name':
         picked, value = await self._pick_choice(
@@ -5310,7 +5311,7 @@ async def _edit_profile_field(self, kind, attr, label):
                 db.session.commit()
             await self.session.write(
                 f"\r\n{FG['cyan']}Takes effect next time you connect.{RESET}\r\n")
-            await self.session.read_line("Press Enter...")
+            await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 
     elif kind == 'lang':
         # No enforced list of valid language codes exists anywhere in
@@ -5328,7 +5329,7 @@ async def _edit_profile_field(self, kind, attr, label):
             else:
                 await self.session.write(
                     f"\r\n{FG['red']}Must be exactly 2 letters (ISO-639-1).{RESET}\r\n")
-                await self.session.read_line("Press Enter...")
+                await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 BBSMenuUI._edit_profile_field = _edit_profile_field
 
 
@@ -5412,18 +5413,18 @@ async def _change_password(self):
     new2 = await self.session.read_password("Confirm new: ")
     if not new1 or new1 != new2:
         await self.session.write("\r\nPasswords don't match (or empty). Cancelled.\r\n")
-        await self.session.read_line("Press Enter...")
+        await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
         return
     with _app().app_context():
         u = User.query.get(self.session.user['id'])
         if not u or not check_password_hash(u.password_hash, cur or ''):
             await self.session.write("\r\nCurrent password incorrect.\r\n")
-            await self.session.read_line("Press Enter...")
+            await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             return
         u.set_password(new1)
         db.session.commit()
     await self.session.write("\r\nPassword changed.\r\n")
-    await self.session.read_line("Press Enter...")
+    await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 BBSMenuUI.change_password = _change_password
 
 
@@ -5646,7 +5647,7 @@ async def _stock_sysop_menu(self):
     """
     if not self.session.user.get('is_admin'):
         await self.session.write("\r\nSysop access required.\r\n")
-        await self.session.read_line("Press Enter...")
+        await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
         return
     from .ansi_ui import banner, FG, RESET, BOLD, ui_width
 
@@ -5732,7 +5733,7 @@ async def _sysop_cfg_tool(self):
         await self.session.write(
             "\r\nThe config tool is only available over SSH (not telnet), "
             "for security.\r\n")
-        await self.session.read_line("Press Enter...")
+        await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
         return
 
     from flask import Flask
@@ -5751,7 +5752,7 @@ async def _sysop_cfg_tool(self):
             await self.session.write(
                 "\r\nConfig tool isn't available on this install "
                 "(anetbbs-cfg not found -- check the venv is up to date).\r\n")
-            await self.session.read_line("Press Enter...")
+            await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             return
 
     try:
@@ -5763,7 +5764,7 @@ async def _sysop_cfg_tool(self):
     except Exception as exc:
         logger.exception('anetbbs-cfg launch error: %s', exc)
         await self.session.write(f"\r\nError launching config tool: {exc}\r\n")
-        await self.session.read_line("\r\nPress Enter...")
+        await self.session.read_line(('\r\n' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
 BBSMenuUI.sysop_cfg_tool = _sysop_cfg_tool
 
 
@@ -5798,7 +5799,7 @@ async def _sysop_anetdraw(self):
                 "\r\nANetDRAW isn't set up on this install -- add it "
                 "under Games as a door_native game with slug "
                 "'anetdraw' (see docs/14-door-games.md).\r\n")
-            await self.session.read_line("Press Enter...")
+            await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             return
 
     try:
@@ -5810,7 +5811,7 @@ async def _sysop_anetdraw(self):
     except Exception as exc:
         logger.exception('ANetDRAW launch error: %s', exc)
         await self.session.write(f"\r\nError launching ANetDRAW: {exc}\r\n")
-        await self.session.read_line("\r\nPress Enter...")
+        await self.session.read_line(('\r\n' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
 BBSMenuUI.sysop_anetdraw = _sysop_anetdraw
 
 
@@ -5859,7 +5860,7 @@ async def _sysop_edit_user(self, uid):
         u = User.query.get(uid)
         if not u:
             await self.session.write(f"\r\n{FG['red']}No such user.{RESET}\r\n")
-            await self.session.read_line("Press Enter...")
+            await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             return
         info = (u.username, u.email, u.is_active, u.is_admin)
     while True:
@@ -5880,7 +5881,7 @@ async def _sysop_edit_user(self, uid):
                         ('Q', 'Back')):
             await self.session.write(menu_item(hk, lbl, _w) + '\r\n')
         await self.session.write('\r\n' + footer(_w) + '\r\n')
-        choice = (await self.session.read_line(_p('Choice: ')) or '').strip().upper()
+        choice = (await self.session.read_line(_p((terminal_label(self.session, 'terminal.ui.choice_label', 'Choice:') + ' '))) or '').strip().upper()
         if choice == 'Q' or not choice:
             return
         # Real gap found in a security/performance audit: web/admin.py's
@@ -5932,7 +5933,7 @@ async def _sysop_edit_user(self, uid):
                         db.session.delete(u)
                         db.session.commit()
                         await self.session.write(f"\r\n{FG['red']}User deleted.{RESET}\r\n")
-                        await self.session.read_line("Press Enter...")
+                        await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
                         return
             db.session.commit()
 BBSMenuUI._sysop_edit_user = _sysop_edit_user
@@ -5961,11 +5962,11 @@ async def _sysop_boards(self):
                 await self.session.write(f"          {FG['dim']}{desc[:_desc_w]}{RESET}\r\n")
         await self.session.write('\r\n')
         await self.session.write(menu_item('N', 'New board', _w) + '\r\n')
-        await self.session.write(menu_item('M', 'Bulletins', _w) + '\r\n')
-        await self.session.write(menu_item('Q', 'Back', _w) + '\r\n')
+        await self.session.write(menu_item('M', terminal_label(self.session, 'terminal.ui.bulletins', 'Bulletins'), _w) + '\r\n')
+        await self.session.write(menu_item('Q', terminal_label(self.session, 'terminal.ui.back', 'Back'), _w) + '\r\n')
         await self.session.write(f"  {FG['dim']}Or enter a board ID to edit{RESET}\r\n")
         await self.session.write('\r\n' + footer(_w) + '\r\n')
-        choice = (await self.session.read_line(_p('Choice: ')) or '').strip()
+        choice = (await self.session.read_line(_p((terminal_label(self.session, 'terminal.ui.choice_label', 'Choice:') + ' '))) or '').strip()
         u = choice.upper()
         if u == 'Q' or not choice:
             return
@@ -5997,7 +5998,7 @@ async def _sysop_boards(self):
                 f"{FG['yel']}[R]{RESET} rename  "
                 f"{FG['yel']}[X]{RESET} delete  "
                 f"{FG['yel']}[Q]{RESET} back\r\n")
-            sub = (await self.session.read_line(_p('Choice: ')) or '').strip().upper()
+            sub = (await self.session.read_line(_p((terminal_label(self.session, 'terminal.ui.choice_label', 'Choice:') + ' '))) or '').strip().upper()
             if sub == 'T':
                 b.is_active = not b.is_active
                 await self.session.write(f"\r\n{FG['grn']}Active toggled.{RESET}\r\n")
@@ -6050,7 +6051,7 @@ async def _sysop_bulletins(self):
                 Bulletin.expires_at < datetime.utcnow()).delete()
             db.session.commit()
         await ui.session.write(f"\r\n{FG['grn']}Purged {n} expired bulletin(s).{RESET}\r\n")
-        await ui.session.read_line("Press Enter...")
+        await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 
     async def _delete(ui, row):
         bid, title = row[0], row[1]
@@ -6184,7 +6185,7 @@ async def _sysop_qwk_requests(self):
             if QWKNode.query.filter_by(packet_id=pid).first():
                 await ui.session.write(
                     f"\r\n{FG['red']}Packet ID {pid} already taken.{RESET}\r\n")
-                await ui.session.read_line("Press Enter...")
+                await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
                 return
             alphabet = string.ascii_letters + string.digits
             password = ''.join(secrets.choice(alphabet) for _ in range(16))
@@ -6202,7 +6203,7 @@ async def _sysop_qwk_requests(self):
             req.node_id = node.id
             db.session.commit()
         await ui.session.write(f"\r\n{FG['grn']}Approved. QWK node {pid} created.{RESET}\r\n")
-        await ui.session.read_line("Press Enter...")
+        await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 
     async def _deny(ui, row):
         rid, bbs = row[0], row[1]
@@ -6352,7 +6353,7 @@ async def _sysop_games(self):
                 gs.ended_at = datetime.utcnow()
                 db.session.commit()
         await ui.session.write(f"\r\n{FG['grn']}Session terminated.{RESET}\r\n")
-        await ui.session.read_line("Press Enter...")
+        await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 
     async def _reset_tw2(ui, row):
         confirm = await ui.session.read_line(
@@ -6383,7 +6384,7 @@ async def _sysop_games(self):
         await ui.session.write(
             f"\r\n{FG['grn']}Universe reset -- {len(wiped)} file(s) removed.{RESET}\r\n"
             if wiped else f"\r\n{FG['dim']}Nothing to reset.{RESET}\r\n")
-        await ui.session.read_line("Press Enter...")
+        await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 
     # TW2002 reset doesn't depend on any session being selected (or even
     # existing), so it can't be a row-relative _sysop_record_list action
@@ -6467,7 +6468,7 @@ async def _sysop_file_queue(self):
             area = FileArea.query.get(entry.file_area_id)
             if not area or not area.storage_path:
                 await ui.session.write(f"\r\n{FG['red']}Area has no storage path.{RESET}\r\n")
-                await ui.session.read_line("Press Enter...")
+                await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
                 return
             try:
                 _os.makedirs(area.storage_path, exist_ok=True)
@@ -6479,7 +6480,7 @@ async def _sysop_file_queue(self):
                 _os.rename(entry.quarantine_path, dest)
             except OSError as exc:
                 await ui.session.write(f"\r\n{FG['red']}Approve failed: {exc}{RESET}\r\n")
-                await ui.session.read_line("Press Enter...")
+                await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
                 return
             entry.status = 'approved'
             entry.reviewed_by_id = ui.session.user.get('id')
@@ -6492,7 +6493,7 @@ async def _sysop_file_queue(self):
                 except Exception:
                     logger.exception('hatch_local_file failed for %s', safe_name)
         await ui.session.write(f"\r\n{FG['grn']}Approved.{RESET}\r\n")
-        await ui.session.read_line("Press Enter...")
+        await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 
     async def _reject(ui, row):
         eid = row[0]
@@ -6600,7 +6601,7 @@ async def _sysop_events(self):
         await ui.session.write(
             f"\r\n{FG['grn'] if ok else FG['red']}{'OK' if ok else 'FAILED'}{RESET}: "
             f"{(out or '')[:300]}\r\n")
-        await ui.session.read_line("Press Enter...")
+        await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 
     async def _delete(ui, row):
         eid, name = row[0], row[1]
@@ -6651,14 +6652,14 @@ async def _sysop_events(self):
             handler_key = cur_hkey
         if not handler_key or handler_key not in REGISTRY:
             await ui.session.write(f"\r\n{FG['red']}A handler is required.{RESET}\r\n")
-            await ui.session.read_line("Press Enter...")
+            await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             return
         sched_text = (await ui.session.read_line(
             f"Schedule [{_schedule_to_text(cur_sched)}]: ") or '').strip()
         sched, err = _parse_schedule_text(sched_text) if sched_text else (cur_sched, None)
         if err:
             await ui.session.write(f"\r\n{FG['red']}{err}{RESET}\r\n")
-            await ui.session.read_line("Press Enter...")
+            await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             return
         params_text = (await ui.session.read_line(
             f"Params JSON [{cur_params}]: ") or '').strip() or cur_params
@@ -6668,7 +6669,7 @@ async def _sysop_events(self):
                 raise ValueError
         except (ValueError, _json.JSONDecodeError):
             await ui.session.write(f"\r\n{FG['red']}Params must be a JSON object.{RESET}\r\n")
-            await ui.session.read_line("Press Enter...")
+            await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             return
         with _app().app_context():
             if eid:
@@ -6682,7 +6683,7 @@ async def _sysop_events(self):
             e.params_json = _json.dumps(parsed)
             db.session.commit()
         await ui.session.write(f"\r\n{FG['grn']}Saved.{RESET}\r\n")
-        await ui.session.read_line("Press Enter...")
+        await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 
     await self._sysop_record_list(
         'Scheduled Events', _fetch_rows, render_row, render_hint_extra,
@@ -6729,10 +6730,10 @@ async def _sysop_rss_admin(self):
             n = _import_one_feed(_app(), fid)
         except Exception as exc:
             await ui.session.write(f"\r\n{FG['red']}Refresh failed: {exc}{RESET}\r\n")
-            await ui.session.read_line("Press Enter...")
+            await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             return
         await ui.session.write(f"\r\n{FG['grn']}{n} new item(s) fetched.{RESET}\r\n")
-        await ui.session.read_line("Press Enter...")
+        await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 
     async def _delete(ui, row):
         fid, name = row[0], row[1]
@@ -6756,13 +6757,13 @@ async def _sysop_rss_admin(self):
         url = (await ui.session.read_line(f"Feed URL [{cur_url}]: ") or '').strip() or cur_url
         if not name or not url:
             await ui.session.write(f"\r\n{FG['red']}Name and URL are required.{RESET}\r\n")
-            await ui.session.read_line("Press Enter...")
+            await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             return
         cat = (await ui.session.read_line(f"Category [{cur_cat}]: ") or '').strip() or cur_cat
         with _app().app_context():
             if not fid and RssFeed.query.filter_by(url=url).first():
                 await ui.session.write(f"\r\n{FG['red']}That URL is already subscribed.{RESET}\r\n")
-                await ui.session.read_line("Press Enter...")
+                await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
                 return
             if fid:
                 f = RssFeed.query.get(fid)
@@ -6780,7 +6781,7 @@ async def _sysop_rss_admin(self):
             _import_one_feed(_app(), new_id)
         except Exception:
             pass
-        await ui.session.read_line("Press Enter...")
+        await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 
     await self._sysop_record_list(
         'RSS Feeds', _fetch_rows, render_row, render_hint_extra,
@@ -6849,14 +6850,14 @@ async def _sysop_login_modules(self):
             f"Event type [logon/logoff] [{cur_ev}]: ") or '').strip().lower() or cur_ev
         if ev not in ('logon', 'logoff'):
             await ui.session.write(f"\r\n{FG['red']}Must be logon or logoff.{RESET}\r\n")
-            await ui.session.read_line("Press Enter...")
+            await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             return
         mtype = (await ui.session.read_line(
             f"Module type [{'/'.join(_MODULE_TYPES)}] [{cur_mtype}]: ")
             or '').strip().lower() or cur_mtype
         if mtype not in _MODULE_TYPES:
             await ui.session.write(f"\r\n{FG['red']}Unknown module type.{RESET}\r\n")
-            await ui.session.read_line("Press Enter...")
+            await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             return
         params = (await ui.session.read_line(
             f"Params JSON [{cur_params}]: ") or '').strip() or cur_params
@@ -6867,7 +6868,7 @@ async def _sysop_login_modules(self):
                 raise ValueError
         except (ValueError, _json.JSONDecodeError):
             await ui.session.write(f"\r\n{FG['red']}Params must be a JSON object.{RESET}\r\n")
-            await ui.session.read_line("Press Enter...")
+            await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             return
         with _app().app_context():
             if mid:
@@ -6881,7 +6882,7 @@ async def _sysop_login_modules(self):
             m.params_json = _json.dumps(parsed)
             db.session.commit()
         await ui.session.write(f"\r\n{FG['grn']}Saved.{RESET}\r\n")
-        await ui.session.read_line("Press Enter...")
+        await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 
     await self._sysop_record_list(
         'Login/Logoff Modules', _fetch_rows, render_row, render_hint_extra,
@@ -6950,14 +6951,14 @@ async def _sysop_webhooks(self):
         url = (await ui.session.read_line(f"POST URL [{cur_url}]: ") or '').strip() or cur_url
         if not name or not url:
             await ui.session.write(f"\r\n{FG['red']}Name and URL are required.{RESET}\r\n")
-            await ui.session.read_line("Press Enter...")
+            await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             return
         event = (await ui.session.read_line(
             f"Event [{'/'.join(_WEBHOOK_EVENTS)}] [{cur_event}]: ")
             or '').strip().lower() or cur_event
         if event not in _WEBHOOK_EVENTS:
             await ui.session.write(f"\r\n{FG['red']}Unknown event type.{RESET}\r\n")
-            await ui.session.read_line("Press Enter...")
+            await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             return
         secret = (await ui.session.read_line(
             "Bearer secret (blank = keep current): ") or '').strip() or cur_secret
@@ -6973,7 +6974,7 @@ async def _sysop_webhooks(self):
             w.secret = secret[:120] if secret else None
             db.session.commit()
         await ui.session.write(f"\r\n{FG['grn']}Saved.{RESET}\r\n")
-        await ui.session.read_line("Press Enter...")
+        await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 
     await self._sysop_record_list(
         'Webhooks', _fetch_rows, render_row, render_hint_extra,
@@ -7021,7 +7022,7 @@ async def _sysop_broadcast_compose(self):
     except Exception:
         pass
     await self.session.write(f"\r\n{FG['grn']}Broadcast sent.{RESET}\r\n")
-    await self.session.read_line("Press Enter...")
+    await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 BBSMenuUI.sysop_broadcast_compose = _sysop_broadcast_compose
 
 
@@ -7111,7 +7112,7 @@ async def _sysop_pages(self):
         pid, uid = row[0], row[1]
         if not uid:
             await ui.session.write(f"\r\n{FG['red']}No user to reply to.{RESET}\r\n")
-            await ui.session.read_line("Press Enter...")
+            await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             return
         text = (await ui.session.read_line("Reply: ") or '').strip()
         if not text:
@@ -7125,7 +7126,7 @@ async def _sysop_pages(self):
                 p.answered_at = datetime.utcnow()
                 db.session.commit()
         await ui.session.write(f"\r\n{FG['grn']}Reply queued.{RESET}\r\n")
-        await ui.session.read_line("Press Enter...")
+        await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 
     await self._sysop_record_list(
         'Sysop Pages', _fetch_rows, render_row, render_hint_extra,
@@ -7145,7 +7146,7 @@ async def _sysop_notifications(self):
     ]
 
     async def render_header():
-        await self.session.write(banner('Notifications', ui_width(self.session)))
+        await self.session.write(banner(terminal_label(self.session, 'terminal.ui.notifications', 'Notifications'), ui_width(self.session)))
 
     def render_row(idx, row, selected):
         label, _fn = row
@@ -7255,7 +7256,7 @@ async def _sysop_registry(self):
             await u.session.write(
                 f"\r\n{FG['grn'] if ok else FG['red']}"
                 f"{'OK' if ok else 'FAILED'} ({ms:.0f}ms): {detail[:120]}{RESET}\r\n")
-            await u.session.read_line("Press Enter...")
+            await u.session.read_line(terminal_label(u.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 
         await ui._sysop_record_list(
             'Peer BBSes', _fetch_rows, render_row, render_hint_extra,
@@ -7328,7 +7329,7 @@ async def _sysop_callers(self):
                 pass
         await ui.session.write(
             f"\r\n{FG['grn']}Hide-sysop is now {'ON' if not cur else 'OFF'}.{RESET}\r\n")
-        await ui.session.read_line("Press Enter...")
+        await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 
     await self._sysop_record_list(
         'Caller Log', _fetch_rows, render_row, render_hint_extra,
@@ -7381,7 +7382,7 @@ async def _sysop_status(self):
             f"  {FG['cyan']}{k:<18}{RESET} "
             f"{FG['wht']}{BOLD}{v}{RESET}\r\n")
     await self.session.write('\r\n' + footer(_w) + '\r\n')
-    await self.session.read_line(_p('Press Enter...'))
+    await self.session.read_line(_p(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
 BBSMenuUI.sysop_status = _sysop_status
 
 
@@ -7450,14 +7451,14 @@ async def _sysop_node_monitor(self):
             else:
                 await ui.session.write(
                     f"\r\n{FG['red']}Node no longer live.{RESET}\r\n")
-        await ui.session.read_line("Press Enter...")
+        await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 
     async def _do_message(ui, row):
         slot, uid, uname, *_ = row
         if not uid:
             await ui.session.write(
                 f"\r\n{FG['red']}Can't message an unauthenticated node.{RESET}\r\n")
-            await ui.session.read_line("Press Enter...")
+            await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             return
         text = (await ui.session.read_line(
             f"\r\nMessage to {uname} (slot {slot}): ") or '').strip()
@@ -7465,7 +7466,7 @@ async def _sysop_node_monitor(self):
             from .sysop_paging import push_message
             push_message(uid, ui.session.user.get('username') or 'sysop', text)
             await ui.session.write(f"\r\n{FG['grn']}Sent.{RESET}\r\n")
-            await ui.session.read_line("Press Enter...")
+            await ui.session.read_line(terminal_label(ui.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
 
     await self._sysop_record_list(
         'Node Monitor', _fetch_rows, render_row, render_hint_extra,

@@ -3,12 +3,12 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-diagram-3"></i> Echomail Networks</h1>
+    <h1><i class="bi bi-diagram-3"></i> {{ t('ui.heading.echomail_networks', 'Echomail Networks') }}</h1>
 </div>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <a href="{{ url_for('echomail_admin.dashboard') }}" class="btn btn-primary btn-sm">
-        <i class="bi bi-arrow-left"></i> Dashboard
+        <i class="bi bi-arrow-left"></i> {{ t('ui.dashboard', 'Dashboard') }}
     </a>
     <a href="{{ url_for('echomail_admin.new_network') }}" class="btn btn-primary">
         <i class="bi bi-plus-circle"></i> Add Network
@@ -21,8 +21,8 @@
         <table class="table table-striped mb-0">
             <thead>
                 <tr>
-                    <th>Name</th><th>Type</th><th>Host</th><th>Outbound Spool</th><th>Status</th>
-                    <th>Last Poll</th><th>Interval</th><th>Actions</th>
+                    <th>{{ t('ui.name', 'Name') }}</th><th>{{ t('ui.type', 'Type') }}</th><th>{{ t('ui.host', 'Host') }}</th><th>Outbound Spool</th><th>{{ t('ui.status', 'Status') }}</th>
+                    <th>{{ t('ui.last_poll', 'Last Poll') }}</th><th>Interval</th><th>{{ t('ui.actions', 'Actions') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -63,13 +63,13 @@
                                 <i class="bi bi-arrow-repeat"></i>
                             </button>
                         </form>
-                        <a href="{{ url_for('echomail_admin.edit_network', network_id=net.id) }}" class="btn btn-primary btn-sm ms-1" title="Edit">
+                        <a href="{{ url_for('echomail_admin.edit_network', network_id=net.id) }}" class="btn btn-primary btn-sm ms-1" title="{{ t('ui.edit', 'Edit') }}">
                             <i class="bi bi-pencil"></i>
                         </a>
                         <form method="post" action="{{ url_for('echomail_admin.delete_network', network_id=net.id) }}" class="d-inline ms-1"
                               onsubmit="return confirm('Delete network {{ net.name }}? This will also delete all areas and messages!');">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-sm" style="background:#000; border:1px solid #ff0000; color:#ff0000;" title="Delete">
+                            <button type="submit" class="btn btn-sm" style="background:#000; border:1px solid #ff0000; color:#ff0000;" title="{{ t('ui.delete', 'Delete') }}">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </form>

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ title }} - Admin{% endblock %}
+{% block title %}{{ title }} {{ t('admin.user_form.admin', '- Admin') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
@@ -66,7 +66,7 @@
 
                     <div class="d-flex gap-2">
                         {{ form.submit(class="btn btn-primary") }}
-                        <a href="{{ url_for('admin.users') }}" class="btn btn-secondary">Cancel</a>
+                        <a href="{{ url_for('admin.users') }}" class="btn btn-secondary">{{ t('admin.user_form.cancel', 'Cancel') }}</a>
                     </div>
                 </form>
             </div>

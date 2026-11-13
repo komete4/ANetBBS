@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}QWK Offline Reader{% endblock %}
+{% block title %}{{ t('ui.heading.qwk_offline_reader', 'QWK Offline Reader') }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-mailbox"></i> QWK Offline Reader</h1>
+    <h1><i class="bi bi-mailbox"></i> {{ t('ui.heading.qwk_offline_reader', 'QWK Offline Reader') }}</h1>
     <p class="small text-muted">
         Grab your unread echomail as a .QWK packet, read it offline in
         your favorite QWK reader (MultiMail, BlueWave, OLX...), then
@@ -18,7 +18,7 @@
             <p>Builds a packet of every echomail message in your subscribed
                areas you haven't read yet.</p>
             <a href="{{ url_for('qwk_user.download') }}" class="btn btn-primary">
-                <i class="bi bi-download"></i> Download
+                <i class="bi bi-download"></i> {{ t('ui.download', 'Download') }}
             </a>
         </div>
     </div>
@@ -42,7 +42,7 @@
     <div class="card-header"><i class="bi bi-info-circle"></i> How to use a QWK reader</div>
     <div class="card-body">
         <ol class="small">
-            <li>Click <strong>Download</strong> above to grab the latest packet.</li>
+            <li>Click <strong>{{ t('ui.download', 'Download') }}</strong> above to grab the latest packet.</li>
             <li>Open the .QWK file in MultiMail, BlueWave, OLX, etc.</li>
             <li>Read messages, hit reply, write your response.</li>
             <li>Save the resulting .REP file.</li>

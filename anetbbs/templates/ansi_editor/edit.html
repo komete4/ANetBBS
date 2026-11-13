@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Edit: {{ art.name }}{% endblock %}
+{% block title %}{{ t('ui.edit_label', 'Edit:') }} {{ art.name }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
@@ -70,7 +70,7 @@
             <div class="col-md-4">
                 <button class="btn btn-success w-100"
                         onclick="return confirm('Apply this art as the ANSI screen for the selected menu?')">
-                    <i class="bi bi-check2-circle"></i> Apply
+                    <i class="bi bi-check2-circle"></i> {{ t('ui.apply', 'Apply') }}
                 </button>
             </div>
         </form>
@@ -98,7 +98,7 @@
             <div class="col-md-4">
                 <button class="btn btn-info w-100"
                         onclick="return confirm('Apply this art to the selected screen slot?')">
-                    <i class="bi bi-check2-circle"></i> Apply
+                    <i class="bi bi-check2-circle"></i> {{ t('ui.apply', 'Apply') }}
                 </button>
             </div>
         </form>

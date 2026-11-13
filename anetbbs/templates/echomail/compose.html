@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{% if original %}Reply{% else %}Compose{% endif %} — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{% if original %}{{ t('ui.reply', 'Reply') }}{% else %}Compose{% endif %} — {{ config.BBS_NAME }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
@@ -79,7 +79,7 @@
 
             <div class="d-flex justify-content-between">
                 <a href="{{ url_for('echomail.area', area_id=echo_area.id) }}" class="btn btn-primary">
-                    <i class="bi bi-x-circle"></i> Cancel
+                    <i class="bi bi-x-circle"></i> {{ t('ui.cancel', 'Cancel') }}
                 </a>
                 {{ form.submit(class="btn btn-primary") }}
             </div>

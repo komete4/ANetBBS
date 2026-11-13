@@ -40,7 +40,7 @@
 {% if messages %}
 <div class="card">
     <div class="card-header">
-        <i class="bi bi-list-ul"></i> Messages
+        <i class="bi bi-list-ul"></i> {{ t('ui.messages', 'Messages') }}
         <small class="ms-2" style="color:#00cc00;">{{ echo_area.total_messages or 0 }} total</small>
     </div>
     <div class="card-body p-0">
@@ -48,10 +48,10 @@
             <thead>
                 <tr>
                     <th></th>
-                    <th>Subject</th>
-                    <th>From</th>
-                    <th>To</th>
-                    <th>Date</th>
+                    <th>{{ t('ui.subject', 'Subject') }}</th>
+                    <th>{{ t('ui.from', 'From') }}</th>
+                    <th>{{ t('ui.to', 'To') }}</th>
+                    <th>{{ t('ui.date', 'Date') }}</th>
                 </tr>
             </thead>
             <tbody>

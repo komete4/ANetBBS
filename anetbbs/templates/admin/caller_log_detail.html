@@ -6,7 +6,7 @@
 </div>
 <div class="mb-3">
     <a href="{{ url_for('admin.caller_log') }}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left"></i> Caller Log</a>
+        <i class="bi bi-arrow-left"></i> {{ t('ui.caller_log', 'Caller Log') }}</a>
     <a href="{{ url_for('admin.activity') }}" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-list-ul"></i> Full Activity Feed</a>
 </div>
@@ -19,14 +19,14 @@
             <div class="col-md-3"><strong>IP:</strong> <code>{{ cl.ip_address or '' }}</code></div>
             <div class="col-md-3"><strong>Duration:</strong> {{ cl.duration_seconds or 0 }}s</div>
         </div>
-        <div class="mt-2 text-muted small">Started {{ cl.started_at|eastern('%Y-%m-%d %H:%M:%S') }}</div>
+        <div class="mt-2 text-muted small">{{ t('ui.started', 'Started') }} {{ cl.started_at|eastern('%Y-%m-%d %H:%M:%S') }}</div>
     </div>
 </div>
 
 <div class="card">
     <div class="card-body p-0">
         <table class="table table-sm table-striped mb-0">
-            <thead><tr><th>When</th><th>Event</th><th>Details</th></tr></thead>
+            <thead><tr><th>{{ t('ui.when', 'When') }}</th><th>{{ t('ui.event', 'Event') }}</th><th>{{ t('ui.details', 'Details') }}</th></tr></thead>
             <tbody>
             {% for e in events %}
                 <tr>

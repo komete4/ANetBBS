@@ -11,9 +11,32 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+STOCK_GAME_CATEGORIES = {
+    'action': 'Action',
+    'classic': 'Classic DOS',
+    'puzzle': 'Puzzle',
+    'rpg': 'RPG',
+    'space': 'Space',
+    'strategy': 'Strategy',
+    'other': 'Other',
+}
+
+
+def category_label(slug, name, translate):
+    """Translate only the stock category names, preserving custom labels."""
+    if name == STOCK_GAME_CATEGORIES.get(slug):
+        return translate(f'terminal.games.category.{slug}', name)
+    return name
+
+
 class GameManager:
     def __init__(self, session):
         self.session = session
+
+    def _menu_text(self, key, source, **values):
+        from .i18n import terminal_label
+
+        return terminal_label(self.session, 'terminal.games.' + key, source, **values)
 
     async def show_menu(self):
         """Game Center top-level picker (Door Games / Number Guessing).
@@ -49,13 +72,13 @@ class GameManager:
                     pass
             if not await write_menu_art(self.session, 'game_center'):
                 await self.session.clear_screen()
-                await self.session.write(banner('Game Center', _w))
-                for hk, lbl in (('1', 'Door Games (LORD, TradeWars, etc.)'),
-                                ('2', 'Number Guessing (built-in)'),
-                                ('3', 'Return to Main Menu')):
+                await self.session.write(banner(self._menu_text('title', 'Game Center'), _w))
+                for hk, lbl in (('1', self._menu_text('door_intro', 'Door Games (LORD, TradeWars, etc.)')),
+                                ('2', self._menu_text('guess', 'Number Guessing (built-in)')),
+                                ('3', self._menu_text('main', 'Return to Main Menu'))):
                     await self.session.write(menu_item(hk, lbl, _w) + '\r\n')
                 await self.session.write(footer(_w) + '\r\n')
-            choice = (await self.session.read_line(_p('Choice: ')) or '').strip().upper()
+            choice = (await self.session.read_line(_p(self._menu_text('choice', 'Choice: '))) or '').strip().upper()
 
             if choice in ('3', 'Q') or not choice:
                 break
@@ -101,7 +124,11 @@ class GameManager:
             # used below as that category's own displayed menu number
             # (see _display_number()).
             cat_rows = GameCategory.query.all()
-            cat_names = {c.slug: c.name for c in cat_rows}
+            localize = getattr(self.session, '_terminal_text', None)
+            cat_names = {
+                c.slug: category_label(c.slug, c.name, localize) if localize else c.name
+                for c in cat_rows
+            }
             cat_as_submenu = {c.slug: bool(c.as_submenu) for c in cat_rows}
             cat_sort_order = {c.slug: (c.sort_order or 0) for c in cat_rows}
 
@@ -140,9 +167,10 @@ class GameManager:
         top_level_order = [(kind, payload) for (_, kind, payload) in _combined]
 
         if not game_list:
-            await self.session.write("\r\n\r\nNo door games are configured yet.\r\n"
-                                     "An admin can add games via the web at /admin/games/.\r\n")
-            await self.session.read_line("\r\nPress Enter to continue...")
+            await self.session.write(self._menu_text(
+                'empty', "\r\n\r\nNo door games are configured yet.\r\n"
+                "An admin can add games via the web at /admin/games/.\r\n"))
+            await self.session.read_line(self._menu_text('continue', '\r\nPress Enter to continue...'))
             return
 
         # Real gap Jerry hit live: sort_order used to only control a
@@ -231,7 +259,7 @@ class GameManager:
                         slug = payload
                         cat_name = cat_names.get(slug, slug.capitalize())
                         count = len(grouped[slug])
-                        plural = 'door' if count == 1 else 'doors'
+                        plural = self._menu_text('one', 'door') if count == 1 else self._menu_text('many', 'doors')
                         num = cat_sort_order.get(slug, 0)
                         item_list.append((str(num), f'{cat_name} ({count} {plural})',
                                           '', '', f'{num}\r'))
@@ -241,16 +269,16 @@ class GameManager:
                     num = g['sort_order']
                     item_list.append((str(num), g['name'], '', '', f'{num}\r'))
                     by_number.setdefault(num, g)
-                item_list.append(('Q', 'Return', '', '', 'Q\r'))
+                item_list.append(('Q', self._menu_text('return', 'Return'), '', '', 'Q\r'))
                 self.session._enhanced_vt_state = None
                 self.session.writer.write(
-                    encode_menu('Door Games', item_list).encode('utf-8'))
+                    encode_menu(self._menu_text('doors', 'Door Games'), item_list).encode('utf-8'))
                 await self.session._drain_protected()
                 self.session._enhanced_menu_active = True
             elif not await write_menu_art(self.session, 'door_games'):
                 await self.session.clear_screen()
                 hbar = '═' * _iw
-                title = "Door Games".center(_iw)
+                title = self._menu_text('doors', 'Door Games').center(_iw)
                 await self.session.write(f"\r\n{BOLD}{CYAN}{hbar}{RESET}\r\n")
                 await self.session.write(f"{WHT}{title}{RESET}\r\n")
                 await self.session.write(f"{BOLD}{CYAN}{hbar}{RESET}\r\n")
@@ -270,7 +298,7 @@ class GameManager:
                         cat_name = cat_names.get(slug, slug.capitalize())
                         cat_games = grouped[slug]
                         count = len(cat_games)
-                        plural = 'door' if count == 1 else 'doors'
+                        plural = self._menu_text('one', 'door') if count == 1 else self._menu_text('many', 'doors')
                         num = cat_sort_order.get(slug, 0)
                         await self.session.write(
                             f"  {YEL}{num:2d}{DIM}. {GRN}{BOLD}{cat_name}{RESET}"
@@ -293,7 +321,7 @@ class GameManager:
                         f"{YEL}{num:2d}{DIM}. {GRN}{name_col:<{_col_w - 5}}{RESET}")
                     by_number.setdefault(num, g)
                 await _flush_cells()
-                await self.session.write(f"  {YEL}Q{DIM}. {GRN}Return{RESET}\r\n")
+                await self.session.write(f"  {YEL}Q{DIM}. {GRN}{self._menu_text('return', 'Return')}{RESET}\r\n")
                 await self.session.write(f"{BOLD}{CYAN}{hbar}{RESET}\r\n\r\n")
             else:
                 # write_menu_art drew a custom screen -- by_number still
@@ -310,7 +338,7 @@ class GameManager:
                     g = payload
                     by_number.setdefault(g['sort_order'], g)
 
-            choice = await self.session.read_line("Pick a game (number or Q): ")
+            choice = await self.session.read_line(self._menu_text('pick', 'Pick a game (number or Q): '))
             if not choice or choice.lower() == 'q':
                 return
             try:
@@ -324,7 +352,7 @@ class GameManager:
                     continue
             except ValueError:
                 pass
-            await self.session.write("\r\nInvalid choice.\r\n")
+            await self.session.write(self._menu_text('invalid', '\r\nInvalid choice.\r\n'))
 
     async def _show_category_submenu(self, slug, cat_name, games):
         """Second-level door menu for a single as_submenu=True category --
@@ -402,13 +430,14 @@ class GameManager:
                             for g in page_games]
                 if total_pages > 1:
                     if page > 0:
-                        item_list.append(('P', 'Prev page', '', '', 'P\r'))
+                        item_list.append(('P', self._menu_text('previous', 'Prev page'), '', '', 'P\r'))
                     if page < total_pages - 1:
-                        item_list.append(('N', 'Next page', '', '', 'N\r'))
-                item_list.append(('B', 'Back', '', '', 'B\r'))
+                        item_list.append(('N', self._menu_text('next', 'Next page'), '', '', 'N\r'))
+                item_list.append(('B', self._menu_text('back', 'Back'), '', '', 'B\r'))
                 page_title = cat_name
                 if total_pages > 1:
-                    page_title = f'{cat_name} (page {page + 1}/{total_pages})'
+                    page_title = self._menu_text('page_title', '{category} (page {page}/{total})',
+                        category=cat_name, page=page + 1, total=total_pages)
                 self.session._enhanced_vt_state = None
                 self.session.writer.write(
                     encode_menu(page_title, item_list).encode('utf-8'))
@@ -430,17 +459,19 @@ class GameManager:
                     row = '  '.join(cells[i:i + _cols])
                     await self.session.write(f"  {row}\r\n")
                 if total_pages > 1:
-                    await self.session.write(
-                        f"  {DIM}-- page {page + 1}/{total_pages} "
-                        f"({start + 1}-{end} of {len(games)}) --{RESET}\r\n")
+                    page_label = self._menu_text(
+                        'page_range', 'page {page}/{total} ({start}-{end} of {count})',
+                        page=page + 1, total=total_pages, start=start + 1,
+                        end=end, count=len(games))
+                    await self.session.write(f"  {DIM}-- {page_label} --{RESET}\r\n")
                     nav = []
                     if page > 0:
-                        nav.append(f"{YEL}P{DIM}. {GRN}Prev page{RESET}")
+                        nav.append(f"{YEL}P{DIM}. {GRN}{self._menu_text('previous', 'Prev page')}{RESET}")
                     if page < total_pages - 1:
-                        nav.append(f"{YEL}N{DIM}. {GRN}Next page{RESET}")
+                        nav.append(f"{YEL}N{DIM}. {GRN}{self._menu_text('next', 'Next page')}{RESET}")
                     if nav:
                         await self.session.write("  " + "   ".join(nav) + "\r\n")
-                await self.session.write(f"  {YEL}B{DIM}. {GRN}Back{RESET}\r\n")
+                await self.session.write(f"  {YEL}B{DIM}. {GRN}{self._menu_text('back', 'Back')}{RESET}\r\n")
                 await self.session.write(f"{BOLD}{CYAN}{hbar}{RESET}\r\n\r\n")
 
             # Real live UI bug: this used to always say "number, N/P, or
@@ -449,8 +480,8 @@ class GameManager:
             # -- the "-- page X/Y --" line and Prev/Next hints above are
             # already correctly hidden for total_pages == 1 (see above),
             # the prompt text just never matched.
-            prompt = ("Pick a game (number, N/P, or B): " if total_pages > 1
-                      else "Pick a game (number or B): ")
+            prompt = (self._menu_text('pick_pages', 'Pick a game (number, N/P, or B): ') if total_pages > 1
+                      else self._menu_text('pick_back', 'Pick a game (number or B): '))
             choice = (await self.session.read_line(prompt) or '').strip()
             if not choice or choice.lower() in ('b', 'q'):
                 return
@@ -468,7 +499,7 @@ class GameManager:
                     continue
             except ValueError:
                 pass
-            await self.session.write("\r\nInvalid choice.\r\n")
+            await self.session.write(self._menu_text('invalid', '\r\nInvalid choice.\r\n'))
 
     async def _launch(self, game_dict):
         """Launch a door game and bridge it to this session.

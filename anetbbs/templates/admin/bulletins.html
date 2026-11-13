@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-megaphone"></i> Bulletin Management</h1>
+    <h1><i class="bi bi-megaphone"></i> {{ t('ui.heading.bulletin_management', 'Bulletin Management') }}</h1>
 </div>
 
 <div class="text-end mb-3 d-flex gap-2 justify-content-end">
@@ -13,7 +13,7 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="btn btn-outline-danger"><i class="bi bi-archive"></i> Purge Expired</button>
     </form>
-    <a href="{{ url_for('admin.add_bulletin') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Add Bulletin</a>
+    <a href="{{ url_for('admin.add_bulletin') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> {{ t('ui.add_bulletin', 'Add Bulletin') }}</a>
 </div>
 
 <div class="card">
@@ -21,12 +21,12 @@
         <table class="table mb-0">
             <thead>
                 <tr>
-                    <th>Title</th>
-                    <th>Author</th>
+                    <th>{{ t('ui.title', 'Title') }}</th>
+                    <th>{{ t('ui.author', 'Author') }}</th>
                     <th>Pinned</th>
-                    <th>Created</th>
-                    <th>Expires</th>
-                    <th>Actions</th>
+                    <th>{{ t('ui.created', 'Created') }}</th>
+                    <th>{{ t('ui.expires', 'Expires') }}</th>
+                    <th>{{ t('ui.actions', 'Actions') }}</th>
                 </tr>
             </thead>
             <tbody>

@@ -1,34 +1,34 @@
 {% extends "base.html" %}
 
-{% block title %}IRC Server Presets{% endblock %}
+{% block title %}{{ t('admin.irc_presets.irc_server_presets', 'IRC Server Presets') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-chat-dots"></i> IRC Server Presets</h1>
-    <p>Sysop-configured IRC servers shown as quick-connect options in the terminal IRC chat menu.</p>
+    <h1><i class="bi bi-chat-dots"></i> {{ t('admin.irc_presets.irc_server_presets', 'IRC Server Presets') }}</h1>
+    <p>{{ t('admin.irc_presets.sysop_configured_irc_servers_shown_as_quick_connect_options_in_the_terminal_irc_chat_menu', 'Sysop-configured IRC servers shown as quick-connect options in the terminal IRC chat menu.') }}</p>
 </div>
 
 <div class="card mb-3">
-    <div class="card-header"><i class="bi bi-plus-square"></i> Add Preset</div>
+    <div class="card-header"><i class="bi bi-plus-square"></i> {{ t('admin.irc_presets.add_preset', 'Add Preset') }}</div>
     <div class="card-body">
         <form method="post" class="row g-2">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="action" value="add">
-            <div class="col-md-4"><label class="form-label">Display Name</label>
+            <div class="col-md-4"><label class="form-label">{{ t('admin.irc_presets.display_name', 'Display Name') }}</label>
                 <input type="text" name="name" class="form-control" required
                        placeholder="Libera.Chat"></div>
-            <div class="col-md-4"><label class="form-label">Server</label>
+            <div class="col-md-4"><label class="form-label">{{ t('admin.irc_presets.server', 'Server') }}</label>
                 <input type="text" name="server" class="form-control" required
                        placeholder="irc.libera.chat"></div>
-            <div class="col-md-2"><label class="form-label">Port</label>
+            <div class="col-md-2"><label class="form-label">{{ t('admin.irc_presets.port', 'Port') }}</label>
                 <input type="number" name="port" class="form-control" value="6667"></div>
-            <div class="col-md-2"><label class="form-label">Order</label>
+            <div class="col-md-2"><label class="form-label">{{ t('admin.irc_presets.order', 'Order') }}</label>
                 <input type="number" name="order" class="form-control" value="0"
-                       title="Lower numbers appear first"></div>
-            <div class="col-md-4"><label class="form-label">Default Nick <small class="text-muted">(optional)</small></label>
+                       title="{{ t('admin.irc_presets.order_help', 'Lower numbers appear first') }}"></div>
+            <div class="col-md-4"><label class="form-label">{{ t('admin.irc_presets.default_nick', 'Default Nick') }} <small class="text-muted">{{ t('admin.irc_presets.optional', '(optional)') }}</small></label>
                 <input type="text" name="default_nick" class="form-control"
-                       placeholder="leave blank to use BBS username"></div>
-            <div class="col-md-4"><label class="form-label">Auto-join Channels <small class="text-muted">(optional, comma-separated)</small></label>
+                       placeholder="{{ t('admin.irc_presets.nick_placeholder', 'leave blank to use BBS username') }}"></div>
+            <div class="col-md-4"><label class="form-label">{{ t('admin.irc_presets.auto_join_channels', 'Auto-join Channels') }} <small class="text-muted">{{ t('admin.irc_presets.optional_comma_separated', '(optional, comma-separated)') }}</small></label>
                 <input type="text" name="channels" class="form-control"
                        placeholder="#libera,#bbs"></div>
             <div class="col-md-2 d-flex align-items-end gap-3">
@@ -39,11 +39,11 @@
                 <div class="form-check mb-2">
                     <input class="form-check-input" type="checkbox" name="is_active"
                            id="add_active" checked>
-                    <label class="form-check-label" for="add_active">Active</label>
+                    <label class="form-check-label" for="add_active">{{ t('admin.irc_presets.active', 'Active') }}</label>
                 </div>
             </div>
             <div class="col-12">
-                <button class="btn btn-primary" type="submit">Add Preset</button>
+                <button class="btn btn-primary" type="submit">{{ t('admin.irc_presets.add_preset', 'Add Preset') }}</button>
             </div>
         </form>
     </div>
@@ -51,12 +51,12 @@
 
 {% if presets %}
 <div class="card">
-    <div class="card-header">Configured Presets</div>
+    <div class="card-header">{{ t('admin.irc_presets.configured_presets', 'Configured Presets') }}</div>
     <div class="card-body p-0">
         <table class="table table-sm mb-0">
             <thead><tr>
-                <th>Order</th><th>Name</th><th>Server</th><th>Port</th>
-                <th>SSL</th><th>Nick</th><th>Channels</th><th>Status</th><th>Actions</th>
+                <th>{{ t('admin.irc_presets.order', 'Order') }}</th><th>{{ t('admin.irc_presets.name', 'Name') }}</th><th>{{ t('admin.irc_presets.server', 'Server') }}</th><th>{{ t('admin.irc_presets.port', 'Port') }}</th>
+                <th>SSL</th><th>Nick</th><th>{{ t('admin.irc_presets.channels', 'Channels') }}</th><th>{{ t('admin.irc_presets.status', 'Status') }}</th><th>{{ t('admin.irc_presets.actions', 'Actions') }}</th>
             </tr></thead>
             <tbody>
             {% for p in presets %}
@@ -70,9 +70,9 @@
                 <td><small>{{ p.channels or '' }}</small></td>
                 <td>
                     {% if p.is_active %}
-                        <span class="badge bg-success">Active</span>
+                        <span class="badge bg-success">{{ t('admin.irc_presets.active', 'Active') }}</span>
                     {% else %}
-                        <span class="badge bg-secondary">Disabled</span>
+                        <span class="badge bg-secondary">{{ t('admin.irc_presets.disabled', 'Disabled') }}</span>
                     {% endif %}
                 </td>
                 <td>
@@ -86,14 +86,14 @@
                     </form>
                     <!-- Edit (inline expand via details) -->
                     <button class="btn btn-sm btn-outline-primary"
-                            onclick="document.getElementById('edit-{{ p.id }}').hidden=!document.getElementById('edit-{{ p.id }}').hidden">Edit</button>
+                            onclick="document.getElementById('edit-{{ p.id }}').hidden=!document.getElementById('edit-{{ p.id }}').hidden">{{ t('admin.irc_presets.edit', 'Edit') }}</button>
                     <!-- Delete -->
                     <form method="post" class="d-inline"
-                          onsubmit="return confirm('Delete {{ p.name }}?')">
+                          data-confirm="{{ t('admin.irc_presets.delete_confirm', 'Delete {name}?', name=p.name) }}" onsubmit="return confirm(this.dataset.confirm)">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="action" value="delete">
                         <input type="hidden" name="preset_id" value="{{ p.id }}">
-                        <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                        <button class="btn btn-sm btn-outline-danger" type="submit">{{ t('admin.irc_presets.delete', 'Delete') }}</button>
                     </form>
                 </td>
             </tr>
@@ -103,22 +103,22 @@
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="action" value="edit">
                         <input type="hidden" name="preset_id" value="{{ p.id }}">
-                        <div class="col-md-3"><label class="form-label">Name</label>
+                        <div class="col-md-3"><label class="form-label">{{ t('admin.irc_presets.name', 'Name') }}</label>
                             <input type="text" name="name" class="form-control"
                                    value="{{ p.name }}" required></div>
-                        <div class="col-md-3"><label class="form-label">Server</label>
+                        <div class="col-md-3"><label class="form-label">{{ t('admin.irc_presets.server', 'Server') }}</label>
                             <input type="text" name="server" class="form-control"
                                    value="{{ p.server }}" required></div>
-                        <div class="col-md-1"><label class="form-label">Port</label>
+                        <div class="col-md-1"><label class="form-label">{{ t('admin.irc_presets.port', 'Port') }}</label>
                             <input type="number" name="port" class="form-control"
                                    value="{{ p.port }}"></div>
-                        <div class="col-md-1"><label class="form-label">Order</label>
+                        <div class="col-md-1"><label class="form-label">{{ t('admin.irc_presets.order', 'Order') }}</label>
                             <input type="number" name="order" class="form-control"
                                    value="{{ p.order }}"></div>
-                        <div class="col-md-2"><label class="form-label">Default Nick</label>
+                        <div class="col-md-2"><label class="form-label">{{ t('admin.irc_presets.default_nick', 'Default Nick') }}</label>
                             <input type="text" name="default_nick" class="form-control"
                                    value="{{ p.default_nick or '' }}"></div>
-                        <div class="col-md-2"><label class="form-label">Channels</label>
+                        <div class="col-md-2"><label class="form-label">{{ t('admin.irc_presets.channels', 'Channels') }}</label>
                             <input type="text" name="channels" class="form-control"
                                    value="{{ p.channels or '' }}"></div>
                         <div class="col-md-2 d-flex align-items-end gap-3">
@@ -130,11 +130,11 @@
                             <div class="form-check mb-2">
                                 <input class="form-check-input" type="checkbox" name="is_active"
                                        id="active-{{ p.id }}" {{ 'checked' if p.is_active else '' }}>
-                                <label class="form-check-label" for="active-{{ p.id }}">Active</label>
+                                <label class="form-check-label" for="active-{{ p.id }}">{{ t('admin.irc_presets.active', 'Active') }}</label>
                             </div>
                         </div>
                         <div class="col-12">
-                            <button class="btn btn-sm btn-primary" type="submit">Save</button>
+                            <button class="btn btn-sm btn-primary" type="submit">{{ t('admin.irc_presets.save', 'Save') }}</button>
                         </div>
                     </form>
                 </td>
@@ -145,11 +145,10 @@
     </div>
 </div>
 {% else %}
-<div class="alert alert-info">No IRC presets configured yet. Add one above.</div>
+<div class="alert alert-info">{{ t('admin.irc_presets.no_irc_presets_configured_yet_add_one_above', 'No IRC presets configured yet. Add one above.') }}</div>
 {% endif %}
 
 <div class="mt-3 text-muted small">
-    <strong>How presets work:</strong> Active presets appear as numbered options in the terminal IRC chat menu.
-    Users can also still connect manually to any server. Inactive presets are hidden from the menu.
+    <strong>{{ t('admin.irc_presets.how_presets_work', 'How presets work:') }}</strong> {{ t('admin.irc_presets.active_presets_appear_as_numbered_options_in_the_terminal_irc_chat_menu_users_can_also_still_connect_manually_to_any_server_inactive_presets_are_hidden_from_the_menu', 'Active presets appear as numbered options in the terminal IRC chat menu. Users can also still connect manually to any server. Inactive presets are hidden from the menu.') }}
 </div>
 {% endblock %}

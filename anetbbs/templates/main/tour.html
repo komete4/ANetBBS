@@ -2,7 +2,7 @@
 {% block title %}Tour — {{ config.BBS_NAME }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-compass"></i> Welcome Tour</h1>
+    <h1><i class="bi bi-compass"></i> {{ t('ui.heading.welcome_tour', 'Welcome Tour') }}</h1>
     <p class="lead">A 60-second guide to {{ config.BBS_NAME }}.</p>
 </div>
 
@@ -49,7 +49,7 @@
             </a>
             {% endif %}
             <a href="{{ url_for('shoutbox.index') }}" class="btn btn-sm btn-primary">
-                <i class="bi bi-megaphone"></i> Shoutbox
+                <i class="bi bi-megaphone"></i> {{ t('ui.heading.shoutbox', 'Shoutbox') }}
             </a>
         </div>
     </div>

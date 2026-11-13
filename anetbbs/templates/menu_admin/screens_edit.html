@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{% if row %}Edit{% else %}New{% endif %} ANSI Screen{% endblock %}
+{% block title %}{% if row %}{{ t('ui.edit', 'Edit') }}{% else %}{{ t('ui.new', 'New') }}{% endif %} ANSI Screen{% endblock %}
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-tv"></i> {% if row %}Edit screen <code>{{ row.slot }}</code>{% else %}New ANSI screen{% endif %}</h1>
@@ -62,8 +62,8 @@
         <label for="ia" class="form-check-label">Active (uncheck to disable without deleting)</label>
     </div>
 
-    <button class="btn btn-primary"><i class="bi bi-save"></i> Save</button>
-    <a href="{{ url_for('menu_admin.list_screens') }}" class="btn btn-secondary">Cancel</a>
+    <button class="btn btn-primary"><i class="bi bi-save"></i> {{ t('ui.save', 'Save') }}</button>
+    <a href="{{ url_for('menu_admin.list_screens') }}" class="btn btn-secondary">{{ t('ui.cancel', 'Cancel') }}</a>
 </form>
 
 <script>

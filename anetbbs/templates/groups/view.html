@@ -9,7 +9,7 @@
     <p class="small text-muted">
         Leader: <a href="{{ url_for('profile.view_user', username=g.leader.username) }}">{{ g.leader.username }}</a> ·
         Founded {{ g.created_at|eastern('%Y-%m-%d') }} ·
-        {% if g.is_open %}Open{% else %}Invite-only{% endif %}
+        {% if g.is_open %}{{ t('ui.open', 'Open') }}{% else %}Invite-only{% endif %}
     </p>
 </div>
 

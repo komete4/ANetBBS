@@ -36,7 +36,7 @@
                 {{ sort_hdr('Filename', 'name', 'name') }}
                 {{ sort_hdr('Size', 'size', '-size') }}
                 {{ sort_hdr('Date', 'date', '-date') }}
-                <th class="text-white-50">Description</th>
+                <th class="text-white-50">{{ t('ui.description', 'Description') }}</th>
             </tr></thead>
             <tbody>
             {% for f in files %}
@@ -107,7 +107,7 @@
         <li class="page-item disabled"><span class="page-link">Next ›</span></li>
         {% endif %}
     </ul>
-    <p class="text-center text-muted small">Page {{ pagination.page }} of {{ pagination.pages }} — {{ pagination.total }} file{{ '' if pagination.total == 1 else 's' }} total</p>
+    <p class="text-center text-muted small">{{ t('ui.page', 'Page') }} {{ pagination.page }} of {{ pagination.pages }} — {{ pagination.total }} file{{ '' if pagination.total == 1 else 's' }} total</p>
 </nav>
 {% endif %}
 
@@ -115,13 +115,13 @@
                     (area.upload_permission == 'sysop' and current_user.is_admin) %}
 {% if can_upload and config.get('FILE_UPLOADS_ENABLED', true) %}
 <div class="card">
-    <div class="card-header"><i class="bi bi-upload"></i> Upload File</div>
+    <div class="card-header"><i class="bi bi-upload"></i> {{ t('ui.upload_file', 'Upload File') }}</div>
     <div class="card-body">
         <form method="post" action="{{ url_for('file_areas.upload', area_id=area.id) }}"
               enctype="multipart/form-data" class="row g-2 align-items-end">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="col-md-6">
-                <label class="form-label">File</label>
+                <label class="form-label">{{ t('ui.file', 'File') }}</label>
                 <input type="file" name="file" class="form-control" required>
             </div>
             {% if area.password %}
@@ -143,7 +143,7 @@
             </div>
             {% endif %}
             <div class="col-md-3">
-                <button class="btn btn-primary w-100"><i class="bi bi-upload"></i> Upload</button>
+                <button class="btn btn-primary w-100"><i class="bi bi-upload"></i> {{ t('ui.upload', 'Upload') }}</button>
             </div>
         </form>
     </div>

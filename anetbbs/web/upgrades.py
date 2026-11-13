@@ -249,11 +249,22 @@ def _upstream_url(cfg) -> str:
     return base + '/api/releases/latest'
 
 
+_REGISTRY_NOT_CONFIGURED = 'upstream not configured — set REGISTRY_URL in Admin → Settings'
+
+
+def _display_upstream_error(error):
+    from ..features.i18n import translate
+
+    if error == _REGISTRY_NOT_CONFIGURED:
+        return translate('admin.upgrades.registry_missing', error)
+    return error
+
+
 def _fetch_upstream(cfg, force: bool = False):
     """Return (data_or_none, error_or_none). Caches briefly."""
     url = _upstream_url(cfg)
     if not url.startswith(('http://', 'https://')):
-        return None, 'upstream not configured — set REGISTRY_URL in Admin → Settings'
+        return None, _REGISTRY_NOT_CONFIGURED
     now = time.time()
     with _upstream_lock:
         if (not force
@@ -315,7 +326,7 @@ def index():
                            current=VERSION,
                            upstream=upstream,
                            upstream_url=_upstream_url(cfg),
-                           upstream_error=err,
+                           upstream_error=_display_upstream_error(err),
                            newer=newer,
                            rollback_candidates=_local_releases(cfg))
 
@@ -328,7 +339,7 @@ def check():
     data, err = _fetch_upstream(cfg, force=True)
     body = {'current': VERSION,
             'upstream': data,
-            'error': err,
+            'error': _display_upstream_error(err),
             'newer': bool(data and _version_newer(data.get('version', ''),
                                                   VERSION))}
     return jsonify(body)

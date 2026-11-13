@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-diagram-3-fill"></i> Nodelist Browser</h1>
+    <h1><i class="bi bi-diagram-3-fill"></i> {{ t('ui.heading.nodelist_browser', 'Nodelist Browser') }}</h1>
     <p>Search the FidoNet network directory.</p>
 </div>
 
@@ -12,12 +12,12 @@
     <div class="card-body">
         <form method="get" class="row g-2 align-items-end">
             <div class="col-md-7">
-                <label class="form-label">Search</label>
+                <label class="form-label">{{ t('ui.search', 'Search') }}</label>
                 <input type="text" name="q" value="{{ q }}" class="form-control"
                        placeholder="Sysop name, system name, location, or address (e.g. 1:234/5)">
             </div>
             <div class="col-md-3">
-                <label class="form-label">Domain</label>
+                <label class="form-label">{{ t('ui.domain', 'Domain') }}</label>
                 <select name="domain" class="form-select">
                     <option value="">— all —</option>
                     {% for nl in nodelists %}
@@ -29,7 +29,7 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <button class="btn btn-primary w-100"><i class="bi bi-search"></i> Search</button>
+                <button class="btn btn-primary w-100"><i class="bi bi-search"></i> {{ t('ui.search', 'Search') }}</button>
             </div>
         </form>
     </div>
@@ -41,7 +41,7 @@
     <div class="card-body p-0">
         <table class="table table-sm mb-0">
             <thead><tr>
-                <th>Domain</th><th>Filename</th><th>Day</th><th>Released</th>
+                <th>{{ t('ui.domain', 'Domain') }}</th><th>{{ t('ui.filename', 'Filename') }}</th><th>Day</th><th>Released</th>
                 <th>Entries</th><th>Imported</th>
             </tr></thead>
             <tbody>
@@ -80,8 +80,8 @@
         {% if entries %}
         <table class="table table-sm table-hover mb-0">
             <thead><tr>
-                <th>Address</th><th>System</th><th>Sysop</th>
-                <th>Location</th><th>Type</th>
+                <th>{{ t('ui.address', 'Address') }}</th><th>{{ t('ui.system', 'System') }}</th><th>Sysop</th>
+                <th>{{ t('ui.location', 'Location') }}</th><th>{{ t('ui.type', 'Type') }}</th>
             </tr></thead>
             <tbody>
             {% for e in entries %}

@@ -1,30 +1,30 @@
 {% extends "base.html" %}
-{% block title %}Game Center — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{{ t('ui.game_center', 'Game Center') }} — {{ config.BBS_NAME }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-controller"></i> GAME CENTER</h1>
-    <p>Choose your game and prepare to play!</p>
+    <h1><i class="bi bi-controller"></i> {{ t('ui.game_center_uppercase', 'GAME CENTER') }}</h1>
+    <p>{{ t('ui.choose_your_game_and_prepare_to_play', 'Choose your game and prepare to play!') }}</p>
 </div>
 
 <!-- Search + Filter -->
 <form method="get" class="mb-4 d-flex gap-2 flex-wrap">
     <input type="text" name="q" class="form-control" style="max-width:300px;"
-           placeholder="Search games…" value="{{ search }}">
+           placeholder="{{ t('ui.search_games', 'Search games…') }}" value="{{ search }}">
     <select name="category" class="form-control" style="max-width:180px;">
-        <option value="">All Categories</option>
+        <option value="">{{ t('ui.all_categories', 'All Categories') }}</option>
         {% for cat in db_cats %}
         <option value="{{ cat.slug }}" {% if category_filter == cat.slug %}selected{% endif %}>
-            {{ cat.name }}
+            {{ cat_names[cat.slug] }}
         </option>
         {% endfor %}
     </select>
     <button type="submit" class="btn btn-primary">
-        <i class="bi bi-search"></i> Filter
+        <i class="bi bi-search"></i> {{ t('ui.filter', 'Filter') }}
     </button>
     {% if category_filter or search %}
     <a href="{{ url_for('games.lobby') }}" class="btn btn-outline-secondary" style="border-color:#00ff00;color:#00ff00;">
-        <i class="bi bi-x-circle"></i> Clear
+        <i class="bi bi-x-circle"></i> {{ t('ui.clear', 'Clear') }}
     </a>
     {% endif %}
 </form>
@@ -43,7 +43,7 @@
                             {{ cat_names.get(cat, cat | capitalize) }}
                         </h5>
                         <span style="color:#00cc00;">
-                            {{ game_list|length }} door{{ 's' if game_list|length != 1 else '' }}
+                            {% if game_list|length == 1 %}{{ t('games.door_one', '1 game') }}{% else %}{{ t('games.door_count', '{count} games', count=game_list|length) }}{% endif %}
                             <i class="bi bi-chevron-right"></i>
                         </span>
                     </div>
@@ -66,30 +66,30 @@
                             <p class="card-text small" style="color:#00cc00;">{{ game.description or '' }}</p>
                             <span class="badge mb-2"
                                   style="background:#001a00;color:#00ff00;border:1px solid #00ff00;font-size:.7rem;">
-                                {% if game.game_type == 'builtin_web' %}Web Game
-                                {% elif game.game_type == 'door_dos' %}DOS Door
-                                {% elif game.game_type == 'door_native' %}Native Door
+                                {% if game.game_type == 'builtin_web' %}{{ t('ui.web_game', 'Web Game') }}
+                                {% elif game.game_type == 'door_dos' %}{{ t('ui.dos_door', 'DOS Door') }}
+                                {% elif game.game_type == 'door_native' %}{{ t('ui.native_door', 'Native Door') }}
                                 {% elif game.game_type == 'door_mystic' %}Mystic Python
                                 {% elif game.game_type == 'door_synchronet' %}Synchronet JS
                                 {% else %}{{ game.game_type }}{% endif %}
                             </span>
                             {% if game.guest_playable and not current_user.is_authenticated %}
-                            <span class="badge mb-2 bg-success"><i class="bi bi-unlock"></i> No login needed</span>
+                            <span class="badge mb-2 bg-success"><i class="bi bi-unlock"></i> {{ t('ui.no_login_needed', 'No login needed') }}</span>
                             {% endif %}
                             <br>
                             <small style="color:#007700;">
-                                <i class="bi bi-play-circle"></i> {{ game.play_count or 0 }} plays
+                                <i class="bi bi-play-circle"></i> {{ game.play_count or 0 }} {{ t('ui.plays', 'plays') }}
                             </small>
                         </div>
                         <div class="card-footer d-flex gap-2">
                             <a href="{{ url_for('games.detail', slug=game.slug) }}"
                                class="btn btn-primary btn-sm flex-grow-1">
-                                <i class="bi bi-info-circle"></i> Info
+                                <i class="bi bi-info-circle"></i> {{ t('ui.info', 'Info') }}
                             </a>
                             <a href="{{ url_for('games.play', slug=game.slug) }}"
                                class="btn btn-sm flex-grow-1"
                                style="background:#003300;border:1px solid #00ff00;color:#00ff00;">
-                                <i class="bi bi-play-fill"></i> Play
+                                <i class="bi bi-play-fill"></i> {{ t('ui.play', 'Play') }}
                             </a>
                         </div>
                     </div>
@@ -101,7 +101,9 @@
         {% else %}
             <div class="alert alert-info">
                 <i class="bi bi-info-circle"></i>
-                No games found{% if search %} matching "{{ search }}"{% endif %}{% if category_filter %} in category "{{ category_filter }}"{% endif %}.
+                {{ t('games.no_games', 'No games found.') }}
+                {% if search %}{{ t('games.search_filter', 'Search: {query}.', query=search) }}{% endif %}
+                {% if category_filter %}{{ t('games.category_filter', 'Category: {category}.', category=cat_names.get(category_filter, category_filter)) }}{% endif %}
             </div>
         {% endif %}
     </div>
@@ -109,7 +111,7 @@
     <!-- Sidebar -->
     <div class="col-md-3">
         <div class="card">
-            <div class="card-header"><i class="bi bi-people"></i> Now Playing</div>
+            <div class="card-header"><i class="bi bi-people"></i> {{ t('ui.now_playing', 'Now Playing') }}</div>
             <div class="card-body p-2">
                 {% if now_playing %}
                     {% for s in now_playing %}
@@ -119,16 +121,16 @@
                     </div>
                     {% endfor %}
                 {% else %}
-                    <p class="small mb-0" style="color:#007700;">No active sessions.</p>
+                    <p class="small mb-0" style="color:#007700;">{{ t('ui.no_active_sessions', 'No active sessions.') }}</p>
                 {% endif %}
             </div>
         </div>
 
         <div class="card mt-3">
-            <div class="card-header"><i class="bi bi-trophy"></i> Leaderboards</div>
+            <div class="card-header"><i class="bi bi-trophy"></i> {{ t('ui.leaderboards', 'Leaderboards') }}</div>
             <div class="card-body p-2">
                 <a href="{{ url_for('games.scores') }}" class="btn btn-primary btn-sm w-100">
-                    <i class="bi bi-list-ol"></i> View All Scores
+                    <i class="bi bi-list-ol"></i> {{ t('ui.view_all_scores', 'View All Scores') }}
                 </a>
             </div>
         </div>

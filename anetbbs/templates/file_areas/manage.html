@@ -29,15 +29,15 @@
               enctype="multipart/form-data" class="row g-2 align-items-end">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="col-md-5">
-                <label class="form-label mb-1">File</label>
+                <label class="form-label mb-1">{{ t('ui.file', 'File') }}</label>
                 <input type="file" name="file" class="form-control" required>
             </div>
             <div class="col-md-5">
-                <label class="form-label mb-1">Description <span class="text-muted small">(optional)</span></label>
+                <label class="form-label mb-1">{{ t('ui.description', 'Description') }} <span class="text-muted small">(optional)</span></label>
                 <input type="text" name="description" class="form-control" placeholder="Short description…" maxlength="512">
             </div>
             <div class="col-md-2">
-                <button class="btn btn-success w-100"><i class="bi bi-upload"></i> Upload</button>
+                <button class="btn btn-success w-100"><i class="bi bi-upload"></i> {{ t('ui.upload', 'Upload') }}</button>
             </div>
         </form>
     </div>
@@ -51,11 +51,11 @@
         <table class="table table-sm table-hover mb-0 align-middle">
             <thead>
                 <tr>
-                    <th>Filename</th>
-                    <th style="width:90px">Size</th>
-                    <th style="width:100px">Date</th>
-                    <th>Description</th>
-                    <th style="width:80px" class="text-center">Delete</th>
+                    <th>{{ t('ui.filename', 'Filename') }}</th>
+                    <th style="width:90px">{{ t('ui.size', 'Size') }}</th>
+                    <th style="width:100px">{{ t('ui.date', 'Date') }}</th>
+                    <th>{{ t('ui.description', 'Description') }}</th>
+                    <th style="width:80px" class="text-center">{{ t('ui.delete', 'Delete') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -85,9 +85,9 @@
                                           class="form-control form-control-sm mb-1"
                                           style="font-size:0.8rem;">{{ f.description or '' }}</textarea>
                                 <div class="d-flex gap-1">
-                                    <button class="btn btn-primary btn-sm">Save</button>
+                                    <button class="btn btn-primary btn-sm">{{ t('ui.save', 'Save') }}</button>
                                     <button type="button" class="btn btn-outline-secondary btn-sm"
-                                            onclick="cancelDesc({{ loop.index }})">Cancel</button>
+                                            onclick="cancelDesc({{ loop.index }})">{{ t('ui.cancel', 'Cancel') }}</button>
                                 </div>
                             </form>
                         </div>
@@ -103,7 +103,7 @@
                           onsubmit="return confirm('Delete {{ f.name }}? This cannot be undone.')">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="filename" value="{{ f.name }}">
-                        <button class="btn btn-outline-danger btn-sm" title="Delete">
+                        <button class="btn btn-outline-danger btn-sm" title="{{ t('ui.delete', 'Delete') }}">
                             <i class="bi bi-trash"></i>
                         </button>
                     </form>

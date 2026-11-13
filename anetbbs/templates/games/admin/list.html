@@ -3,23 +3,23 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3><i class="bi bi-list"></i> Games</h3>
+    <h3><i class="bi bi-list"></i> {{ t('ui.games', 'Games') }}</h3>
     <div class="d-flex gap-2">
         <a href="{{ url_for('games_admin.add_game') }}" class="btn btn-primary btn-sm">
             <i class="bi bi-plus-circle"></i> Add Game
         </a>
         <a href="{{ url_for('games_admin.list_categories') }}" class="btn btn-primary btn-sm">
-            <i class="bi bi-tags"></i> Categories
+            <i class="bi bi-tags"></i> {{ t('ui.categories', 'Categories') }}
         </a>
         <form method="post" action="{{ url_for('games_admin.renumber_games') }}" style="display:inline;"
               onsubmit="return confirm('Renumber every game? Submenu categories\' games get a clean 1/2/3/... sequence; top-level/inline games get a gapped 10/20/30/... sequence. This changes the number players type to pick a door -- update any hand-made ANSI door-menu art to match afterwards.');">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-sm btn-primary" title="Auto-renumber all games">
-                <i class="bi bi-sort-numeric-down"></i> Renumber
+                <i class="bi bi-sort-numeric-down"></i> {{ t('ui.renumber', 'Renumber') }}
             </button>
         </form>
         <a href="{{ url_for('games_admin.dashboard') }}" class="btn btn-primary btn-sm">
-            <i class="bi bi-arrow-left"></i> Dashboard
+            <i class="bi bi-arrow-left"></i> {{ t('ui.dashboard', 'Dashboard') }}
         </a>
     </div>
 </div>
@@ -27,7 +27,7 @@
 <p class="small" style="color:#888;">
     <i class="bi bi-info-circle"></i>
     The <strong>#</strong> column is the exact number a player types in the terminal door menu to
-    pick that game -- it's <code>Sort Order</code>, not a recomputed position, so it only changes
+    pick that game -- it's <code>{{ t('ui.sort_order', 'Sort Order') }}</code>, not a recomputed position, so it only changes
     when you change it (directly, by dragging, or via Renumber). Safe to hardcode into custom ANSI
     door-menu art. Drag the <i class="bi bi-grip-vertical"></i> handle to reorder within a category;
     dropping writes new Sort Order values automatically -- gapped (10/20/30/...) for a top-level or
@@ -55,7 +55,7 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="category" value="{{ slug }}">
             <button type="submit" class="btn btn-sm btn-outline-primary" title="Renumber only this category's games">
-                <i class="bi bi-sort-numeric-down"></i> Renumber
+                <i class="bi bi-sort-numeric-down"></i> {{ t('ui.renumber', 'Renumber') }}
             </button>
         </form>
     </div>
@@ -66,12 +66,12 @@
                     <tr>
                         <th style="width:2em;"></th>
                         <th style="width:4em;">#</th>
-                        <th>Name</th>
-                        <th>Type</th>
+                        <th>{{ t('ui.name', 'Name') }}</th>
+                        <th>{{ t('ui.type', 'Type') }}</th>
                         <th>Min Level</th>
                         <th>Plays</th>
-                        <th>Status</th>
-                        <th>Actions</th>
+                        <th>{{ t('ui.status', 'Status') }}</th>
+                        <th>{{ t('ui.actions', 'Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -89,16 +89,16 @@
                         <td>
                             <span class="badge"
                                   style="background:{% if game.is_active %}#003300{% else %}#330000{% endif %};color:{% if game.is_active %}#00ff00{% else %}#ff0000{% endif %};">
-                                {% if game.is_active %}Active{% else %}Inactive{% endif %}
+                                {% if game.is_active %}{{ t('ui.active', 'Active') }}{% else %}Inactive{% endif %}
                             </span>
                         </td>
                         <td>
                             <a href="{{ url_for('games.detail', slug=game.slug) }}"
-                               class="btn btn-sm btn-primary" title="View">
+                               class="btn btn-sm btn-primary" title="{{ t('ui.view', 'View') }}">
                                 <i class="bi bi-eye"></i>
                             </a>
                             <a href="{{ url_for('games_admin.edit_game', game_id=game.id) }}"
-                               class="btn btn-sm btn-primary" title="Edit">
+                               class="btn btn-sm btn-primary" title="{{ t('ui.edit', 'Edit') }}">
                                 <i class="bi bi-pencil"></i>
                             </a>
                             <form method="post"
@@ -108,7 +108,7 @@
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-sm"
                                         style="background:#330000;border:1px solid #ff0000;color:#ff0000;"
-                                        title="Delete">
+                                        title="{{ t('ui.delete', 'Delete') }}">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>

@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}My File Shares{% endblock %}
+{% block title %}{{ t('ui.heading.my_file_shares', 'My File Shares') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-share-fill"></i> My File Shares</h1>
+    <h1><i class="bi bi-share-fill"></i> {{ t('ui.heading.my_file_shares', 'My File Shares') }}</h1>
     <p>Anonymous-access download links you've created.</p>
 </div>
 
@@ -13,8 +13,8 @@
     {% if rows %}
         <table class="table table-sm mb-0">
             <thead><tr>
-                <th>File</th><th>Note</th><th>Token URL</th><th>Downloads</th>
-                <th>Expires</th><th>Status</th><th></th>
+                <th>{{ t('ui.file', 'File') }}</th><th>Note</th><th>Token URL</th><th>{{ t('ui.downloads', 'Downloads') }}</th>
+                <th>{{ t('ui.expires', 'Expires') }}</th><th>{{ t('ui.status', 'Status') }}</th><th></th>
             </tr></thead>
             <tbody>
             {% for r in rows %}

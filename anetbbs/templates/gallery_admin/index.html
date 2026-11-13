@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-images"></i> Gallery Admin</h1>
+    <h1><i class="bi bi-images"></i> {{ t('ui.heading.gallery_admin', 'Gallery Admin') }}</h1>
     <p>Manage image gallery collections.</p>
 </div>
 
@@ -21,8 +21,8 @@
         <table class="table table-striped mb-0">
             <thead>
                 <tr>
-                    <th>Label</th><th>Slug</th><th>Path</th>
-                    <th>Images</th><th>Status</th><th>Order</th><th>Actions</th>
+                    <th>{{ t('ui.label', 'Label') }}</th><th>{{ t('ui.slug', 'Slug') }}</th><th>Path</th>
+                    <th>Images</th><th>{{ t('ui.status', 'Status') }}</th><th>Order</th><th>{{ t('ui.actions', 'Actions') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -46,13 +46,13 @@
                         <a href="{{ url_for('gallery_admin.files', slug=g.slug) }}" class="btn btn-primary btn-sm" title="Manage Files">
                             <i class="bi bi-folder2-open"></i>
                         </a>
-                        <a href="{{ url_for('gallery_admin.edit', slug=g.slug) }}" class="btn btn-primary btn-sm" title="Edit">
+                        <a href="{{ url_for('gallery_admin.edit', slug=g.slug) }}" class="btn btn-primary btn-sm" title="{{ t('ui.edit', 'Edit') }}">
                             <i class="bi bi-pencil"></i>
                         </a>
                         <form method="post" action="{{ url_for('gallery_admin.delete', slug=g.slug) }}" class="d-inline"
                               onsubmit="return confirm('Remove gallery \'{{ g.label }}\' from the listing? Files on disk will be left untouched.');">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button class="btn btn-sm" style="background:#000;border:1px solid #ff0000;color:#ff0000" title="Remove">
+                            <button class="btn btn-sm" style="background:#000;border:1px solid #ff0000;color:#ff0000" title="{{ t('ui.remove', 'Remove') }}">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </form>

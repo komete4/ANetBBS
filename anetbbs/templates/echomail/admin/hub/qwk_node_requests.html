@@ -3,13 +3,13 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-person-plus"></i> QWK Node Requests</h1>
+    <h1><i class="bi bi-person-plus"></i> {{ t('ui.heading.qwk_node_requests', 'QWK Node Requests') }}</h1>
     <p>Applications submitted by sysops via the BBS terminal to join ANotherNetwork.</p>
 </div>
 
 <div class="mb-3">
     <a href="{{ url_for('hub_admin.index') }}" class="btn btn-primary btn-sm">
-        <i class="bi bi-arrow-left"></i> Hub Admin
+        <i class="bi bi-arrow-left"></i> {{ t('ui.hub_admin', 'Hub Admin') }}
     </a>
     <a href="{{ url_for('hub_admin.qwk_nodes') }}" class="btn btn-secondary btn-sm ms-1">
         <i class="bi bi-archive"></i> Active Nodes
@@ -26,7 +26,7 @@
 
 {# ── Pending ─────────────────────────────────────────────────── #}
 <h5 class="mt-3">
-  Pending
+  {{ t('ui.pending', 'Pending') }}
   {% if pending %}
     <span class="badge bg-danger ms-1">{{ pending|length }}</span>
   {% endif %}
@@ -37,14 +37,14 @@
 <table class="table table-sm table-hover align-middle">
   <thead class="table-dark">
     <tr>
-      <th>BBS Name</th>
-      <th>Packet ID</th>
+      <th>{{ t('ui.bbs_name', 'BBS Name') }}</th>
+      <th>{{ t('ui.packet_id', 'Packet ID') }}</th>
       <th>Sysop</th>
-      <th>Email</th>
+      <th>{{ t('ui.email', 'Email') }}</th>
       <th>BBS Address</th>
-      <th>Notes</th>
+      <th>{{ t('ui.notes', 'Notes') }}</th>
       <th>Applied</th>
-      <th class="text-end">Actions</th>
+      <th class="text-end">{{ t('ui.actions', 'Actions') }}</th>
     </tr>
   </thead>
   <tbody>
@@ -67,14 +67,14 @@
               onsubmit="return confirm('Approve {{ r.bbs_name }} ({{ r.packet_id }}) and create their node account?')">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="btn btn-sm btn-success">
-            <i class="bi bi-check-circle"></i> Approve
+            <i class="bi bi-check-circle"></i> {{ t('ui.approve', 'Approve') }}
           </button>
         </form>
 
         <button class="btn btn-sm btn-outline-danger ms-1"
                 data-bs-toggle="modal"
                 data-bs-target="#denyModal{{ r.id }}">
-          <i class="bi bi-x-circle"></i> Deny
+          <i class="bi bi-x-circle"></i> {{ t('ui.deny', 'Deny') }}
         </button>
 
         {# Deny modal #}
@@ -85,7 +85,7 @@
                     action="{{ url_for('hub_admin.deny_qwk_request', req_id=r.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-header">
-                  <h5 class="modal-title">Deny {{ r.bbs_name }} ({{ r.packet_id }})</h5>
+                  <h5 class="modal-title">{{ t('ui.deny', 'Deny') }} {{ r.bbs_name }} ({{ r.packet_id }})</h5>
                   <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -94,7 +94,7 @@
                     placeholder="e.g. Packet ID already taken, try MYBBS2">
                 </div>
                 <div class="modal-footer">
-                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('ui.cancel', 'Cancel') }}</button>
                   <button type="submit" class="btn btn-danger">Deny Request</button>
                 </div>
               </form>
@@ -118,9 +118,9 @@
 <table class="table table-sm table-hover align-middle">
   <thead class="table-secondary">
     <tr>
-      <th>BBS Name</th>
-      <th>Packet ID</th>
-      <th>Status</th>
+      <th>{{ t('ui.bbs_name', 'BBS Name') }}</th>
+      <th>{{ t('ui.packet_id', 'Packet ID') }}</th>
+      <th>{{ t('ui.status', 'Status') }}</th>
       <th>Reviewed</th>
       <th>Reviewed by</th>
       <th>Reason / Notes</th>

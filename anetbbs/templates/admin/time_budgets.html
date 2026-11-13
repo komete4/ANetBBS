@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}Time Budgets{% endblock %}
+{% block title %}{{ t('ui.heading.time_budgets', 'Time Budgets') }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-clock"></i> Time Budgets</h1>
+    <h1><i class="bi bi-clock"></i> {{ t('ui.heading.time_budgets', 'Time Budgets') }}</h1>
     <p class="small text-muted">
         Per-user time limits for the telnet/SSH/rlogin BBS. Per-session
         limit ends a single session at the cap; daily limit is total across
@@ -15,7 +15,7 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="row g-2">
         <div class="col-md-3">
-            <label class="form-label small mb-0">User ID</label>
+            <label class="form-label small mb-0">{{ t('ui.user_id', 'User ID') }}</label>
             <input type="number" name="user_id" class="form-control" required>
         </div>
         <div class="col-md-3">
@@ -41,7 +41,7 @@
     <thead>
         <tr>
             <th>ID</th>
-            <th>User</th>
+            <th>{{ t('ui.user', 'User') }}</th>
             <th>Per-session (min)</th>
             <th>Daily (min)</th>
             <th>Bank (min)</th>

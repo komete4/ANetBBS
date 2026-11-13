@@ -2,12 +2,12 @@
 {% block title %}Pending Events{% endblock %}
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-hourglass-split"></i> Pending Event Submissions</h1>
+    <h1><i class="bi bi-hourglass-split"></i> {{ t('ui.heading.pending_event_submissions', 'Pending Event Submissions') }}</h1>
 </div>
 
 <p class="text-muted small">
     These events were submitted by users and are awaiting your approval.
-    <strong>Approve</strong> to publish; <strong>Reject</strong> to delete.
+    <strong>{{ t('ui.approve', 'Approve') }}</strong> to publish; <strong>{{ t('ui.reject', 'Reject') }}</strong> to delete.
     <a href="{{ url_for('calendar.index') }}" class="ms-3">← Back to Calendar</a>
 </p>
 
@@ -30,12 +30,12 @@
         <div class="d-flex gap-2 ms-3 flex-shrink-0">
             <form method="post" action="{{ url_for('calendar.approve_event', event_id=e.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="btn btn-sm btn-success">Approve</button>
+                <button class="btn btn-sm btn-success">{{ t('ui.approve', 'Approve') }}</button>
             </form>
             <form method="post" action="{{ url_for('calendar.reject_event', event_id=e.id) }}"
                   onsubmit="return confirm('Reject and delete this event?');">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="btn btn-sm btn-outline-danger">Reject</button>
+                <button class="btn btn-sm btn-outline-danger">{{ t('ui.reject', 'Reject') }}</button>
             </form>
         </div>
     </div>

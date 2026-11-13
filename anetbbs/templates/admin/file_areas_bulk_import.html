@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-upload"></i> Bulk Import File Areas</h1>
+    <h1><i class="bi bi-upload"></i> {{ t('ui.heading.bulk_import_file_areas', 'Bulk Import File Areas') }}</h1>
 </div>
 
 <a href="{{ url_for('admin.file_areas_admin') }}" class="btn btn-primary btn-sm mb-3">
@@ -84,7 +84,7 @@ TQW_FILES       - TQW File Echo         (FidoNet backbone style)</pre>
 
             <div class="d-flex justify-content-between">
                 <a href="{{ url_for('admin.file_areas_admin') }}" class="btn btn-primary">
-                    <i class="bi bi-x-circle"></i> Cancel
+                    <i class="bi bi-x-circle"></i> {{ t('ui.cancel', 'Cancel') }}
                 </a>
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-upload"></i> Import Areas

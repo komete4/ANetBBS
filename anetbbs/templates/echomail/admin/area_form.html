@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{% if area %}Edit Area{% else %}Add Area{% endif %} — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{% if area %}Edit Area{% else %}{{ t('ui.add_area', 'Add Area') }}{% endif %} — {{ config.BBS_NAME }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
@@ -52,14 +52,14 @@
                         <div class="form-check">
                             {{ form.is_active(class="form-check-input") }}
                             <label class="form-check-label" for="is_active" style="color:#00ff00;">
-                                <i class="bi bi-check-circle"></i> Active
+                                <i class="bi bi-check-circle"></i> {{ t('ui.active', 'Active') }}
                             </label>
                             <div class="form-text" style="font-size:.7rem;">Area visible and accepting messages</div>
                         </div>
                         <div class="form-check">
                             {{ form.is_subscribed(class="form-check-input") }}
                             <label class="form-check-label" for="is_subscribed" style="color:#44aaff;">
-                                <i class="bi bi-bell"></i> Subscribed
+                                <i class="bi bi-bell"></i> {{ t('ui.subscribed', 'Subscribed') }}
                             </label>
                             <div class="form-text" style="font-size:.7rem;">Receive messages from hub/upstream</div>
                         </div>
@@ -98,7 +98,7 @@
 
             <div class="d-flex justify-content-between">
                 <a href="{{ url_for('echomail_admin.areas') }}" class="btn btn-primary">
-                    <i class="bi bi-x-circle"></i> Cancel
+                    <i class="bi bi-x-circle"></i> {{ t('ui.cancel', 'Cancel') }}
                 </a>
                 {{ form.submit(class="btn btn-primary") }}
             </div>

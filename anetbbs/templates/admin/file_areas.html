@@ -4,12 +4,12 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-folder-symlink"></i> File Areas (Admin)</h1>
+    <h1><i class="bi bi-folder-symlink"></i> {{ t('ui.heading.file_areas_admin', 'File Areas (Admin)') }}</h1>
 </div>
 
 <div class="d-flex justify-content-end gap-2 mb-3">
     <a href="{{ url_for('admin.file_area_categories_admin') }}" class="btn btn-primary btn-sm">
-        <i class="bi bi-tags"></i> Categories
+        <i class="bi bi-tags"></i> {{ t('ui.categories', 'Categories') }}
     </a>
     <a href="{{ url_for('admin.file_areas_bulk_import') }}" class="btn btn-primary btn-sm">
         <i class="bi bi-upload"></i> Bulk Import (Backbone File)
@@ -66,12 +66,12 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="action" value="create">
             <div class="col-md-3">
-                <label class="form-label">Tag</label>
+                <label class="form-label">{{ t('ui.tag', 'Tag') }}</label>
                 <input type="text" name="tag" class="form-control" required
                        placeholder="FILES.GAMES">
             </div>
             <div class="col-md-3">
-                <label class="form-label">Name</label>
+                <label class="form-label">{{ t('ui.name', 'Name') }}</label>
                 <input type="text" name="name" class="form-control">
             </div>
             <div class="col-md-3">
@@ -80,24 +80,24 @@
                        placeholder="/home/stingray/anetbbs/data/file_areas/games">
             </div>
             <div class="col-md-2">
-                <label class="form-label">Network</label>
+                <label class="form-label">{{ t('ui.network', 'Network') }}</label>
                 <select name="network_id" class="form-select">
                     <option value="">— local —</option>
                     {% for n in networks %}<option value="{{ n.id }}">{{ n.name }}</option>{% endfor %}
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label">Category</label>
+                <label class="form-label">{{ t('ui.category', 'Category') }}</label>
                 <select name="category" class="form-select">
                     <option value="other">— other —</option>
                     {% for c in categories %}<option value="{{ c.slug }}">{{ c.name }}</option>{% endfor %}
                 </select>
             </div>
             <div class="col-md-1 d-flex align-items-end">
-                <button class="btn btn-primary w-100">Add</button>
+                <button class="btn btn-primary w-100">{{ t('ui.add', 'Add') }}</button>
             </div>
             <div class="col-md-8">
-                <label class="form-label">Description</label>
+                <label class="form-label">{{ t('ui.description', 'Description') }}</label>
                 <input type="text" name="description" class="form-control"
                        placeholder="Shown to callers browsing this area">
             </div>
@@ -155,13 +155,13 @@
                 <span id="areaFilterCount" class="text-muted small ms-1"></span>
             </div>
             <div class="col-md-auto ms-auto d-flex gap-2 flex-wrap">
-                <button form="bulkAreaForm" class="btn btn-outline-success btn-sm" name="bulk_action" value="enable">Enable</button>
-                <button form="bulkAreaForm" class="btn btn-outline-secondary btn-sm" name="bulk_action" value="disable">Disable</button>
-                <button form="bulkAreaForm" class="btn btn-outline-success btn-sm" name="bulk_action" value="subscribe">Subscribe</button>
-                <button form="bulkAreaForm" class="btn btn-outline-secondary btn-sm" name="bulk_action" value="unsubscribe">Unsubscribe</button>
+                <button form="bulkAreaForm" class="btn btn-outline-success btn-sm" name="bulk_action" value="enable">{{ t('ui.enable', 'Enable') }}</button>
+                <button form="bulkAreaForm" class="btn btn-outline-secondary btn-sm" name="bulk_action" value="disable">{{ t('ui.disable', 'Disable') }}</button>
+                <button form="bulkAreaForm" class="btn btn-outline-success btn-sm" name="bulk_action" value="subscribe">{{ t('ui.subscribe', 'Subscribe') }}</button>
+                <button form="bulkAreaForm" class="btn btn-outline-secondary btn-sm" name="bulk_action" value="unsubscribe">{{ t('ui.unsubscribe', 'Unsubscribe') }}</button>
                 <button form="bulkAreaForm" class="btn btn-outline-danger btn-sm" name="bulk_action" value="delete"
                         onclick="return confirm('Delete every SELECTED file area? Files on disk are NOT removed.')">
-                    Delete Selected
+                    {{ t('ui.delete_selected', 'Delete Selected') }}
                 </button>
             </div>
         </div>
@@ -192,7 +192,7 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="category" value="{{ slug }}">
                 <button type="submit" class="btn btn-sm btn-outline-primary" title="Renumber only this category's areas">
-                    <i class="bi bi-sort-numeric-down"></i> Renumber
+                    <i class="bi bi-sort-numeric-down"></i> {{ t('ui.renumber', 'Renumber') }}
                 </button>
             </form>
         </div>
@@ -213,7 +213,7 @@
                 </div>
                 <div class="col-md-2"><strong><code>{{ fa.tag }}</code></strong></div>
                 <div class="col-md-3">
-                    <label class="form-label small mb-0">Name</label>
+                    <label class="form-label small mb-0">{{ t('ui.name', 'Name') }}</label>
                     <input type="text" name="name" class="form-control form-control-sm" value="{{ fa.name or '' }}">
                 </div>
                 <div class="col-md-3">
@@ -225,7 +225,7 @@
                     </div>
                 </div>
                 <div class="col-md-1">
-                    <label class="form-label small mb-0">Upload</label>
+                    <label class="form-label small mb-0">{{ t('ui.upload', 'Upload') }}</label>
                     <select name="upload_permission" class="form-select form-select-sm">
                         <option value="users" {% if fa.upload_permission == 'users' %}selected{% endif %}>users</option>
                         <option value="sysop" {% if fa.upload_permission == 'sysop' %}selected{% endif %}>sysop</option>
@@ -233,12 +233,12 @@
                     </select>
                 </div>
                 <div class="col-md-1">
-                    <label class="form-label small mb-0">Password</label>
+                    <label class="form-label small mb-0">{{ t('ui.password', 'Password') }}</label>
                     <input type="text" name="password" class="form-control form-control-sm" value="{{ fa.password or '' }}">
                 </div>
                 <div class="col-md-2 d-flex flex-wrap">
-                    <div class="form-check me-2"><input type="checkbox" name="is_active" {% if fa.is_active %}checked{% endif %} class="form-check-input"><label class="form-check-label small">Active</label></div>
-                    <div class="form-check me-2"><input type="checkbox" name="is_subscribed" {% if fa.is_subscribed %}checked{% endif %} class="form-check-input"><label class="form-check-label small">Subscribed</label></div>
+                    <div class="form-check me-2"><input type="checkbox" name="is_active" {% if fa.is_active %}checked{% endif %} class="form-check-input"><label class="form-check-label small">{{ t('ui.active', 'Active') }}</label></div>
+                    <div class="form-check me-2"><input type="checkbox" name="is_subscribed" {% if fa.is_subscribed %}checked{% endif %} class="form-check-input"><label class="form-check-label small">{{ t('ui.subscribed', 'Subscribed') }}</label></div>
                     <div class="form-check"><input type="checkbox" name="is_sysop_only" {% if fa.is_sysop_only %}checked{% endif %} class="form-check-input"><label class="form-check-label small">Sysop-only</label></div>
                 </div>
                 <div class="col-md-1">
@@ -250,7 +250,7 @@
                     <input type="number" name="min_write_level" class="form-control form-control-sm" min="0" max="255" value="{{ fa.min_write_level if fa.min_write_level is not none else '' }}" placeholder="=read" title="Leave blank to use read level for uploads too">
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small mb-0">Category</label>
+                    <label class="form-label small mb-0">{{ t('ui.category', 'Category') }}</label>
                     <select name="category" class="form-select form-select-sm">
                         <option value="other" {% if (fa.category or 'other') == 'other' %}selected{% endif %}>— other —</option>
                         {% for c in categories %}
@@ -261,7 +261,7 @@
             </div>
             <div class="row g-2 mt-2">
                 <div class="col-md-9">
-                    <label class="form-label small mb-0">Description</label>
+                    <label class="form-label small mb-0">{{ t('ui.description', 'Description') }}</label>
                     <input type="text" name="description" class="form-control form-control-sm" value="{{ fa.description or '' }}" placeholder="Shown to callers browsing this area">
                 </div>
             </div>
@@ -290,9 +290,9 @@
                 </div>
             </div>
             <div class="mt-2">
-                <button class="btn btn-primary btn-sm" name="action" value="update">Save</button>
+                <button class="btn btn-primary btn-sm" name="action" value="update">{{ t('ui.save', 'Save') }}</button>
                 <button class="btn btn-outline-danger btn-sm" name="action" value="delete"
-                        onclick="return confirm('Delete area {{ fa.tag }}? Files on disk are NOT removed.')">Delete</button>
+                        onclick="return confirm('Delete area {{ fa.tag }}? Files on disk are NOT removed.')">{{ t('ui.delete', 'Delete') }}</button>
                 <a href="{{ url_for('file_areas.view_area', area_id=fa.id) }}" class="btn btn-outline-secondary btn-sm">Browse</a>
                 <a href="{{ url_for('file_areas.manage_files', area_id=fa.id) }}" class="btn btn-outline-info btn-sm"><i class="bi bi-folder-check"></i> Manage Files</a>
             </div>

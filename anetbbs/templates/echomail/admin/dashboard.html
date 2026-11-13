@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-diagram-3"></i> Echomail Admin</h1>
+    <h1><i class="bi bi-diagram-3"></i> {{ t('ui.heading.echomail_admin', 'Echomail Admin') }}</h1>
     <p>Network and area management dashboard</p>
 </div>
 
@@ -20,7 +20,7 @@
         <div class="card text-center">
             <div class="card-body">
                 <div style="font-size:2rem; color:#00ff00;">{{ total_areas }}</div>
-                <div>Echo Areas</div>
+                <div>{{ t('ui.heading.echo_areas', 'Echo Areas') }}</div>
             </div>
         </div>
     </div>
@@ -28,7 +28,7 @@
         <div class="card text-center">
             <div class="card-body">
                 <div style="font-size:2rem; color:#00ff00;">{{ total_messages }}</div>
-                <div>Messages</div>
+                <div>{{ t('ui.messages', 'Messages') }}</div>
             </div>
         </div>
     </div>
@@ -57,28 +57,28 @@
                     <i class="bi bi-chat-square-text"></i> Manage Areas
                 </a>
                 <a href="{{ url_for('echomail_admin.new_area') }}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> Add Area
+                    <i class="bi bi-plus-circle"></i> {{ t('ui.add_area', 'Add Area') }}
                 </a>
                 <a href="{{ url_for('echomail_admin.logs') }}" class="btn btn-primary">
                     <i class="bi bi-journal-text"></i> Poll Logs
                 </a>
                 <a href="{{ url_for('echomail_admin.areafix_log') }}" class="btn btn-primary">
-                    <i class="bi bi-journals"></i> AreaFix Log
+                    <i class="bi bi-journals"></i> {{ t('ui.heading.areafix_log', 'AreaFix Log') }}
                 </a>
                 <a href="{{ url_for('echomail_admin.bad_areas') }}" class="btn btn-warning">
-                    <i class="bi bi-exclamation-triangle"></i> Bad Areas
+                    <i class="bi bi-exclamation-triangle"></i> {{ t('ui.bad_areas', 'Bad Areas') }}
                 </a>
                 <a href="{{ url_for('echomail_admin.unclaimed_netmail') }}" class="btn btn-warning">
-                    <i class="bi bi-envelope-exclamation"></i> Unclaimed Netmail
+                    <i class="bi bi-envelope-exclamation"></i> {{ t('ui.heading.unclaimed_netmail', 'Unclaimed Netmail') }}
                 </a>
                 <a href="{{ url_for('echomail_admin.akas') }}" class="btn btn-secondary">
-                    <i class="bi bi-mailbox"></i> FTN AKAs
+                    <i class="bi bi-mailbox"></i> {{ t('ui.heading.ftn_akas', 'FTN AKAs') }}
                 </a>
                 <a href="{{ url_for('echomail_admin.freq_requests') }}" class="btn btn-secondary">
                     <i class="bi bi-download"></i> WaZOO FREQ
                 </a>
                 <a href="{{ url_for('hub_admin.index') }}" class="btn btn-info">
-                    <i class="bi bi-broadcast"></i> Hub Management
+                    <i class="bi bi-broadcast"></i> {{ t('ui.heading.hub_management', 'Hub Management') }}
                 </a>
             </div>
         </div>
@@ -91,7 +91,7 @@
         {% if recent_logs %}
         <table class="table table-striped mb-0">
             <thead>
-                <tr><th>Network</th><th>Started</th><th>Type</th><th>Status</th><th>Sent</th><th>Received</th><th>Detail</th></tr>
+                <tr><th>{{ t('ui.network', 'Network') }}</th><th>{{ t('ui.started', 'Started') }}</th><th>{{ t('ui.type', 'Type') }}</th><th>{{ t('ui.status', 'Status') }}</th><th>{{ t('ui.sent', 'Sent') }}</th><th>{{ t('ui.received', 'Received') }}</th><th>Detail</th></tr>
             </thead>
             <tbody>
                 {% for log in recent_logs %}

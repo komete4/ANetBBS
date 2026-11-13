@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Scheduled Events{% endblock %}
+{% block title %}{{ t('ui.heading.scheduled_events', 'Scheduled Events') }}{% endblock %}
 
 {% block head %}
 {{ super() if super }}
@@ -18,7 +18,7 @@
 <div class="container py-3">
   <div class="ev-banner d-flex justify-content-between align-items-center">
     <div>
-      <h1 class="m-0"><i class="bi bi-calendar2-event"></i> Scheduled Events</h1>
+      <h1 class="m-0"><i class="bi bi-calendar2-event"></i> {{ t('ui.heading.scheduled_events', 'Scheduled Events') }}</h1>
       <div class="text-white-50 mt-1">
         Cron-style tasks — door maintenance, DB vacuum, log rotation, ad-hoc shell.
       </div>
@@ -38,9 +38,9 @@
     <table class="table table-hover align-middle mb-0">
       <thead class="table-light">
         <tr>
-          <th>Name</th><th>Handler</th><th>Schedule</th>
+          <th>{{ t('ui.name', 'Name') }}</th><th>Handler</th><th>{{ t('ui.schedule', 'Schedule') }}</th>
           <th>Last run</th><th>Next run</th>
-          <th class="text-end">Actions</th>
+          <th class="text-end">{{ t('ui.actions', 'Actions') }}</th>
         </tr>
       </thead>
       <tbody>

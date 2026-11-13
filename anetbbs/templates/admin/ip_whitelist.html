@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% block title %}IP Whitelist{% endblock %}
+{% block title %}{{ t('ui.heading.ip_whitelist', 'IP Whitelist') }}{% endblock %}
 {% block content %}
-<div class="bbs-header"><h1><i class="bi bi-shield-check"></i> IP Whitelist</h1></div>
+<div class="bbs-header"><h1><i class="bi bi-shield-check"></i> {{ t('ui.heading.ip_whitelist', 'IP Whitelist') }}</h1></div>
 <p class="text-muted small">Whitelisted IPs bypass all ban checks and country blocks.</p>
 
 <form method="post" class="card p-3 mb-3">
@@ -23,7 +23,7 @@
 </form>
 
 <table class="table table-sm">
-    <thead><tr><th>CIDR</th><th>Note</th><th>Added by</th><th>When</th><th></th></tr></thead>
+    <thead><tr><th>CIDR</th><th>Note</th><th>Added by</th><th>{{ t('ui.when', 'When') }}</th><th></th></tr></thead>
     <tbody>
     {% for r in rows %}
     <tr>
@@ -36,7 +36,7 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="action" value="remove">
                 <input type="hidden" name="whitelist_id" value="{{ r.id }}">
-                <button class="btn btn-sm btn-outline-secondary">Remove</button>
+                <button class="btn btn-sm btn-outline-secondary">{{ t('ui.remove', 'Remove') }}</button>
             </form>
         </td>
     </tr>

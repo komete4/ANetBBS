@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Caller Log{% endblock %}
+{% block title %}{{ t('ui.caller_log', 'Caller Log') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-list-ul"></i> Caller Log</h1>
+    <h1><i class="bi bi-list-ul"></i> {{ t('ui.caller_log', 'Caller Log') }}</h1>
     <p>Recent connections across all protocols.</p>
 </div>
 
@@ -13,7 +13,7 @@
     {% if pagination.items %}
         <table class="table table-sm mb-0">
             <thead><tr>
-                <th>When</th><th>User</th><th>Service</th><th>IP</th><th>Duration</th>
+                <th>{{ t('ui.when', 'When') }}</th><th>{{ t('ui.user', 'User') }}</th><th>{{ t('ui.service', 'Service') }}</th><th>IP</th><th>{{ t('ui.duration', 'Duration') }}</th>
             </tr></thead>
             <tbody>
             {% for c in pagination.items %}
@@ -34,9 +34,9 @@
 {% if pagination.pages > 1 %}
 <nav class="mt-3">
     <ul class="pagination">
-        {% if pagination.has_prev %}<li class="page-item"><a class="page-link" href="?page={{ pagination.prev_num }}">Prev</a></li>{% endif %}
+        {% if pagination.has_prev %}<li class="page-item"><a class="page-link" href="?page={{ pagination.prev_num }}">{{ t('ui.prev', 'Prev') }}</a></li>{% endif %}
         <li class="page-item disabled"><span class="page-link">{{ pagination.page }}/{{ pagination.pages }}</span></li>
-        {% if pagination.has_next %}<li class="page-item"><a class="page-link" href="?page={{ pagination.next_num }}">Next</a></li>{% endif %}
+        {% if pagination.has_next %}<li class="page-item"><a class="page-link" href="?page={{ pagination.next_num }}">{{ t('ui.next', 'Next') }}</a></li>{% endif %}
     </ul>
 </nav>
 {% endif %}

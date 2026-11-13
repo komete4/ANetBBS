@@ -164,7 +164,7 @@
 <div class="scc-banner">
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
         <div>
-            <h1><i class="bi bi-sliders"></i> Service Control Center</h1>
+            <h1><i class="bi bi-sliders"></i> {{ t('ui.heading.service_control_center', 'Service Control Center') }}</h1>
             <div class="text-light-emphasis small" style="opacity:.85;">
                 Live state of every ANetBBS service and listener — restart,
                 tail logs, kick nodes, watch who's online.
@@ -301,8 +301,8 @@
             {% else %}
             <form method="post" action="{{ url_for('control.service_action', unit=s.unit, action='start') }}" class="d-inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="btn btn-success" title="Start">
-                    <i class="bi bi-play-fill"></i> Start
+                <button class="btn btn-success" title="{{ t('ui.start', 'Start') }}">
+                    <i class="bi bi-play-fill"></i> {{ t('ui.start', 'Start') }}
                 </button>
             </form>
             {% endif %}
@@ -347,17 +347,17 @@
                         <option value="5000">5 000</option>
                     </select>
                     <button class="btn btn-sm btn-outline-light" onclick="reloadJournal()">
-                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                        <i class="bi bi-arrow-clockwise"></i> {{ t('ui.refresh', 'Refresh') }}
                     </button>
                     <a class="btn btn-sm btn-outline-light" id="scc-journal-dl"
                        href="#" title="Download .txt">
                         <i class="bi bi-download"></i>
                     </a>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="{{ t('ui.close', 'Close') }}"></button>
             </div>
             <div class="modal-body">
-                <pre id="scc-journal-body">Loading…</pre>
+                <pre id="scc-journal-body">{{ t('ui.loading', 'Loading…') }}</pre>
             </div>
         </div>
     </div>
@@ -371,11 +371,11 @@
     </div>
     <table class="table table-sm mb-0">
         <thead><tr>
-            <th>Slot</th><th>User</th><th>Proto</th><th>Page</th>
+            <th>Slot</th><th>{{ t('ui.user', 'User') }}</th><th>Proto</th><th>{{ t('ui.page', 'Page') }}</th>
             <th>Last action</th><th>Idle</th><th></th>
         </tr></thead>
         <tbody id="nodespy-body">
-            <tr><td colspan="7" class="text-muted">Loading…</td></tr>
+            <tr><td colspan="7" class="text-muted">{{ t('ui.loading', 'Loading…') }}</td></tr>
         </tbody>
     </table>
 </div>
@@ -388,10 +388,10 @@
     </div>
     <table class="table table-sm mb-0">
         <thead><tr>
-            <th>User</th><th>Page</th><th>IP</th><th>UA</th><th>Last seen</th><th></th>
+            <th>{{ t('ui.user', 'User') }}</th><th>{{ t('ui.page', 'Page') }}</th><th>IP</th><th>UA</th><th>Last seen</th><th></th>
         </tr></thead>
         <tbody id="who-body">
-            <tr><td colspan="6" class="text-muted">Loading…</td></tr>
+            <tr><td colspan="6" class="text-muted">{{ t('ui.loading', 'Loading…') }}</td></tr>
         </tbody>
     </table>
 </div>

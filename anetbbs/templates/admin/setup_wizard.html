@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Setup Wizard{% endblock %}
+{% block title %}{{ t('ui.heading.setup_wizard', 'Setup Wizard') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-magic"></i> Setup Wizard</h1>
+    <h1><i class="bi bi-magic"></i> {{ t('ui.heading.setup_wizard', 'Setup Wizard') }}</h1>
     <p>One-stop checklist for new ANetBBS installs.</p>
 </div>
 
@@ -27,7 +27,7 @@
     <div class="card-body">
         <h6>BBS Branding</h6>
         <div class="row g-2 mb-3">
-            <div class="col-md-6"><label class="form-label">BBS Name</label>
+            <div class="col-md-6"><label class="form-label">{{ t('ui.bbs_name', 'BBS Name') }}</label>
                 <input type="text" name="bbs_name" class="form-control" value="{{ config.BBS_NAME or '' }}"></div>
             <div class="col-md-6"><label class="form-label">Sysop Name</label>
                 <input type="text" name="sysop_name" class="form-control" value="{{ current_user.display_name or current_user.username }}"></div>
@@ -112,7 +112,7 @@
             <input class="form-check-input" type="checkbox" name="seed_dial" id="cb_dial" {% if not progress.has_dial %}checked{% endif %}>
             <label for="cb_dial" class="form-check-label">
                 Seed default BBS list (A-Net, Particles!, Vert, etc.) — edit later in
-                <a href="{{ url_for('admin.dialout_admin') }}">Dial-Out Directory</a>
+                <a href="{{ url_for('admin.dialout_admin') }}">{{ t('ui.heading.dial_out_directory', 'Dial-Out Directory') }}</a>
             </label>
         </div>
 
@@ -125,7 +125,7 @@
             </label>
         </div>
 
-        <button class="btn btn-primary"><i class="bi bi-check2-circle"></i> Apply</button>
+        <button class="btn btn-primary"><i class="bi bi-check2-circle"></i> {{ t('ui.apply', 'Apply') }}</button>
         <a href="{{ url_for('admin.dashboard') }}" class="btn btn-link">Back to dashboard</a>
     </div>
 </form>

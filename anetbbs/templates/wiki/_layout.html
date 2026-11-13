@@ -56,16 +56,16 @@
 <nav class="wiki-nav" aria-label="Wiki navigation">
     <a href="{{ url_for('wiki.index') }}"
        class="{% if request.endpoint == 'wiki.index' %}current{% endif %}">
-       <i class="bi bi-house"></i> Home</a>
+       <i class="bi bi-house"></i> {{ t('ui.home', 'Home') }}</a>
     <a href="{{ url_for('wiki.all_pages') }}"
        class="{% if request.endpoint == 'wiki.all_pages' %}current{% endif %}">
        <i class="bi bi-list-ul"></i> All pages</a>
     <a href="{{ url_for('wiki.recent') }}"
        class="{% if request.endpoint == 'wiki.recent' %}current{% endif %}">
-       <i class="bi bi-clock-history"></i> Recent changes</a>
+       <i class="bi bi-clock-history"></i> {{ t('ui.heading.recent_changes', 'Recent changes') }}</a>
     <a href="{{ url_for('wiki.search') }}"
        class="{% if request.endpoint == 'wiki.search' %}current{% endif %}">
-       <i class="bi bi-search"></i> Search</a>
+       <i class="bi bi-search"></i> {{ t('ui.search', 'Search') }}</a>
     <a href="{{ url_for('wiki.wanted') }}"
        class="{% if request.endpoint == 'wiki.wanted' %}current{% endif %}">
        <i class="bi bi-question-circle"></i> Wanted</a>

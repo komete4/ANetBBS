@@ -1,25 +1,25 @@
 {% extends "base.html" %}
 
-{% block title %}Polls{% endblock %}
+{% block title %}{{ t('ui.heading.polls', 'Polls') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-bar-chart"></i> Polls</h1>
+    <h1><i class="bi bi-bar-chart"></i> {{ t('ui.heading.polls', 'Polls') }}</h1>
     <p>Vote in active polls or create your own.</p>
 </div>
 
 <div class="mb-3">
     <a href="{{ url_for('polls.new_poll') }}" class="btn btn-primary">
-        <i class="bi bi-plus-square"></i> New Poll
+        <i class="bi bi-plus-square"></i> {{ t('ui.heading.new_poll', 'New Poll') }}
     </a>
 </div>
 
 <div class="card mb-3">
-    <div class="card-header"><i class="bi bi-circle-fill text-success"></i> Active</div>
+    <div class="card-header"><i class="bi bi-circle-fill text-success"></i> {{ t('ui.active', 'Active') }}</div>
     <div class="card-body p-0">
     {% if active %}
         <table class="table table-sm mb-0">
-            <thead><tr><th>Question</th><th>By</th><th>Votes</th><th>Created</th></tr></thead>
+            <thead><tr><th>Question</th><th>{{ t('ui.by', 'By') }}</th><th>Votes</th><th>{{ t('ui.created', 'Created') }}</th></tr></thead>
             <tbody>
             {% for p in active %}
                 <tr>
@@ -40,7 +40,7 @@
     <div class="card-header"><i class="bi bi-circle text-muted"></i> Recently Closed</div>
     <div class="card-body p-0">
         <table class="table table-sm mb-0">
-            <thead><tr><th>Question</th><th>By</th><th>Closed</th></tr></thead>
+            <thead><tr><th>Question</th><th>{{ t('ui.by', 'By') }}</th><th>Closed</th></tr></thead>
             <tbody>
             {% for p in closed %}
                 <tr>

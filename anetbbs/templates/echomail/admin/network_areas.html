@@ -20,13 +20,13 @@
     </a>
     <div class="d-flex gap-2 flex-wrap">
         <a href="{{ url_for('echomail_admin.bad_areas') }}" class="btn btn-warning btn-sm">
-            <i class="bi bi-exclamation-triangle"></i> Bad Areas
+            <i class="bi bi-exclamation-triangle"></i> {{ t('ui.bad_areas', 'Bad Areas') }}
         </a>
         <a href="{{ url_for('echomail_admin.bulk_import') }}" class="btn btn-primary btn-sm">
             <i class="bi bi-upload"></i> Bulk Import
         </a>
         <a href="{{ url_for('echomail_admin.new_area') }}" class="btn btn-primary btn-sm">
-            <i class="bi bi-plus-circle"></i> Add Area
+            <i class="bi bi-plus-circle"></i> {{ t('ui.add_area', 'Add Area') }}
         </a>
     </div>
 </div>
@@ -129,10 +129,10 @@
       <span id="selCount" class="badge bg-secondary">0 selected</span>
 
       {# Quick-select buttons #}
-      <button type="button" class="btn btn-outline-secondary btn-sm" id="selAll">All</button>
-      <button type="button" class="btn btn-outline-secondary btn-sm" id="selNone">None</button>
-      <button type="button" class="btn btn-outline-secondary btn-sm" id="selActive">Active</button>
-      <button type="button" class="btn btn-outline-secondary btn-sm" id="selSub">Subscribed</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" id="selAll">{{ t('ui.all', 'All') }}</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" id="selNone">{{ t('ui.none', 'None') }}</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" id="selActive">{{ t('ui.active', 'Active') }}</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" id="selSub">{{ t('ui.subscribed', 'Subscribed') }}</button>
 
       <div class="vr"></div>
 
@@ -156,7 +156,7 @@
           <option value="set_access_level">Set Access Level →</option>
         </optgroup>
         <optgroup label="Danger">
-          <option value="delete">Delete Selected</option>
+          <option value="delete">{{ t('ui.delete_selected', 'Delete Selected') }}</option>
         </optgroup>
       </select>
 
@@ -166,7 +166,7 @@
         min="0" max="255" placeholder="level">
 
       <button type="button" class="btn btn-primary btn-sm" id="applyBulk">
-        <i class="bi bi-check2"></i> Apply
+        <i class="bi bi-check2"></i> {{ t('ui.apply', 'Apply') }}
       </button>
     </div>
   </div>
@@ -177,13 +177,13 @@
       <thead class="table-dark">
         <tr>
           <th style="width:1%"><input type="checkbox" id="checkAll" title="Select all"></th>
-          <th>Tag</th>
-          <th>Name</th>
-          <th class="text-center">Active</th>
+          <th>{{ t('ui.tag', 'Tag') }}</th>
+          <th>{{ t('ui.name', 'Name') }}</th>
+          <th class="text-center">{{ t('ui.active', 'Active') }}</th>
           <th class="text-center">Sub'd</th>
           <th class="text-center">SysOp</th>
           <th class="text-center">Lvl</th>
-          <th class="text-end">Actions</th>
+          <th class="text-end">{{ t('ui.actions', 'Actions') }}</th>
         </tr>
       </thead>
       <tbody>
@@ -205,14 +205,14 @@
           <td class="small">{{ area.name }}</td>
           <td class="text-center">
             {% if area.is_active %}
-              <i class="bi bi-check-circle-fill text-success" title="Active"></i>
+              <i class="bi bi-check-circle-fill text-success" title="{{ t('ui.active', 'Active') }}"></i>
             {% else %}
               <i class="bi bi-dash-circle text-secondary" title="Inactive"></i>
             {% endif %}
           </td>
           <td class="text-center">
             {% if area.is_subscribed %}
-              <i class="bi bi-rss-fill text-info" title="Subscribed"></i>
+              <i class="bi bi-rss-fill text-info" title="{{ t('ui.subscribed', 'Subscribed') }}"></i>
             {% else %}
               <i class="bi bi-rss text-secondary" title="Not subscribed"></i>
             {% endif %}
@@ -241,7 +241,7 @@
             </form>
             {# Edit #}
             <a href="{{ url_for('echomail_admin.edit_area', area_id=area.id) }}"
-               class="btn btn-xs btn-outline-primary" title="Edit">
+               class="btn btn-xs btn-outline-primary" title="{{ t('ui.edit', 'Edit') }}">
               <i class="bi bi-pencil"></i>
             </a>
             {# Rescan (BinkP only) #}
@@ -259,7 +259,7 @@
                   class="d-inline"
                   onsubmit="return confirm('Delete area {{ area.tag }}?')">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="submit" class="btn btn-xs btn-outline-danger" title="Delete">
+              <button type="submit" class="btn btn-xs btn-outline-danger" title="{{ t('ui.delete', 'Delete') }}">
                 <i class="bi bi-trash"></i>
               </button>
             </form>

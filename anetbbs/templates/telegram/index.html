@@ -16,10 +16,10 @@
     </a>
     <a href="{{ url_for('telegram.sent') }}"
        class="btn btn-sm {% if folder == 'sent' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
-        <i class="bi bi-send"></i> Sent
+        <i class="bi bi-send"></i> {{ t('ui.sent', 'Sent') }}
     </a>
     <a href="{{ url_for('telegram.send') }}" class="btn btn-sm btn-success">
-        <i class="bi bi-lightning"></i> Send Telegram
+        <i class="bi bi-lightning"></i> {{ t('ui.send_telegram', 'Send Telegram') }}
     </a>
 </div>
 
@@ -28,8 +28,8 @@
     {% if messages %}
         <table class="table table-sm table-hover mb-0">
             <thead><tr>
-                <th>{% if folder == 'inbox' %}From{% else %}To{% endif %}</th>
-                <th>Address</th><th>Message</th><th>Date</th>
+                <th>{% if folder == 'inbox' %}{{ t('ui.from', 'From') }}{% else %}{{ t('ui.to', 'To') }}{% endif %}</th>
+                <th>{{ t('ui.address', 'Address') }}</th><th>{{ t('ui.message', 'Message') }}</th><th>{{ t('ui.date', 'Date') }}</th>
             </tr></thead>
             <tbody>
             {% for m in messages %}

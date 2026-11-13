@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}New User Questionnaire{% endblock %}
+{% block title %}{{ t('ui.heading.new_user_questionnaire', 'New User Questionnaire') }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-question-circle"></i> New User Questionnaire</h1>
+    <h1><i class="bi bi-question-circle"></i> {{ t('ui.heading.new_user_questionnaire', 'New User Questionnaire') }}</h1>
     <p class="small text-muted">
         Questions shown to users on the telnet/SSH/rlogin BBS right after
         registration. Answers are stored per user.
@@ -14,16 +14,16 @@
     <input type="hidden" name="action" value="add">
     <div class="row g-2">
         <div class="col-md-7">
-            <label class="form-label small mb-0">Prompt</label>
+            <label class="form-label small mb-0">{{ t('ui.prompt', 'Prompt') }}</label>
             <input type="text" name="prompt" class="form-control" placeholder="Where did you hear about us?" required>
         </div>
         <div class="col-md-2">
-            <label class="form-label small mb-0">Sort</label>
+            <label class="form-label small mb-0">{{ t('ui.sort', 'Sort') }}</label>
             <input type="number" name="sort_order" class="form-control" value="0">
         </div>
         <div class="col-md-2 form-check d-flex align-items-end">
             <input type="checkbox" id="req" name="is_required" class="form-check-input mt-0">
-            <label class="form-check-label ms-2" for="req">Required</label>
+            <label class="form-check-label ms-2" for="req">{{ t('ui.required', 'Required') }}</label>
         </div>
         <div class="col-md-1 d-flex align-items-end">
             <button class="btn btn-primary w-100"><i class="bi bi-plus"></i></button>
@@ -32,7 +32,7 @@
 </form>
 
 <table class="table table-sm">
-    <thead><tr><th>#</th><th>Prompt</th><th>Required</th><th>Active</th><th></th></tr></thead>
+    <thead><tr><th>#</th><th>{{ t('ui.prompt', 'Prompt') }}</th><th>{{ t('ui.required', 'Required') }}</th><th>{{ t('ui.active', 'Active') }}</th><th></th></tr></thead>
     <tbody>
     {% for q in rows %}
     <tr>

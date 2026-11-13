@@ -12,19 +12,19 @@
     <div class="card-header"><i class="bi bi-info-circle"></i> System Info</div>
     <div class="card-body">
         <dl class="row mb-0">
-            <dt class="col-sm-3">Address</dt>
+            <dt class="col-sm-3">{{ t('ui.address', 'Address') }}</dt>
             <dd class="col-sm-9"><code>{{ entry.address }}</code></dd>
-            <dt class="col-sm-3">System</dt>
+            <dt class="col-sm-3">{{ t('ui.system', 'System') }}</dt>
             <dd class="col-sm-9">{{ entry.system_name or '—' }}</dd>
             <dt class="col-sm-3">Sysop</dt>
             <dd class="col-sm-9">{{ entry.sysop_name or '—' }}</dd>
-            <dt class="col-sm-3">Location</dt>
+            <dt class="col-sm-3">{{ t('ui.location', 'Location') }}</dt>
             <dd class="col-sm-9">{{ entry.location or '—' }}</dd>
             <dt class="col-sm-3">Phone</dt>
             <dd class="col-sm-9"><code>{{ entry.phone or '—' }}</code></dd>
             <dt class="col-sm-3">Baud</dt>
             <dd class="col-sm-9">{{ entry.baud_rate or '—' }}</dd>
-            <dt class="col-sm-3">Type</dt>
+            <dt class="col-sm-3">{{ t('ui.type', 'Type') }}</dt>
             <dd class="col-sm-9">
                 {% if entry.keyword_type %}
                     <span class="badge bg-secondary">{{ entry.keyword_type }}</span>

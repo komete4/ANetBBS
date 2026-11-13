@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}New Group{% endblock %}
 {% block content %}
-<div class="bbs-header"><h1><i class="bi bi-people-fill"></i> Create Group</h1></div>
+<div class="bbs-header"><h1><i class="bi bi-people-fill"></i> {{ t('ui.heading.create_group', 'Create Group') }}</h1></div>
 
 <form method="post" class="card p-3">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -14,7 +14,7 @@
         <input type="text" name="tag" class="form-control" maxlength="8" placeholder="ART, TW2K">
     </div>
     <div class="mb-3">
-        <label class="form-label">Description</label>
+        <label class="form-label">{{ t('ui.description', 'Description') }}</label>
         <textarea name="description" class="form-control" rows="4"></textarea>
     </div>
     <div class="form-check mb-3">
@@ -22,8 +22,8 @@
         <label class="form-check-label" for="is_open">Open membership (anyone can join)</label>
     </div>
     <div>
-        <button class="btn btn-primary"><i class="bi bi-check"></i> Create</button>
-        <a href="{{ url_for('groups.index') }}" class="btn btn-secondary">Cancel</a>
+        <button class="btn btn-primary"><i class="bi bi-check"></i> {{ t('ui.create', 'Create') }}</button>
+        <a href="{{ url_for('groups.index') }}" class="btn btn-secondary">{{ t('ui.cancel', 'Cancel') }}</a>
     </div>
 </form>
 {% endblock %}

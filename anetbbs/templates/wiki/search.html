@@ -4,14 +4,14 @@
 {% include "wiki/_layout.html" %}
 
 <div class="bbs-header">
-    <h1><i class="bi bi-search"></i> Search the wiki</h1>
+    <h1><i class="bi bi-search"></i> {{ t('ui.heading.search_the_wiki', 'Search the wiki') }}</h1>
 </div>
 
 <form method="get" action="{{ url_for('wiki.search') }}" class="mb-3">
     <div class="input-group">
         <input type="text" name="q" value="{{ q }}" class="form-control"
                placeholder="Search titles, slugs, and body text…" autofocus>
-        <button class="btn btn-primary">Search</button>
+        <button class="btn btn-primary">{{ t('ui.search', 'Search') }}</button>
     </div>
 </form>
 

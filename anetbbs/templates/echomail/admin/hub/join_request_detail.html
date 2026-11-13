@@ -31,10 +31,10 @@
           {% if req.hub_identity and not req.hub_identity.is_default %}
           <tr><th>Hub Identity</th><td>{{ req.hub_identity.name }}</td></tr>
           {% endif %}
-          <tr><th>Name</th><td>{{ req.name or '—' }}</td></tr>
-          <tr><th>Location</th><td>{{ req.location or '—' }}</td></tr>
-          <tr><th>Email</th><td>{{ req.email }}</td></tr>
-          <tr><th>BBS Name</th><td>{{ req.bbs_name }}</td></tr>
+          <tr><th>{{ t('ui.name', 'Name') }}</th><td>{{ req.name or '—' }}</td></tr>
+          <tr><th>{{ t('ui.location', 'Location') }}</th><td>{{ req.location or '—' }}</td></tr>
+          <tr><th>{{ t('ui.email', 'Email') }}</th><td>{{ req.email }}</td></tr>
+          <tr><th>{{ t('ui.bbs_name', 'BBS Name') }}</th><td>{{ req.bbs_name }}</td></tr>
           <tr><th>BBS Software</th><td>{{ req.bbs_software or '—' }}</td></tr>
           <tr><th>BBS OS</th><td>{{ req.bbs_os or '—' }}</td></tr>
           <tr><th>Telnet Address</th><td>{{ req.telnet_address or '—' }}</td></tr>
@@ -76,7 +76,7 @@
 
   <div class="col-12">
     <div class="card">
-      <div class="card-header">Notes</div>
+      <div class="card-header">{{ t('ui.notes', 'Notes') }}</div>
       <div class="card-body"><p class="mb-0" style="white-space:pre-wrap;">{{ req.notes or '—' }}</p></div>
     </div>
   </div>
@@ -99,10 +99,10 @@
             {% if req.email_error %}
               {# email_error holds the MOST RECENT failure, even if an
                  earlier attempt succeeded -- must not read as "Sent". #}
-              <span class="badge bg-danger"><i class="bi bi-envelope-exclamation"></i> Failed</span>
+              <span class="badge bg-danger"><i class="bi bi-envelope-exclamation"></i> {{ t('ui.failed', 'Failed') }}</span>
               <span class="small text-muted d-block">{{ req.email_error }}</span>
             {% elif req.email_sent_at %}
-              <span class="badge bg-success"><i class="bi bi-envelope-check"></i> Sent</span>
+              <span class="badge bg-success"><i class="bi bi-envelope-check"></i> {{ t('ui.sent', 'Sent') }}</span>
               <span class="small text-muted">{{ req.email_sent_at|eastern('%Y-%m-%d %H:%M %Z') }}</span>
             {% else %}
               <span class="badge bg-secondary">Not sent</span>
@@ -129,10 +129,10 @@
   <form method="POST" action="{{ url_for('hub_admin.approve_join_request', req_id=req.id) }}"
         onsubmit="return confirm('Approve {{ req.bbs_name }} and create their node account(s)?')">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button class="btn btn-success"><i class="bi bi-check-circle"></i> Approve</button>
+    <button class="btn btn-success"><i class="bi bi-check-circle"></i> {{ t('ui.approve', 'Approve') }}</button>
   </form>
   <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#denyModal">
-    <i class="bi bi-x-circle"></i> Deny
+    <i class="bi bi-x-circle"></i> {{ t('ui.deny', 'Deny') }}
   </button>
 </div>
 
@@ -142,7 +142,7 @@
       <form method="POST" action="{{ url_for('hub_admin.deny_join_request', req_id=req.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-header">
-          <h5 class="modal-title">Deny {{ req.bbs_name }}</h5>
+          <h5 class="modal-title">{{ t('ui.deny', 'Deny') }} {{ req.bbs_name }}</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
@@ -151,7 +151,7 @@
             placeholder="e.g. Address already taken, try a different one">
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('ui.cancel', 'Cancel') }}</button>
           <button type="submit" class="btn btn-danger">Deny Request</button>
         </div>
       </form>

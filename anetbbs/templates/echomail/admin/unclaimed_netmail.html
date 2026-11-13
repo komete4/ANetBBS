@@ -5,7 +5,7 @@
 <div class="container-fluid my-3">
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <div>
-            <h2 class="mb-1"><i class="bi bi-envelope-exclamation"></i> Unclaimed Netmail</h2>
+            <h2 class="mb-1"><i class="bi bi-envelope-exclamation"></i> {{ t('ui.heading.unclaimed_netmail', 'Unclaimed Netmail') }}</h2>
             <p class="text-muted mb-0">
                 Inbound netmail whose To: name/address didn't match any local
                 user's account or AKA. Without a match here, this mail is
@@ -15,7 +15,7 @@
             </p>
         </div>
         <a href="{{ url_for('echomail_admin.dashboard') }}" class="btn btn-secondary btn-sm">
-            <i class="bi bi-arrow-left"></i> Echomail Dashboard
+            <i class="bi bi-arrow-left"></i> {{ t('ui.echomail_dashboard', 'Echomail Dashboard') }}
         </a>
     </div>
 
@@ -38,11 +38,11 @@
         <table class="table table-sm table-hover">
             <thead>
                 <tr>
-                    <th>Network</th>
-                    <th>From</th>
+                    <th>{{ t('ui.network', 'Network') }}</th>
+                    <th>{{ t('ui.from', 'From') }}</th>
                     <th>To (as received)</th>
-                    <th>Subject</th>
-                    <th>Received</th>
+                    <th>{{ t('ui.subject', 'Subject') }}</th>
+                    <th>{{ t('ui.received', 'Received') }}</th>
                     <th class="text-end">Assign to</th>
                 </tr>
             </thead>

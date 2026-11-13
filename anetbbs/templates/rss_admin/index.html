@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}RSS Feeds — Admin{% endblock %}
+{% block title %}{{ t('ui.heading.rss_feeds_admin', 'RSS Feeds — Admin') }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-rss-fill"></i> RSS Feeds — Admin</h1>
+    <h1><i class="bi bi-rss-fill"></i> {{ t('ui.heading.rss_feeds_admin', 'RSS Feeds — Admin') }}</h1>
     <p>Manage the list of RSS / Atom feeds available to BBS users.</p>
 </div>
 
@@ -19,12 +19,12 @@
 <table class="table table-sm table-hover">
     <thead>
         <tr>
-            <th>Sort</th>
-            <th>Name</th>
+            <th>{{ t('ui.sort', 'Sort') }}</th>
+            <th>{{ t('ui.name', 'Name') }}</th>
             <th>URL</th>
-            <th>Items</th>
+            <th>{{ t('ui.items', 'Items') }}</th>
             <th>Last fetched</th>
-            <th>Status</th>
+            <th>{{ t('ui.status', 'Status') }}</th>
             <th></th>
         </tr>
     </thead>
@@ -69,7 +69,7 @@
                 <form method="post" action="{{ url_for('rss_admin.delete', feed_id=feed.id) }}" class="d-inline"
                       onsubmit="return confirm('Delete feed {{ feed.name }} and all its items?');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button class="btn btn-sm btn-outline-danger" title="Delete">
+                    <button class="btn btn-sm btn-outline-danger" title="{{ t('ui.delete', 'Delete') }}">
                         <i class="bi bi-trash"></i>
                     </button>
                 </form>

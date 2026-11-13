@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-upload"></i> Bulk Import Echo Areas</h1>
+    <h1><i class="bi bi-upload"></i> {{ t('ui.heading.bulk_import_echo_areas', 'Bulk Import Echo Areas') }}</h1>
 </div>
 
 <a href="{{ url_for('echomail_admin.areas') }}" class="btn btn-primary btn-sm mb-3">
@@ -55,7 +55,7 @@ TQW_BBSGEN      - General BBS Chat        (FidoNet backbone style)</pre>
 
             <div class="d-flex justify-content-between">
                 <a href="{{ url_for('echomail_admin.areas') }}" class="btn btn-primary">
-                    <i class="bi bi-x-circle"></i> Cancel
+                    <i class="bi bi-x-circle"></i> {{ t('ui.cancel', 'Cancel') }}
                 </a>
                 {{ form.submit(class="btn btn-primary") }}
             </div>

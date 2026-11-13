@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Saved Messages{% endblock %}
+{% block title %}{{ t('ui.heading.saved_messages', 'Saved Messages') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-bookmark-star-fill"></i> Saved Messages</h1>
+    <h1><i class="bi bi-bookmark-star-fill"></i> {{ t('ui.heading.saved_messages', 'Saved Messages') }}</h1>
     <p>Messages you've bookmarked from echomail, netmail, boards, and PMs.</p>
 </div>
 
@@ -13,8 +13,8 @@
     {% if items %}
         <table class="table table-sm table-hover mb-0">
             <thead><tr>
-                <th>Kind</th><th>Subject</th><th>From</th><th>Saved</th>
-                <th>Notes</th><th></th>
+                <th>Kind</th><th>{{ t('ui.subject', 'Subject') }}</th><th>{{ t('ui.from', 'From') }}</th><th>{{ t('ui.saved', 'Saved') }}</th>
+                <th>{{ t('ui.notes', 'Notes') }}</th><th></th>
             </tr></thead>
             <tbody>
             {% for it in items %}

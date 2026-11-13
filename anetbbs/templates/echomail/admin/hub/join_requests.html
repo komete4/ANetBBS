@@ -3,19 +3,19 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-file-earmark-person"></i> Network Join Requests</h1>
+    <h1><i class="bi bi-file-earmark-person"></i> {{ t('ui.heading.network_join_requests', 'Network Join Requests') }}</h1>
     <p>Applications submitted through the public "apply to join" web form.</p>
 </div>
 
 <div class="mb-3 d-flex align-items-center gap-2">
     <a href="{{ url_for('hub_admin.index', gen_tab='join') }}" class="btn btn-primary btn-sm">
-        <i class="bi bi-arrow-left"></i> Hub Admin
+        <i class="bi bi-arrow-left"></i> {{ t('ui.hub_admin', 'Hub Admin') }}
     </a>
     {% if identities|length > 1 %}
     <form method="GET" class="d-inline-flex align-items-center gap-2 ms-2">
         <label class="form-label mb-0 small">Hub Identity:</label>
         <select name="identity" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
-            <option value="">All</option>
+            <option value="">{{ t('ui.all', 'All') }}</option>
             {% for i in identities %}
             <option value="{{ i.id }}" {% if identity_filter == i.id %}selected{% endif %}>{{ i.name }}</option>
             {% endfor %}
@@ -34,7 +34,7 @@
 
 {# ── Pending ─────────────────────────────────────────────────── #}
 <h5 class="mt-3">
-  Pending
+  {{ t('ui.pending', 'Pending') }}
   {% if pending %}
     <span class="badge bg-danger ms-1">{{ pending|length }}</span>
   {% endif %}
@@ -45,15 +45,15 @@
 <table class="table table-sm table-hover align-middle">
   <thead class="table-dark">
     <tr>
-      <th>BBS Name</th>
-      {% if identities|length > 1 %}<th>Identity</th>{% endif %}
+      <th>{{ t('ui.bbs_name', 'BBS Name') }}</th>
+      {% if identities|length > 1 %}<th>{{ t('ui.identity', 'Identity') }}</th>{% endif %}
       <th>Applicant</th>
-      <th>Email</th>
+      <th>{{ t('ui.email', 'Email') }}</th>
       <th>BinkP</th>
       <th>QWK</th>
-      <th>Notes</th>
+      <th>{{ t('ui.notes', 'Notes') }}</th>
       <th>Applied</th>
-      <th class="text-end">Actions</th>
+      <th class="text-end">{{ t('ui.actions', 'Actions') }}</th>
     </tr>
   </thead>
   <tbody>
@@ -74,7 +74,7 @@
       <td class="text-end text-nowrap">
         <a href="{{ url_for('hub_admin.join_request_detail', req_id=r.id) }}"
            class="btn btn-sm btn-outline-primary">
-          <i class="bi bi-eye"></i> View
+          <i class="bi bi-eye"></i> {{ t('ui.view', 'View') }}
         </a>
 
         <form method="POST"
@@ -83,14 +83,14 @@
               onsubmit="return confirm('Approve {{ r.bbs_name }} and create their node account(s)?')">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="btn btn-sm btn-success ms-1">
-            <i class="bi bi-check-circle"></i> Approve
+            <i class="bi bi-check-circle"></i> {{ t('ui.approve', 'Approve') }}
           </button>
         </form>
 
         <button class="btn btn-sm btn-outline-danger ms-1"
                 data-bs-toggle="modal"
                 data-bs-target="#denyModal{{ r.id }}">
-          <i class="bi bi-x-circle"></i> Deny
+          <i class="bi bi-x-circle"></i> {{ t('ui.deny', 'Deny') }}
         </button>
 
         {# Deny modal #}
@@ -101,7 +101,7 @@
                     action="{{ url_for('hub_admin.deny_join_request', req_id=r.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-header">
-                  <h5 class="modal-title">Deny {{ r.bbs_name }}</h5>
+                  <h5 class="modal-title">{{ t('ui.deny', 'Deny') }} {{ r.bbs_name }}</h5>
                   <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -110,7 +110,7 @@
                     placeholder="e.g. Address already taken, try a different one">
                 </div>
                 <div class="modal-footer">
-                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('ui.cancel', 'Cancel') }}</button>
                   <button type="submit" class="btn btn-danger">Deny Request</button>
                 </div>
               </form>
@@ -134,13 +134,13 @@
 <table class="table table-sm table-hover align-middle">
   <thead class="table-secondary">
     <tr>
-      <th>BBS Name</th>
-      {% if identities|length > 1 %}<th>Identity</th>{% endif %}
-      <th>Status</th>
+      <th>{{ t('ui.bbs_name', 'BBS Name') }}</th>
+      {% if identities|length > 1 %}<th>{{ t('ui.identity', 'Identity') }}</th>{% endif %}
+      <th>{{ t('ui.status', 'Status') }}</th>
       <th>Reviewed</th>
       <th>Reviewed by</th>
       <th>Reason / Credentials</th>
-      <th>Email</th>
+      <th>{{ t('ui.email', 'Email') }}</th>
     </tr>
   </thead>
   <tbody>
@@ -181,11 +181,11 @@
                earlier attempt (email_sent_at) succeeded -- a later
                failed resend must not read as "Sent". #}
             <span class="badge bg-danger" title="{{ r.email_error }}">
-              <i class="bi bi-envelope-exclamation"></i> Failed
+              <i class="bi bi-envelope-exclamation"></i> {{ t('ui.failed', 'Failed') }}
             </span>
           {% elif r.email_sent_at %}
             <span class="badge bg-success" title="Last sent {{ r.email_sent_at|eastern('%Y-%m-%d %H:%M') }}">
-              <i class="bi bi-envelope-check"></i> Sent
+              <i class="bi bi-envelope-check"></i> {{ t('ui.sent', 'Sent') }}
             </span>
           {% else %}
             <span class="badge bg-secondary">Not sent</span>

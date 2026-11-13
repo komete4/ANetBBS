@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{% if parent %}Reply{% else %}Compose Netmail{% endif %}{% endblock %}
+{% block title %}{% if parent %}{{ t('ui.reply', 'Reply') }}{% else %}{{ t('ui.compose_netmail', 'Compose Netmail') }}{% endif %}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
@@ -76,19 +76,19 @@
             <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="is_private" id="cb_private"
                     {% if form.is_private %}checked{% endif %}>
-                <label class="form-check-label" for="cb_private">Private</label>
+                <label class="form-check-label" for="cb_private">{{ t('ui.private', 'Private') }}</label>
             </div>
         </div>
     </div>
 
     <div class="mb-3">
-        <label class="form-label">Subject</label>
+        <label class="form-label">{{ t('ui.subject', 'Subject') }}</label>
         <input type="text" name="subject" class="form-control"
                value="{{ form.subject or '' }}" maxlength="200">
     </div>
 
     <div class="mb-3">
-        <label class="form-label">Message</label>
+        <label class="form-label">{{ t('ui.message', 'Message') }}</label>
         <textarea name="body" rows="14" class="form-control" spellcheck="true"
                   style="font-family:monospace;">{{ form.body or '' }}</textarea>
         <div class="form-text">
@@ -108,11 +108,11 @@
     </div>
 
     <button type="submit" class="btn btn-primary">
-        <i class="bi bi-send"></i> Send
+        <i class="bi bi-send"></i> {{ t('ui.send', 'Send') }}
     </button>
     <button type="submit" name="save_draft" value="1" class="btn btn-outline-secondary">
         <i class="bi bi-bookmark"></i> Save as Draft
     </button>
-    <a href="{{ url_for('netmail.inbox') }}" class="btn btn-link">Cancel</a>
+    <a href="{{ url_for('netmail.inbox') }}" class="btn btn-link">{{ t('ui.cancel', 'Cancel') }}</a>
 </form>
 {% endblock %}

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{% if feed %}Edit{% else %}Add{% endif %} RSS Feed{% endblock %}
+{% block title %}{% if feed %}{{ t('ui.edit', 'Edit') }}{% else %}{{ t('ui.add', 'Add') }}{% endif %} RSS Feed{% endblock %}
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-rss-fill"></i>
@@ -12,14 +12,14 @@
 
     <div class="row g-3">
         <div class="col-md-6">
-            <label class="form-label">Name <span class="text-danger">*</span></label>
+            <label class="form-label">{{ t('ui.name', 'Name') }} <span class="text-danger">*</span></label>
             <input type="text" name="name" class="form-control" required
                    value="{{ feed.name if feed else '' }}"
                    placeholder="X-News">
             <small class="text-muted">Display name shown to users.</small>
         </div>
         <div class="col-md-6">
-            <label class="form-label">Category</label>
+            <label class="form-label">{{ t('ui.category', 'Category') }}</label>
             <input type="text" name="category" class="form-control"
                    value="{{ feed.category if feed else 'general' }}"
                    placeholder="news / tech / scene / general">
@@ -39,7 +39,7 @@
             <small class="text-muted">Human-facing homepage of the feed source.</small>
         </div>
         <div class="col-12">
-            <label class="form-label">Description (optional)</label>
+            <label class="form-label">{{ t('ui.description_optional', 'Description (optional)') }}</label>
             <input type="text" name="description" class="form-control" maxlength="500"
                    value="{{ feed.description if feed else '' }}"
                    placeholder="One-line description of the feed">
@@ -60,16 +60,16 @@
             <div class="form-check">
                 <input type="checkbox" id="is_active" name="is_active" class="form-check-input"
                        {% if (feed and feed.is_active) or not feed %}checked{% endif %}>
-                <label for="is_active" class="form-check-label">Active</label>
+                <label for="is_active" class="form-check-label">{{ t('ui.active', 'Active') }}</label>
             </div>
         </div>
     </div>
 
     <div class="mt-3 d-flex gap-2">
         <button type="submit" class="btn btn-primary">
-            <i class="bi bi-save"></i> Save{% if not feed %} & Fetch{% endif %}
+            <i class="bi bi-save"></i> {{ t('ui.save', 'Save') }}{% if not feed %} & Fetch{% endif %}
         </button>
-        <a href="{{ url_for('rss_admin.index') }}" class="btn btn-secondary">Cancel</a>
+        <a href="{{ url_for('rss_admin.index') }}" class="btn btn-secondary">{{ t('ui.cancel', 'Cancel') }}</a>
     </div>
 </form>
 {% endblock %}

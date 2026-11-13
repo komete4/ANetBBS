@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{% if network %}Edit{% else %}Add{% endif %} Network — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{% if network %}{{ t('ui.edit', 'Edit') }}{% else %}{{ t('ui.add', 'Add') }}{% endif %} Network — {{ config.BBS_NAME }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -46,7 +46,7 @@
 
             <div class="mb-3 form-check">
                 {{ form.is_active(class="form-check-input") }}
-                <label class="form-check-label" for="is_active" style="color:#00ff00;">Active</label>
+                <label class="form-check-label" for="is_active" style="color:#00ff00;">{{ t('ui.active', 'Active') }}</label>
             </div>
 
             <div class="mb-3 form-check">
@@ -183,7 +183,7 @@
                         <strong>Two IDs, two different purposes:</strong>
                         <ul class="mb-0 mt-1">
                             <li><strong>Hub System ID</strong> = the hub's own ID (e.g. <code>VERT</code> for vert.synchro.net). Controls the download filename (<code>VERT.qwk</code>), upload filename (<code>VERT.rep</code>), and inner MSG file (<code>VERT.MSG</code>). The hub rejects the REP silently if this is wrong.</li>
-                            <li><strong>Packet ID</strong> = YOUR BBS's registered node ID on the hub (e.g. <code>ANETBBS</code>). Used for FTP login identity and message IDs. Does NOT go in the filenames.</li>
+                            <li><strong>{{ t('ui.packet_id', 'Packet ID') }}</strong> = YOUR BBS's registered node ID on the hub (e.g. <code>ANETBBS</code>). Used for FTP login identity and message IDs. Does NOT go in the filenames.</li>
                         </ul>
                     </div>
                     <div class="row g-3">
@@ -234,7 +234,7 @@
 
             <div class="d-flex justify-content-between">
                 <a href="{{ url_for('echomail_admin.networks') }}" class="btn btn-primary">
-                    <i class="bi bi-x-circle"></i> Cancel
+                    <i class="bi bi-x-circle"></i> {{ t('ui.cancel', 'Cancel') }}
                 </a>
                 {{ form.submit(class="btn btn-primary") }}
             </div>

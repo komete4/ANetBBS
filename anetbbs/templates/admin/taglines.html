@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Tagline Pool{% endblock %}
+{% block title %}{{ t('ui.heading.tagline_pool', 'Tagline Pool') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-chat-quote"></i> Tagline Pool</h1>
+    <h1><i class="bi bi-chat-quote"></i> {{ t('ui.heading.tagline_pool', 'Tagline Pool') }}</h1>
     <p>Shared random-tagline pool — anyone composing a message (local boards,
        private messages, netmail, echomail, terminal or web) can opt in to
        append one random active entry. Distinct from a user's own fixed
@@ -22,7 +22,7 @@
                 <input type="text" name="text" class="form-control" required maxlength="200">
             </div>
             <div class="col-md-2">
-                <button class="btn btn-primary w-100">Add</button>
+                <button class="btn btn-primary w-100">{{ t('ui.add', 'Add') }}</button>
             </div>
         </div>
     </div>
@@ -32,7 +32,7 @@
     <div class="card-body p-0">
     {% if taglines %}
         <table class="table table-sm mb-0">
-            <thead><tr><th>On</th><th>Text</th><th>Added</th><th></th></tr></thead>
+            <thead><tr><th>On</th><th>{{ t('ui.text', 'Text') }}</th><th>Added</th><th></th></tr></thead>
             <tbody>
             {% for t in taglines %}
                 <tr {% if not t.is_active %}class="text-muted"{% endif %}>

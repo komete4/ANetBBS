@@ -4,7 +4,7 @@
 {% block content %}
 <div class="bbs-header d-flex justify-content-between align-items-center flex-wrap gap-2">
     <div>
-        <h1><i class="bi bi-diagram-3"></i> Hub Identities</h1>
+        <h1><i class="bi bi-diagram-3"></i> {{ t('ui.heading.hub_identities', 'Hub Identities') }}</h1>
         <p>Distinct echomail/QWK hub networks this install operates. Most sysops only need the one default identity below — this only matters if you run more than one real hub network (own zone:net, own QWK hub ID, own downstream nodes).</p>
     </div>
     <div class="d-flex gap-2">
@@ -12,7 +12,7 @@
             <i class="bi bi-plus-circle"></i> Add Hub Identity
         </a>
         <a href="{{ url_for('hub_admin.index') }}" class="btn btn-secondary">
-            <i class="bi bi-arrow-left"></i> Hub Overview
+            <i class="bi bi-arrow-left"></i> {{ t('ui.hub_overview', 'Hub Overview') }}
         </a>
     </div>
 </div>
@@ -28,14 +28,14 @@
         <table class="table table-striped mb-0">
             <thead>
                 <tr>
-                    <th>Name</th>
-                    <th>Slug</th>
+                    <th>{{ t('ui.name', 'Name') }}</th>
+                    <th>{{ t('ui.slug', 'Slug') }}</th>
                     <th>Zone:Net/Hub</th>
                     <th>QWK Hub ID</th>
                     <th>Networks</th>
-                    <th>BinkP Nodes</th>
-                    <th>QWK Nodes</th>
-                    <th>Status</th>
+                    <th>{{ t('ui.binkp_nodes', 'BinkP Nodes') }}</th>
+                    <th>{{ t('ui.qwk_nodes', 'QWK Nodes') }}</th>
+                    <th>{{ t('ui.status', 'Status') }}</th>
                     <th></th>
                 </tr>
             </thead>
@@ -67,7 +67,7 @@
                             <button type="submit" class="btn btn-sm btn-outline-primary">Make Default</button>
                         </form>
                         {% endif %}
-                        <a href="{{ url_for('hub_admin.edit_hub_identity', identity_id=identity.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                        <a href="{{ url_for('hub_admin.edit_hub_identity', identity_id=identity.id) }}" class="btn btn-sm btn-outline-secondary">{{ t('ui.edit', 'Edit') }}</a>
                     </td>
                 </tr>
                 {% endfor %}

@@ -3,9 +3,9 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3><i class="bi bi-cloud-download"></i> Add games from A-Net Game Server</h3>
+    <h3><i class="bi bi-cloud-download"></i> {{ t('ui.heading.add_games_from_a_net_game_server', 'Add games from A-Net Game Server') }}</h3>
     <a href="{{ url_for('games_admin.dashboard') }}" class="btn btn-primary btn-sm">
-        <i class="bi bi-arrow-left"></i> Dashboard
+        <i class="bi bi-arrow-left"></i> {{ t('ui.dashboard', 'Dashboard') }}
     </a>
 </div>
 
@@ -32,7 +32,7 @@
         <thead>
             <tr>
                 <th>Source category (A-Net Game Server)</th>
-                <th>Games</th>
+                <th>{{ t('ui.games', 'Games') }}</th>
                 <th>Import into</th>
             </tr>
         </thead>

@@ -1,15 +1,15 @@
 {% extends "base.html" %}
-{% block title %}Leaderboards — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{{ t('ui.leaderboards', 'Leaderboards') }} — {{ config.BBS_NAME }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
-    <h2><i class="bi bi-trophy"></i> LEADERBOARDS</h2>
+    <h2><i class="bi bi-trophy"></i> {{ t('ui.leaderboards_uppercase', 'LEADERBOARDS') }}</h2>
 </div>
 
 <!-- Filters -->
 <form method="get" class="mb-4 d-flex gap-2 flex-wrap">
     <select name="game_id" class="form-control" style="max-width:220px;">
-        <option value="">All Games</option>
+        <option value="">{{ t('ui.all_games', 'All Games') }}</option>
         {% for g in all_games %}
         <option value="{{ g.id }}" {% if game_id == g.id %}selected{% endif %}>{{ g.name }}</option>
         {% endfor %}
@@ -19,7 +19,7 @@
         <option value="monthly" {% if period == 'monthly' %}selected{% endif %}>This Month</option>
     </select>
     <button type="submit" class="btn btn-primary">
-        <i class="bi bi-funnel"></i> Filter
+        <i class="bi bi-funnel"></i> {{ t('ui.filter', 'Filter') }}
     </button>
 </form>
 
@@ -28,10 +28,10 @@
     <thead>
         <tr>
             <th>#</th>
-            <th>Player</th>
-            <th>Game</th>
-            <th>Score</th>
-            <th>Date</th>
+            <th>{{ t('ui.player', 'Player') }}</th>
+            <th>{{ t('ui.game', 'Game') }}</th>
+            <th>{{ t('ui.score', 'Score') }}</th>
+            <th>{{ t('ui.date', 'Date') }}</th>
         </tr>
     </thead>
     <tbody>
@@ -63,7 +63,7 @@
 </table>
 {% else %}
 <div class="alert alert-info">
-    <i class="bi bi-info-circle"></i> No scores recorded yet. Play some games!
+    <i class="bi bi-info-circle"></i> {{ t('ui.no_scores_recorded_yet_play_some_games', 'No scores recorded yet. Play some games!') }}
 </div>
 {% endif %}
 {% endblock %}

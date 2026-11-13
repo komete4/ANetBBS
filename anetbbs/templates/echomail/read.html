@@ -19,20 +19,20 @@
     <div>
         {% if prev_msg %}
         <a href="{{ url_for('echomail.read', area_id=echo_area.id, message_id=prev_msg.id) }}" class="btn btn-primary btn-sm">
-            <i class="bi bi-chevron-left"></i> Prev
+            <i class="bi bi-chevron-left"></i> {{ t('ui.prev', 'Prev') }}
         </a>
         {% endif %}
         {% if next_msg %}
         <a href="{{ url_for('echomail.read', area_id=echo_area.id, message_id=next_msg.id) }}" class="btn btn-primary btn-sm ms-1">
-            Next <i class="bi bi-chevron-right"></i>
+            {{ t('ui.next', 'Next') }} <i class="bi bi-chevron-right"></i>
         </a>
         {% endif %}
         <a href="{{ url_for('echomail.compose', area_id=echo_area.id, reply_to_id=msg.id) }}" class="btn btn-primary btn-sm ms-2">
-            <i class="bi bi-reply"></i> Reply
+            <i class="bi bi-reply"></i> {{ t('ui.reply', 'Reply') }}
         </a>
         {% if msg.msg_id or msg.reply_id %}
         <a href="{{ url_for('echomail.thread', area_id=echo_area.id, message_id=msg.id) }}" class="btn btn-outline-primary btn-sm ms-1">
-            <i class="bi bi-chat-square-text"></i> Thread
+            <i class="bi bi-chat-square-text"></i> {{ t('ui.heading.thread', 'Thread') }}
         </a>
         {% endif %}
         <a href="{{ url_for('echomail.next_unread', area_id=echo_area.id) }}" class="btn btn-success btn-sm ms-1">
@@ -63,7 +63,7 @@
             <tr><th>To:</th><td>{{ msg.to_name or 'All' }}{% if msg.to_address %} &lt;{{ msg.to_address }}&gt;{% endif %}</td></tr>
             <tr><th>Date:</th><td>{{ msg.created_at|eastern('%a, %d %b %Y %H:%M %Z') }}</td></tr>
             <tr><th>Area:</th><td><a href="{{ url_for('echomail.area', area_id=echo_area.id) }}">{{ echo_area.name }}</a> ({{ echo_area.tag }})</td></tr>
-            <tr><th>Network:</th><td>{{ echo_area.network.name }}</td></tr>
+            <tr><th>{{ t('ui.network_label', 'Network:') }}</th><td>{{ echo_area.network.name }}</td></tr>
         </table>
 
         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -118,12 +118,12 @@
                  class="d-inline" onsubmit="return confirm('Permanently delete this message? This also removes it from any not-yet-sent outbound queue, but cannot recall a copy already delivered to a peer.');">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-outline-danger btn-sm me-1" title="Delete this message (admin only)">
-                    <i class="bi bi-trash"></i> Delete
+                    <i class="bi bi-trash"></i> {{ t('ui.delete', 'Delete') }}
                 </button>
             </form>
             {% endif %}
             <a href="{{ url_for('echomail.compose', area_id=echo_area.id, reply_to_id=msg.id) }}" class="btn btn-primary btn-sm">
-                <i class="bi bi-reply"></i> Reply
+                <i class="bi bi-reply"></i> {{ t('ui.reply', 'Reply') }}
             </a>
         </span>
     </div>

@@ -5,7 +5,7 @@
 {% block content %}
 <div class="bbs-header d-flex justify-content-between align-items-center flex-wrap gap-2">
     <div>
-        <h1><i class="bi bi-file-earmark-arrow-down"></i> TIC In Log</h1>
+        <h1><i class="bi bi-file-earmark-arrow-down"></i> {{ t('ui.heading.tic_in_log', 'TIC In Log') }}</h1>
         <p>Inbound FidoNet file-echo manifests.</p>
     </div>
     <div>
@@ -25,10 +25,10 @@
             </button>
         </form>
         <a href="{{ url_for('admin.hatch_log') }}" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-file-earmark-arrow-up"></i> TIC Out Log
+            <i class="bi bi-file-earmark-arrow-up"></i> {{ t('ui.heading.tic_out_log', 'TIC Out Log') }}
         </a>
         <a href="{{ url_for('hub_admin.index', gen_tab='tic') }}" class="btn btn-secondary btn-sm">
-            <i class="bi bi-arrow-left"></i> Hub Admin
+            <i class="bi bi-arrow-left"></i> {{ t('ui.hub_admin', 'Hub Admin') }}
         </a>
     </div>
 </div>
@@ -37,8 +37,8 @@
     <div class="card-body p-0">
         <table class="table table-sm table-hover mb-0">
             <thead><tr>
-                <th>Received</th><th>Status</th><th>Area</th><th>File</th>
-                <th>Size</th><th>From</th><th>Error</th>
+                <th>{{ t('ui.received', 'Received') }}</th><th>{{ t('ui.status', 'Status') }}</th><th>{{ t('ui.area', 'Area') }}</th><th>{{ t('ui.file', 'File') }}</th>
+                <th>{{ t('ui.size', 'Size') }}</th><th>{{ t('ui.from', 'From') }}</th><th>{{ t('ui.error', 'Error') }}</th>
             </tr></thead>
             <tbody>
             {% for t in pagination.items %}
@@ -67,9 +67,9 @@
 {% if pagination.pages > 1 %}
 <nav class="mt-3">
     <ul class="pagination">
-        {% if pagination.has_prev %}<li class="page-item"><a class="page-link" href="?page={{ pagination.prev_num }}">Prev</a></li>{% endif %}
+        {% if pagination.has_prev %}<li class="page-item"><a class="page-link" href="?page={{ pagination.prev_num }}">{{ t('ui.prev', 'Prev') }}</a></li>{% endif %}
         <li class="page-item disabled"><span class="page-link">{{ pagination.page }}/{{ pagination.pages }}</span></li>
-        {% if pagination.has_next %}<li class="page-item"><a class="page-link" href="?page={{ pagination.next_num }}">Next</a></li>{% endif %}
+        {% if pagination.has_next %}<li class="page-item"><a class="page-link" href="?page={{ pagination.next_num }}">{{ t('ui.next', 'Next') }}</a></li>{% endif %}
     </ul>
 </nav>
 {% endif %}

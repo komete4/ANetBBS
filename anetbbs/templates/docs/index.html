@@ -2,7 +2,7 @@
 {% block title %}Documentation — {{ config.BBS_NAME }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-book"></i> Documentation</h1>
+    <h1><i class="bi bi-book"></i> {{ t('ui.heading.documentation', 'Documentation') }}</h1>
     <p class="lead">Everything you need to run, use, and extend your ANetBBS.</p>
 </div>
 
@@ -50,10 +50,10 @@
             <div class="card-header"><i class="bi bi-info-circle"></i> Quick links</div>
             <ul class="list-group list-group-flush small">
                 <li class="list-group-item"><a href="{{ url_for('wiki.index') }}">Wiki</a></li>
-                <li class="list-group-item"><a href="{{ url_for('stats.index') }}">Statistics</a></li>
+                <li class="list-group-item"><a href="{{ url_for('stats.index') }}">{{ t('ui.statistics', 'Statistics') }}</a></li>
                 {% if current_user.is_authenticated and current_user.is_admin %}
                 <li class="list-group-item"><a href="{{ url_for('admin.checklist') }}">Sysop launch checklist</a></li>
-                <li class="list-group-item"><a href="{{ url_for('control.index') }}">Sysop control panel</a></li>
+                <li class="list-group-item"><a href="{{ url_for('control.index') }}">{{ t('ui.heading.sysop_control_panel', 'Sysop control panel') }}</a></li>
                 {% endif %}
                 <li class="list-group-item"><a href="{{ url_for('healthz.healthz') }}">Health check JSON</a></li>
             </ul>

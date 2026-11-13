@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-download"></i> WaZOO File Requests (FREQ)</h1>
+    <h1><i class="bi bi-download"></i> {{ t('ui.heading.wazoo_file_requests_freq', 'WaZOO File Requests (FREQ)') }}</h1>
     <p>Files ANetBBS wants to pull FROM another peer (FTS-0006). Queued
        here, sent as a real <code>.REQ</code> file the next time we
        dial (or are dialed by) that peer's address — any files they
@@ -23,7 +23,7 @@
     {% if requests_list %}
         <table class="table table-sm mb-0">
             <thead><tr>
-                <th>Target</th><th>Pattern</th><th>Status</th><th>Queued</th><th>Sent</th><th></th>
+                <th>Target</th><th>Pattern</th><th>{{ t('ui.status', 'Status') }}</th><th>{{ t('ui.queued', 'Queued') }}</th><th>{{ t('ui.sent', 'Sent') }}</th><th></th>
             </tr></thead>
             <tbody>
             {% for r in requests_list %}

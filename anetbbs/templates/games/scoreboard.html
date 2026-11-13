@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Game Scoreboard{% endblock %}
+{% block title %}{{ t('ui.game_scoreboard', 'Game Scoreboard') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-trophy-fill"></i> Game Scoreboard</h1>
-    <p>Top scores across all games.</p>
+    <h1><i class="bi bi-trophy-fill"></i> {{ t('ui.game_scoreboard', 'Game Scoreboard') }}</h1>
+    <p>{{ t('ui.top_scores_across_all_games', 'Top scores across all games.') }}</p>
 </div>
 
 {% if by_game %}
@@ -31,6 +31,6 @@
 </div>
 {% endfor %}
 {% else %}
-    <div class="alert alert-info">No scores recorded yet.</div>
+    <div class="alert alert-info">{{ t('ui.no_scores_recorded_yet', 'No scores recorded yet.') }}</div>
 {% endif %}
 {% endblock %}

@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import textwrap
+import unicodedata
 import zlib
 from datetime import datetime
 from .tz import fmt_eastern
@@ -1530,9 +1531,9 @@ class BBSSession:
 
         wrap_width = max(20, _prompt_width(self))
         header = '\r\n'.join(_wrap_text_lines(
-            '=== Password Recovery Security Questions ===', wrap_width))
+            self._terminal_text('terminal.security.heading', '=== Password Recovery Security Questions ==='), wrap_width))
         intro = '\r\n'.join(_wrap_text_lines(
-            'These are used if you ever need to reset your password.', wrap_width))
+            self._terminal_text('terminal.security.intro', 'These are used if you ever need to reset your password.'), wrap_width))
         await self.write(f"\r\n\x1b[1;36m{header}\x1b[0m\r\n{intro}\r\n\r\n")
         indent = ' ' * 6  # matches the visible width of "  NN. " below
         wrap_width = max(20, wrap_width - len(indent))
@@ -1547,8 +1548,8 @@ class BBSSession:
         num_slots = min(3, len(questions))
         for slot in range(1, num_slots + 1):
             while True:
-                q_prefix = f"Question {slot} of {num_slots}"
-                q_suffix = f" — enter a number (1-{len(questions)}): "
+                q_prefix = self._terminal_text('terminal.security.counter', 'Question {slot} of {total}', slot=slot, total=num_slots)
+                q_suffix = self._terminal_text('terminal.security.choose', ' — enter a number (1-{count}): ', count=len(questions))
                 q_wrapped = _wrap_text_lines(q_prefix + q_suffix, _prompt_width(self))
                 # Bold only the "Question N of 3" portion -- always the
                 # start of the first wrapped line, since word-wrap never
@@ -1558,29 +1559,29 @@ class BBSSession:
                 raw = await self.read_line("")
                 raw = raw.strip()
                 if not raw.isdigit():
-                    await self.write("\r\nPlease enter a number.\r\n")
+                    await self.write(self._terminal_text('terminal.security.number', '\r\nPlease enter a number.\r\n'))
                     continue
                 idx = int(raw) - 1
                 if not (0 <= idx < len(questions)):
-                    await self.write(f"\r\nChoose between 1 and {len(questions)}.\r\n")
+                    await self.write(self._terminal_text('terminal.security.range', '\r\nChoose between 1 and {count}.\r\n', count=len(questions)))
                     continue
                 if idx in used:
-                    await self.write("\r\nYou already used that question — choose a different one.\r\n")
+                    await self.write(self._terminal_text('terminal.security.repeated', '\r\nYou already used that question — choose a different one.\r\n'))
                     continue
                 question = questions[idx]
                 wrapped_question = '\r\n'.join(
                     _wrap_text_lines(question, _prompt_width(self)))
-                answer = await self.read_line(f"{wrapped_question}\r\nYour answer: ")
+                answer = await self.read_line(self._terminal_text('terminal.security.answer', '{question}\r\nYour answer: ', question=wrapped_question))
                 answer = answer.strip()
                 if len(answer) < 2:
-                    await self.write("\r\nAnswer too short (minimum 2 characters).\r\n")
+                    await self.write(self._terminal_text('terminal.security.short_answer', '\r\nAnswer too short (minimum 2 characters).\r\n'))
                     continue
                 used.add(idx)
                 qa_pairs.append((question, answer))
                 break
 
         self.user_manager.save_security_answers(self.user['id'], qa_pairs)
-        await self.write("\r\n\x1b[1;32mSecurity questions saved.\x1b[0m\r\n")
+        await self.write(self._terminal_text('terminal.security.saved', '\r\n\x1b[1;32mSecurity questions saved.\x1b[0m\r\n'))
 
     async def _run_newuser_questionnaire(self):
         """Walk the sysop's NewUserQuestion list and store answers."""
@@ -1601,10 +1602,9 @@ class BBSSession:
             return
         if not questions:
             return
-        await self.write("\r\n\x1b[1;36m"
-                         "=== New User Questionnaire ===\x1b[0m\r\n")
+        await self.write(self._terminal_text('terminal.questionnaire.title', '\r\n\x1b[1;36m=== New User Questionnaire ===\x1b[0m\r\n'))
         for qid, prompt, required in questions:
-            tag = ' (required)' if required else ' (Enter to skip)'
+            tag = self._terminal_text('terminal.questionnaire.required', ' (required)') if required else self._terminal_text('terminal.questionnaire.skip', ' (Enter to skip)')
             wrapped_prompt = '\r\n'.join(
                 _wrap_text_lines(f'{prompt}{tag}: ', _prompt_width(self)))
             while True:
@@ -1614,7 +1614,7 @@ class BBSSession:
                 ans = ans.strip()
                 if required and not ans:
                     await self.write(
-                        "\x1b[1;31mThis question is required.\x1b[0m\r\n")
+                        self._terminal_text('terminal.questionnaire.required_error', '\x1b[1;31mThis question is required.\x1b[0m\r\n'))
                     continue
                 # Save (or skip if blank + optional).
                 if ans:
@@ -2170,27 +2170,34 @@ class BBSSession:
 
         from ..features.bbs_ui import _app as _bbs_app
         cfg = _bbs_app().config
-        lines = ['', '\x1b[36mWays to reach this BBS:\x1b[0m', '']
+        lines = ['', self._terminal_text(
+            'terminal.matrix.ways', '\x1b[36mWays to reach this BBS:\x1b[0m'), '']
+        port = self._terminal_text('terminal.matrix.port', 'port')
         if cfg.get('TELNET_ENABLED', True):
-            lines.append(f"  \x1b[33m{'Telnet':<26}\x1b[0m port {cfg.get('TELNET_PORT', 2233)}")
+            lines.append(f"  \x1b[33m{'Telnet':<26}\x1b[0m {port} {cfg.get('TELNET_PORT', 2233)}")
         if cfg.get('SSH_ENABLED', True):
-            lines.append(f"  \x1b[33m{'SSH':<26}\x1b[0m port {cfg.get('SSH_PORT', 2234)}")
+            lines.append(f"  \x1b[33m{'SSH':<26}\x1b[0m {port} {cfg.get('SSH_PORT', 2234)}")
         if cfg.get('RLOGIN_ENABLED', False):
-            lines.append(f"  \x1b[33m{'Rlogin':<26}\x1b[0m port {cfg.get('RLOGIN_PORT', 513)}")
+            lines.append(f"  \x1b[33m{'Rlogin':<26}\x1b[0m {port} {cfg.get('RLOGIN_PORT', 513)}")
         if cfg.get('PETSCII40_ENABLED', False):
-            lines.append(f"  \x1b[33m{'PETSCII (40-col, C64)':<26}\x1b[0m port {cfg.get('PETSCII40_PORT', 6400)}")
+            petscii40 = self._terminal_text('terminal.matrix.petscii40', 'PETSCII (40-col, C64)')
+            lines.append(f"  \x1b[33m{petscii40:<26}\x1b[0m {port} {cfg.get('PETSCII40_PORT', 6400)}")
         if cfg.get('PETSCII80_ENABLED', False):
-            lines.append(f"  \x1b[33m{'PETSCII (80-col, C128)':<26}\x1b[0m port {cfg.get('PETSCII80_PORT', 6401)}")
+            petscii80 = self._terminal_text('terminal.matrix.petscii80', 'PETSCII (80-col, C128)')
+            lines.append(f"  \x1b[33m{petscii80:<26}\x1b[0m {port} {cfg.get('PETSCII80_PORT', 6401)}")
         if cfg.get('FTP_ENABLED', False):
-            lines.append(f"  \x1b[33m{'FTP':<26}\x1b[0m port {cfg.get('FTP_PORT', 21)}")
+            lines.append(f"  \x1b[33m{'FTP':<26}\x1b[0m {port} {cfg.get('FTP_PORT', 21)}")
         domain = (cfg.get('BBS_DOMAIN', '') or '').strip()
         web_port = cfg.get('WEB_PORT', 5000)
         web_url = f"https://{domain}/" if domain else f"http://<this-host>:{web_port}/"
-        lines.append(f"  \x1b[33m{'Browser Terminal (ANSI)':<26}\x1b[0m {web_url}terminal/")
-        lines.append(f"  \x1b[33m{'Web / Boards':<26}\x1b[0m {web_url}")
+        browser = self._terminal_text('terminal.matrix.browser', 'Browser Terminal (ANSI)')
+        lines.append(f"  \x1b[33m{browser:<26}\x1b[0m {web_url}terminal/")
+        web = self._terminal_text('terminal.matrix.web', 'Web / Boards')
+        lines.append(f"  \x1b[33m{web:<26}\x1b[0m {web_url}")
         lines.append('')
         await self.write('\r\n'.join(lines) + '\r\n')
-        await self.read_line('\x1b[36mPress Enter to continue...\x1b[0m')
+        await self.read_line(self._terminal_text(
+            'terminal.matrix.continue', '\x1b[36mPress Enter to continue...\x1b[0m'))
 
         # _login_lightbar_menu()'s own _draw_full() never clears the
         # screen itself -- it assumes it's drawing on a blank screen
@@ -2200,6 +2207,50 @@ class BBSSession:
         # this clear made the menu appear to redraw on top of leftover
         # splash text and get visually corrupted on scroll.
         await self.write('\x1b[2J\x1b[H')
+
+    def _terminal_text(self, key, source, **values):
+        """Translate stock prompts using the account or terminal default."""
+        from ..features.i18n import DEFAULT_TRANSLATIONS
+
+        language = (self.user or {}).get('language') or self.config.get(
+            'terminal_language', os.environ.get('TERMINAL_LANGUAGE', 'en'))
+        if language == 'en':
+            return source.format(**values) if values else source
+        if not getattr(self, '_prompt_catalogue', None) or self._prompt_catalogue[0] != language:
+            from ..features.bbs_ui import _app
+            from ..models import MenuTranslation
+            from sqlalchemy.exc import SQLAlchemyError
+
+            entries = {key: text for key, text in DEFAULT_TRANSLATIONS.get(language, {}).items()
+                       if key.startswith('terminal.')}
+            try:
+                with _app().app_context():
+                    entries.update((row.key, row.text) for row in
+                                   MenuTranslation.query.filter_by(lang=language)
+                                   .filter(MenuTranslation.key.startswith('terminal.')))
+            except SQLAlchemyError:
+                # Terminal access still works during a catalogue/schema outage.
+                pass
+            self._prompt_catalogue = (language, entries)
+        text = self._prompt_catalogue[1].get(key, source)
+        if self.encoding != 'utf-8' or self.term_mode in ('ascii', 'petscii'):
+            text = text.translate(str.maketrans({'…': '...', '—': '-', '–': '-'}))
+        if self.term_mode in ('ascii', 'petscii'):
+            text = unicodedata.normalize('NFKD', text)
+            text = ''.join(ch for ch in text if ord(ch) < 128)
+        if not values:
+            return text
+        try:
+            return text.format(**values)
+        except (IndexError, KeyError, ValueError, TypeError, AttributeError):
+            return source.format(**values)
+
+    def _login_labels(self):
+        return (
+            self._terminal_text('terminal.login.enter', 'Login'),
+            self._terminal_text('terminal.login.register', 'New User Registration'),
+            self._terminal_text('terminal.login.exit', 'Exit'),
+        )
 
     async def _login_lightbar_menu(self, bbs_name: str) -> str:
         """Interactive ANSI lightbar replacement for the old static
@@ -2213,6 +2264,8 @@ class BBSSession:
         from the ascii/petscii branches' read_line()-based menus, so
         the caller doesn't need to know which branch produced it.
         """
+        login, register, exit_label = self._login_labels()
+        title_text = self._terminal_text('terminal.login.title', 'Welcome to {bbs}', bbs=bbs_name)
         if self.term_mode == 'enhanced':
             # Real clickable buttons instead of an ANSI lightbar box --
             # Jerry's explicit ask (asked more than once on the Pi3
@@ -2226,12 +2279,12 @@ class BBSSession:
             # new dispatch mechanism, just the same one already proven
             # on the main menu.
             from ..features.enhanced_protocol import encode_menu
-            item_list = [('1', 'Login', '', ''),
-                         ('2', 'New User Registration', '', ''),
-                         ('3', 'Exit', '', '')]
+            item_list = [('1', login, '', ''),
+                         ('2', register, '', ''),
+                         ('3', exit_label, '', '')]
             self._enhanced_vt_state = None
             self.writer.write(
-                encode_menu(f'Welcome to {bbs_name}', item_list).encode('utf-8'))
+                encode_menu(title_text, item_list).encode('utf-8'))
             await self._drain_protected()
             self._enhanced_menu_active = True
             while True:
@@ -2246,13 +2299,13 @@ class BBSSession:
                 # to act on in a pure click-or-direct-hotkey UI --
                 # ignored, not an error; loop back for a real choice.
 
-        items = (('1', 'L', 'Login'),
-                 ('2', 'N', 'New User Registration'),
-                 ('3', 'E', 'Exit'))
+        items = (('1', 'L', login),
+                 ('2', 'N', register),
+                 ('3', 'E', exit_label))
         sel = 0
         IW = 40  # inner content width -- matches the box border below
         B = '\x1b[1m'; R = '\x1b[0m'
-        CY = '\x1b[36m'; YE = '\x1b[33m'; GR = '\x1b[32m'; WH = '\x1b[37m'
+        CY = '\x1b[36m'; GR = '\x1b[32m'; WH = '\x1b[37m'
         SEL = '\x1b[7m\x1b[1m'   # reverse + bold -- same highlight convention as the BBS's other lightbar menus (bbs_ui.py's _rss_lightbar)
         EOL = '\x1b[K'
         # NOT the raw CP437 control-picture bytes (0x10/0x18/0x19) --
@@ -2275,20 +2328,20 @@ class BBSSession:
         def _item_row(idx):
             _, _, label = items[idx]
             marker = CURSOR if idx == sel else ' '
-            text = f'  {marker} {label}'.ljust(IW)
+            text = f'  {marker} {label}'[:IW].ljust(IW)
             if idx == sel:
                 return f'{B}{CY}║{SEL}{text}{R}{B}{CY}║{R}{EOL}'
             return f'{B}{CY}║{R}{GR}{text}{B}{CY}║{R}{EOL}'
 
         async def _draw_full():
-            title = f'Welcome to {bbs_name}'[:IW - 2].center(IW - 2)
+            title = title_text[:IW - 2].center(IW - 2)
             # Must be <= IW - 1 visible chars (the row template below adds
             # one leading literal space before it) -- found live: the
             # earlier "Up/Down" wording was exactly IW chars, one over
             # budget, which overflowed the box border by a column.
-            hint_plain = 'Up/Dn Move   Enter Select   1-3 Direct'
-            hint = f'{YE}Up/Dn{R} Move   {YE}Enter{R} Select   {YE}1-3{R} Direct'
-            hint += ' ' * max(0, IW - 1 - len(hint_plain))
+            hint = self._terminal_text(
+                'terminal.login.hint', 'Up/Dn Move   Enter Select   1-3 Direct'
+            )[:IW - 1].ljust(IW - 1)
             lines = [
                 '',
                 f'{B}{CY}╔{"═" * IW}╗{R}',
@@ -2356,8 +2409,8 @@ class BBSSession:
             self.user = self._prefill_authenticated_user
             username = self.user.get('username', '?')
             await self.clear_screen()
-            await self.write(f"\r\n=== Login as {username} (SSH key) ===\r\n")
-            await self.write(f"\r\nWelcome back, {username}!\r\n")
+            await self.write(self._terminal_text('terminal.login.as_ssh', '\r\n=== Login as {name} (SSH key) ===\r\n', name=username))
+            await self.write(self._terminal_text('terminal.login.welcome_back', '\r\nWelcome back, {name}!\r\n', name=username))
             await asyncio.sleep(1)
             return True
 
@@ -2379,25 +2432,25 @@ class BBSSession:
                     self.user = user
                     await self.clear_screen()
                     await self.write(
-                        f"\r\n=== Login as {self._prefill_username} ===\r\n")
-                    await self.write(f"\r\nWelcome back, {self._prefill_username}!\r\n")
+                        self._terminal_text('terminal.login.as_user', '\r\n=== Login as {name} ===\r\n', name=self._prefill_username))
+                    await self.write(self._terminal_text('terminal.login.welcome_back', '\r\nWelcome back, {name}!\r\n', name=self._prefill_username))
                     await asyncio.sleep(1)
                     return True
                 # Auto-login failed — fall through to interactive prompt.
                 self._prefill_password = None
 
             await self.clear_screen()
-            await self.write(f"\r\n=== Login as {self._prefill_username} ===\r\n\r\n")
-            password = await self.read_password(f"Password for {self._prefill_username}: ")
+            await self.write(self._terminal_text('terminal.login.as_user', '\r\n=== Login as {name} ===\r\n', name=self._prefill_username) + '\r\n')
+            password = await self.read_password(self._terminal_text('terminal.login.password_for', 'Password for {name}: ', name=self._prefill_username))
             if password:
                 user = self.user_manager.authenticate(
                     self._prefill_username, password, ip=self._client_ip())
                 if user:
                     self.user = user
-                    await self.write(f"\r\nWelcome back, {self._prefill_username}!\r\n")
+                    await self.write(self._terminal_text('terminal.login.welcome_back', '\r\nWelcome back, {name}!\r\n', name=self._prefill_username))
                     await asyncio.sleep(1)
                     return True
-                await self.write("\r\nInvalid password — falling back to manual login.\r\n")
+                await self.write(self._terminal_text('terminal.login.manual', '\r\nInvalid password — falling back to manual login.\r\n'))
                 await asyncio.sleep(1)
             # Clear the prefill so we don't loop on it
             self._prefill_username = None
@@ -2417,19 +2470,21 @@ class BBSSession:
 
         while True:
             await self.clear_screen()
-            _title = f'Welcome to {_bbs_name}'[:38].center(38)
+            login, register, exit_label = self._login_labels()
+            title = self._terminal_text('terminal.login.title', 'Welcome to {bbs}', bbs=_bbs_name)
+            choice_prompt = self._terminal_text('terminal.login.choice', 'Choice: ')
             if self.term_mode == 'ascii':
                 menu = (
                     "\r\n"
                     f"+----------------------------------------+\r\n"
-                    f"| {_title} |\r\n"
+                    f"| {title[:38].center(38)} |\r\n"
                     f"+----------------------------------------+\r\n"
-                    f"|  1. Login                              |\r\n"
-                    f"|  2. New User Registration              |\r\n"
-                    f"|  3. Exit                               |\r\n"
+                    f"|  1. {login[:34]:34} |\r\n"
+                    f"|  2. {register[:34]:34} |\r\n"
+                    f"|  3. {exit_label[:34]:34} |\r\n"
                     f"+----------------------------------------+\r\n"
                     "\r\n"
-                    "Choice: "
+                    + choice_prompt
                 )
                 choice = await self.read_line(menu)
             elif self.term_mode == 'petscii':
@@ -2440,18 +2495,18 @@ class BBSSession:
                 def _row(s):
                     return '| ' + s[:inner].ljust(inner) + ' |'
 
-                title_p = f'Welcome to {_bbs_name}'[:inner].center(inner)
+                title_p = title[:inner].center(inner)
                 menu = (
                     "\r\n"
                     f"{bar}\r\n"
                     f"{_row(title_p)}\r\n"
                     f"{bar}\r\n"
-                    f"{_row(' 1. Login')}\r\n"
-                    f"{_row(' 2. New User Registration')}\r\n"
-                    f"{_row(' 3. Exit')}\r\n"
+                    f"{_row(' 1. ' + login)}\r\n"
+                    f"{_row(' 2. ' + register)}\r\n"
+                    f"{_row(' 3. ' + exit_label)}\r\n"
                     f"{bar}\r\n"
                     "\r\n"
-                    "Choice: "
+                    + choice_prompt
                 )
                 choice = await self.read_line(menu)
             else:
@@ -2489,27 +2544,27 @@ class BBSSession:
             
             # Only show "Press Enter" if login/registration failed
             if choice in ['1', '2']:
-                await self.read_line("\r\nPress Enter to continue...")
+                await self.read_line(self._terminal_text('terminal.login.continue', '\r\nPress Enter to continue...'))
 
     async def handle_login(self) -> bool:
         """Handle user login"""
-        await self.write("\r\n=== User Login ===\r\n\r\n")
-        username = await self.read_line("Username: ")
+        await self.write(self._terminal_text('terminal.login.heading', '\r\n=== User Login ===\r\n\r\n'))
+        username = await self.read_line(self._terminal_text('terminal.login.username', 'Username: '))
         if not username:
             return False
 
-        password = await self.read_password("Password: ")
+        password = await self.read_password(self._terminal_text('terminal.login.password', 'Password: '))
         if not password:
             return False
 
         user = self.user_manager.authenticate(username, password, ip=self._client_ip())
         if user:
             self.user = user
-            await self.write(f"\r\nWelcome back, {username}!\r\n")
+            await self.write(self._terminal_text('terminal.login.welcome_back', '\r\nWelcome back, {name}!\r\n', name=username))
             await asyncio.sleep(1)
             return True
         else:
-            await self.write("\r\nInvalid username or password.\r\n")
+            await self.write(self._terminal_text('terminal.login.invalid', '\r\nInvalid username or password.\r\n'))
             return False
 
     async def handle_registration(self) -> bool:
@@ -2518,18 +2573,18 @@ class BBSSession:
         from ..features.bbs_ui import _app as _bbs_app
         _cfg = _bbs_app().config
         if not _cfg.get('REGISTRATION_OPEN', True):
-            await self.write("\r\nNew account registration is currently closed.\r\n")
+            await self.write(self._terminal_text('terminal.registration.closed', '\r\nNew account registration is currently closed.\r\n'))
             return False
         if _cfg.get('REGISTRATION_REQUIRE_VERIFIED_EMAIL'):
-            await self.write("\r\nPlease register on the BBS website to verify your email.\r\n")
+            await self.write(self._terminal_text('terminal.registration.web_required', '\r\nPlease register on the BBS website to verify your email.\r\n'))
             return False
         _invite_code = _cfg.get('REGISTRATION_INVITE_CODE', '')
         if _invite_code:
-            entered = await self.read_line("Invite code: ")
+            entered = await self.read_line(self._terminal_text('terminal.registration.invite', 'Invite code: '))
             if (entered or '') != _invite_code:
-                await self.write("\r\nIncorrect invite code.\r\n")
+                await self.write(self._terminal_text('terminal.registration.invalid_invite', '\r\nIncorrect invite code.\r\n'))
                 return False
-        await self.write("\r\n=== New User Registration ===\r\n\r\n")
+        await self.write(self._terminal_text('terminal.registration.heading', '\r\n=== New User Registration ===\r\n\r\n'))
 
         # Mirror the web form: 3-80 chars, must start with a letter or
         # number, allow spaces / hyphens / periods / apostrophes /
@@ -2542,8 +2597,7 @@ class BBSSession:
 
         while True:
             raw = await self.read_line(
-                "Choose username (3-80 chars; letters, digits, spaces, "
-                "._'- allowed): ")
+                self._terminal_text('terminal.registration.name_prompt', "Choose username (3-80 chars; letters, digits, spaces, ._'- allowed): "))
             if not raw:
                 return False
             # Trim + collapse runs of whitespace so " dr   test " becomes
@@ -2551,41 +2605,39 @@ class BBSSession:
             username = ' '.join(raw.split())
             if not (3 <= len(username) <= 80) or not _NAME_RE.match(username):
                 await self.write(
-                    "\r\nInvalid username — must be 3-80 chars, start with "
-                    "a letter or digit, and only use letters, digits, "
-                    "spaces, dot, apostrophe, hyphen, or underscore.\r\n")
+                    self._terminal_text('terminal.registration.bad_name', '\r\nInvalid username — must be 3-80 chars, start with a letter or digit, and only use letters, digits, spaces, dot, apostrophe, hyphen, or underscore.\r\n'))
                 continue
             if self.user_manager.username_exists(username):
-                await self.write("\r\nThat username is already taken.\r\n")
+                await self.write(self._terminal_text('terminal.registration.name_taken', '\r\nThat username is already taken.\r\n'))
                 continue
             break
 
         while True:
-            email = await self.read_line("Email address: ")
+            email = await self.read_line(self._terminal_text('terminal.registration.email', 'Email address: '))
             if not email or '@' not in email:
-                await self.write("\r\nInvalid email address.\r\n")
+                await self.write(self._terminal_text('terminal.registration.invalid_email', '\r\nInvalid email address.\r\n'))
                 continue
             if self.user_manager.email_exists(email):
                 await self.write(
-                    "\r\nAn account with that email address already exists.\r\n")
+                    self._terminal_text('terminal.registration.email_taken', '\r\nAn account with that email address already exists.\r\n'))
                 continue
             break
 
         while True:
-            password = await self.read_password("Choose password (min 8 chars): ")
+            password = await self.read_password(self._terminal_text('terminal.registration.password', 'Choose password (min 8 chars): '))
             if not password or len(password) < 8:
-                await self.write("\r\nPassword too short.\r\n")
+                await self.write(self._terminal_text('terminal.registration.short_password', '\r\nPassword too short.\r\n'))
                 continue
             
-            confirm = await self.read_password("Confirm password: ")
+            confirm = await self.read_password(self._terminal_text('terminal.registration.confirm_password', 'Confirm password: '))
             if password != confirm:
-                await self.write("\r\nPasswords don't match.\r\n")
+                await self.write(self._terminal_text('terminal.registration.password_mismatch', "\r\nPasswords don't match.\r\n"))
                 continue
             break
 
         result = self.user_manager.create_user(username, password, email)
         if result in ('ok', 'ok_pending'):
-            await self.write("\r\nRegistration successful!\r\n")
+            await self.write(self._terminal_text('terminal.registration.success', '\r\nRegistration successful!\r\n'))
             # _show_ansi_screen has no PETSCII-aware rendering -- it writes
             # raw CP437/ANSI bytes directly to the socket, bypassing
             # write()'s petscii branch -- same limitation already guarded
@@ -2625,17 +2677,16 @@ class BBSSession:
             if result == 'ok_pending':
                 self.user = None
                 await self.write(
-                    "\r\n\x1b[1;33mYour account is awaiting sysop approval "
-                    "and cannot log in yet. Please try again later.\x1b[0m\r\n")
+                    self._terminal_text('terminal.registration.pending', '\r\n\x1b[1;33mYour account is awaiting sysop approval and cannot log in yet. Please try again later.\x1b[0m\r\n'))
                 await asyncio.sleep(1)
                 return False
             await asyncio.sleep(1)
             return True
         elif result == 'email_taken':
-            await self.write("\r\nAn account with that email address already exists.\r\n")
+            await self.write(self._terminal_text('terminal.registration.email_taken', '\r\nAn account with that email address already exists.\r\n'))
             return False
         else:
-            await self.write("\r\nUsername already exists.\r\n")
+            await self.write(self._terminal_text('terminal.registration.name_exists', '\r\nUsername already exists.\r\n'))
             return False
 
     async def init_session(self):
@@ -3361,7 +3412,7 @@ class BBSSession:
         which also silenced every ORDINARY enhanced-mode read_line()
         prompt that has nothing to do with a menu overlay at all, e.g.
         "Press Enter to continue..." on the pre-login Matrix splash and
-        "Username: "/handle_login()'s whole prompt chain -- those went
+        self._terminal_text('terminal.login.username', 'Username: ')/handle_login()'s whole prompt chain -- those went
         completely invisible too, since nothing distinguished "a menu
         is still up" from "no menu was ever sent." Narrowed to
         self._enhanced_menu_active (see its own docstring) -- true only
@@ -4299,6 +4350,6 @@ class BBSSession:
                 # exception" traceback instead of the quiet unwind every
                 # other disconnect already gets.
                 try:
-                    await self.write("\r\nGoodbye!\r\n")
+                    await self.write(self._terminal_text('terminal.login.goodbye', '\r\nGoodbye!\r\n'))
                 except CarrierLost:
                     pass

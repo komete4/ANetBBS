@@ -178,3 +178,20 @@ class LoginScreenLightbarDispatchTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+def test_spanish_lightbar_keeps_existing_keys(monkeypatch):
+    from types import SimpleNamespace
+    from sqlalchemy.exc import OperationalError
+
+    monkeypatch.setenv('TERMINAL_LANGUAGE', 'es')
+    def unavailable():
+        raise OperationalError('', {}, None)
+
+    monkeypatch.setattr('anetbbs.features.bbs_ui._app',
+                        lambda: SimpleNamespace(app_context=unavailable))
+    session, writer = _make_session(forced_term_mode='ansi')
+    session.read_key_arrow = _queue_keys(['N'])
+    assert asyncio.run(session._login_lightbar_menu('GKS BBS')) == '2'
+    assert 'Bienvenido a GKS BBS' in writer.written.decode('cp437')
+    assert 'Iniciar sesión' in writer.written.decode('cp437')

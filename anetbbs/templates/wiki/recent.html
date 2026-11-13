@@ -4,7 +4,7 @@
 {% include "wiki/_layout.html" %}
 
 <div class="bbs-header">
-    <h1><i class="bi bi-clock-history"></i> Recent changes</h1>
+    <h1><i class="bi bi-clock-history"></i> {{ t('ui.heading.recent_changes', 'Recent changes') }}</h1>
     <p class="text-muted">Every edit, newest first.</p>
 </div>
 
@@ -13,8 +13,8 @@
     <table class="table table-sm mb-0">
         <thead>
             <tr>
-                <th>When</th>
-                <th>Page</th>
+                <th>{{ t('ui.when', 'When') }}</th>
+                <th>{{ t('ui.page', 'Page') }}</th>
                 <th>Rev</th>
                 <th>Who</th>
                 <th>Edit summary</th>
@@ -43,7 +43,7 @@
         {% if pagination.has_prev %}
         <li class="page-item"><a class="page-link" href="{{ url_for('wiki.recent', page=pagination.prev_num) }}">«</a></li>
         {% endif %}
-        <li class="page-item disabled"><span class="page-link">Page {{ pagination.page }} of {{ pagination.pages }}</span></li>
+        <li class="page-item disabled"><span class="page-link">{{ t('ui.page', 'Page') }} {{ pagination.page }} of {{ pagination.pages }}</span></li>
         {% if pagination.has_next %}
         <li class="page-item"><a class="page-link" href="{{ url_for('wiki.recent', page=pagination.next_num) }}">»</a></li>
         {% endif %}

@@ -407,10 +407,15 @@ those edits. Do not wrap user posts, names, board descriptions, MOTDs,
 custom profile fields, security-question text or other SysOp content in
 `t()`.
 
-**Spanish first-release coverage:** common navigation and home widgets;
+**Spanish coverage:** common navigation and home widgets;
 login, registration, verification and password recovery; board listing,
 reading, posting, replying and search; private messages; profile and its
 language preference; Admin category pages and the web Translations editor;
+administration dashboard, release notes, SMTP, users, boards, upgrades and
+backups; bulletin and file listings, local chat and the online-user list;
+account verification and recovery emails; the pre-login connection screens;
+terminal login and registration; the game lobby, category picker and score
+listings; interface labels in the web administration and in terminal tools;
 generated titles/items in the four built-in terminal
 menus (`main`, `chat_systems`, `game_center`, `sysop_tools`). Hotkeys and
 actions remain unchanged. Bundled terminal translations apply only to
@@ -421,9 +426,13 @@ the existing renderer's identity charset path (ANSI/escaping stay enabled).
 With the existing schema, a row exactly equal to the shipped translation
 is treated as bundled because rows have no separate provenance flag.
 
-**Limits:** this is not a complete translation. Other Admin tools, games, feature
-bodies and prompts inside terminal applications, the optional pre-login web
-matrix, `.ans`/`.asc` art and other pages are outside this first release.
+Set `TERMINAL_LANGUAGE=es` in the terminal service environment to use Spanish
+before login. Authenticated terminal sessions use the account preference.
+Stock prompts in ASCII and PETSCII omit accents to match those character sets.
+
+Individual games retain their own language. Some advanced tool descriptions,
+validation and integration messages, prompts inside terminal applications,
+and custom `.ans`/`.asc` art can still appear in English.
 Generated menu labels fit the existing fixed-width cells. UTF-8 preserves
 accents; CP437 supports the lowercase Spanish accents but lacks several
 accented capitals, so a menu title retains its original case when its

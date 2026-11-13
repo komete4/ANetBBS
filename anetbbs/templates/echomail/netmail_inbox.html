@@ -4,15 +4,15 @@
 {% block content %}
 <div class="container my-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2><i class="bi bi-envelope-fill"></i> Netmail (Private)</h2>
+        <h2><i class="bi bi-envelope-fill"></i> {{ t('ui.heading.netmail_private', 'Netmail (Private)') }}</h2>
         <a href="{{ url_for('echomail.netmail_compose') }}" class="btn btn-success">
-            <i class="bi bi-pencil-square"></i> Compose Netmail
+            <i class="bi bi-pencil-square"></i> {{ t('ui.compose_netmail', 'Compose Netmail') }}
         </a>
     </div>
 
     {% if not netmail_areas %}
         <div class="alert alert-info">
-            No netmail yet. Use <strong>Compose Netmail</strong> to send a
+            No netmail yet. Use <strong>{{ t('ui.compose_netmail', 'Compose Netmail') }}</strong> to send a
             private message to someone on a QWK network.
         </div>
     {% endif %}
@@ -28,10 +28,10 @@
                 <table class="table table-hover mb-0">
                     <thead>
                         <tr>
-                            <th>From</th>
-                            <th>To</th>
-                            <th>Subject</th>
-                            <th>Date</th>
+                            <th>{{ t('ui.from', 'From') }}</th>
+                            <th>{{ t('ui.to', 'To') }}</th>
+                            <th>{{ t('ui.subject', 'Subject') }}</th>
+                            <th>{{ t('ui.date', 'Date') }}</th>
                             <th>Direction</th>
                         </tr>
                     </thead>

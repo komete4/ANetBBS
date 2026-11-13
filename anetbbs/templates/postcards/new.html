@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}New Postcard{% endblock %}
+{% block title %}{{ t('ui.heading.new_postcard', 'New Postcard') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-postcard"></i> New Postcard</h1>
+    <h1><i class="bi bi-postcard"></i> {{ t('ui.heading.new_postcard', 'New Postcard') }}</h1>
     <p class="text-muted">Compose some retro ANSI/PETSCII art and get a public link + image you can share anywhere.</p>
 </div>
 
@@ -13,7 +13,7 @@
     <div class="card-body">
         <div class="row g-2 mb-3">
             <div class="col-md-6">
-                <label class="form-label">Name</label>
+                <label class="form-label">{{ t('ui.name', 'Name') }}</label>
                 <input type="text" name="name" class="form-control" required
                        placeholder="Greetings from ANetBBS!">
             </div>
@@ -27,7 +27,7 @@
             </div>
         </div>
         <button class="btn btn-primary"><i class="bi bi-easel"></i> Open Editor</button>
-        <a href="{{ url_for('postcards.index') }}" class="btn btn-link">Cancel</a>
+        <a href="{{ url_for('postcards.index') }}" class="btn btn-link">{{ t('ui.cancel', 'Cancel') }}</a>
     </div>
 </form>
 {% endblock %}

@@ -1,13 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Notifications{% endblock %}
+{% block title %}{{ t('ui.notifications', 'Notifications') }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-bell-fill"></i> Notifications</h1>
+    <h1><i class="bi bi-bell-fill"></i> {{ t('ui.notifications', 'Notifications') }}</h1>
 </div>
 <div class="mb-3">
     <form method="post" action="{{ url_for('notifications.mark_all_read') }}" class="d-inline">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-check2-all"></i> Mark all read</button>
+        <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-check2-all"></i> {{ t('ui.mark_all_read', 'Mark all read') }}</button>
     </form>
 </div>
 <div class="card">

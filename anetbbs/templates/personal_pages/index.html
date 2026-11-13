@@ -2,7 +2,7 @@
 {% block title %}My Pages — {{ config.BBS_NAME }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-globe2"></i> My Personal Pages</h1>
+    <h1><i class="bi bi-globe2"></i> {{ t('ui.heading.my_personal_pages', 'My Personal Pages') }}</h1>
 </div>
 
 {% if static_url %}
@@ -32,12 +32,12 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="d-flex gap-2 align-items-center">
         <input type="file" name="file" required class="form-control"{% if static_url %} accept=".html,.htm,.css"{% endif %}>
-        <button class="btn btn-primary"><i class="bi bi-upload"></i> Upload</button>
+        <button class="btn btn-primary"><i class="bi bi-upload"></i> {{ t('ui.upload', 'Upload') }}</button>
     </div>
 </form>
 
 <table class="table table-sm">
-    <thead><tr><th>File</th><th>Size</th><th></th></tr></thead>
+    <thead><tr><th>{{ t('ui.file', 'File') }}</th><th>{{ t('ui.size', 'Size') }}</th><th></th></tr></thead>
     <tbody>
     {% for f in files %}
     <tr>

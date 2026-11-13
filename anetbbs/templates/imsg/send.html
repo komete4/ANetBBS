@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="container my-4" style="max-width:720px;">
-    <h2><i class="bi bi-send"></i> Send Inter-BBS Instant Message</h2>
+    <h2><i class="bi bi-send"></i> {{ t('ui.heading.send_inter_bbs_instant_message', 'Send Inter-BBS Instant Message') }}</h2>
     <p class="text-muted">
         Real-time delivery to a user on another BBS over MSP (TCP port 18).
         The remote BBS must be running Synchronet (sbbsimsg) or another
@@ -44,10 +44,10 @@
         </div>
 
         <button class="btn btn-success">
-            <i class="bi bi-send"></i> Send
+            <i class="bi bi-send"></i> {{ t('ui.send', 'Send') }}
         </button>
         <a href="{{ url_for('imsg.inbox') }}" class="btn btn-secondary">
-            Cancel
+            {{ t('ui.cancel', 'Cancel') }}
         </a>
     </form>
 </div>

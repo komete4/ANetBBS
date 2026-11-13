@@ -72,7 +72,7 @@
                class="form-control mt-2" style="max-width:600px;margin:auto;">
     </div>
     <button type="submit" class="btn btn-primary">
-        <i class="bi bi-upload"></i> Upload
+        <i class="bi bi-upload"></i> {{ t('ui.upload', 'Upload') }}
     </button>
 </form>
 </div>
@@ -94,7 +94,7 @@
               class="d-inline"
               onsubmit="return confirm('Delete {{ img|e }} permanently? This cannot be undone.');">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="delete-btn" title="Delete">
+            <button type="submit" class="delete-btn" title="{{ t('ui.delete', 'Delete') }}">
                 <i class="bi bi-x"></i>
             </button>
         </form>

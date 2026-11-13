@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% block title %}Notification Settings{% endblock %}
+{% block title %}{{ t('ui.heading.notification_settings', 'Notification Settings') }}{% endblock %}
 {% block content %}
-<div class="bbs-header"><h1><i class="bi bi-bell"></i> Notification Settings</h1></div>
+<div class="bbs-header"><h1><i class="bi bi-bell"></i> {{ t('ui.heading.notification_settings', 'Notification Settings') }}</h1></div>
 
 <form method="post" class="card p-3" style="max-width:560px;">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -24,8 +24,8 @@
     {% endfor %}
     {% endif %}
     <div class="mt-2">
-        <button class="btn btn-primary"><i class="bi bi-check"></i> Save</button>
-        <a href="{{ url_for('notifications.index') }}" class="btn btn-secondary">Cancel</a>
+        <button class="btn btn-primary"><i class="bi bi-check"></i> {{ t('ui.save', 'Save') }}</button>
+        <a href="{{ url_for('notifications.index') }}" class="btn btn-secondary">{{ t('ui.cancel', 'Cancel') }}</a>
     </div>
 </form>
 <p class="small text-muted mt-2">Newly created notifications honor these preferences. Existing notifications are not affected.</p>

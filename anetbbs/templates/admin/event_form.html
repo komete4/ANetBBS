@@ -11,7 +11,7 @@
     <div class="card-body">
 
       <div class="mb-3">
-        <label class="form-label">Name</label>
+        <label class="form-label">{{ t('ui.name', 'Name') }}</label>
         <input class="form-control" name="name" required maxlength="120"
                value="{{ ev.name if ev else '' }}">
         <div class="form-text">Shown in the admin list. Pick something descriptive.</div>
@@ -31,7 +31,7 @@
       </div>
 
       <div class="mb-3">
-        <label class="form-label">Schedule</label>
+        <label class="form-label">{{ t('ui.schedule', 'Schedule') }}</label>
         <div class="row g-2">
           <div class="col-md-3">
             <select class="form-select" name="schedule_kind" id="schedule_kind">
@@ -78,8 +78,8 @@
         <label for="is_enabled" class="form-check-label">Enabled (will fire on schedule)</label>
       </div>
 
-      <button class="btn btn-primary"><i class="bi bi-check2-circle"></i> Save</button>
-      <a href="{{ url_for('events_admin.index') }}" class="btn btn-link">Cancel</a>
+      <button class="btn btn-primary"><i class="bi bi-check2-circle"></i> {{ t('ui.save', 'Save') }}</button>
+      <a href="{{ url_for('events_admin.index') }}" class="btn btn-link">{{ t('ui.cancel', 'Cancel') }}</a>
     </div>
   </form>
 </div>

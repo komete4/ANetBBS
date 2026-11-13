@@ -2,7 +2,7 @@
 {% block title %}Block List — {{ config.BBS_NAME }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-slash-circle"></i> Block List</h1>
+    <h1><i class="bi bi-slash-circle"></i> {{ t('ui.heading.block_list', 'Block List') }}</h1>
     <p class="small text-muted">Blocked users can't PM you or @-mention you.</p>
 </div>
 
@@ -16,14 +16,14 @@
             <input type="text" name="reason" class="form-control" placeholder="Reason (optional, private)">
         </div>
         <div class="col-md-2">
-            <button class="btn btn-danger w-100"><i class="bi bi-slash-circle"></i> Block</button>
+            <button class="btn btn-danger w-100"><i class="bi bi-slash-circle"></i> {{ t('ui.block', 'Block') }}</button>
         </div>
     </div>
 </form>
 
 {% if blocks %}
 <table class="table table-sm">
-    <thead><tr><th>User</th><th>Since</th><th>Reason</th><th></th></tr></thead>
+    <thead><tr><th>{{ t('ui.user', 'User') }}</th><th>{{ t('ui.since', 'Since') }}</th><th>{{ t('ui.reason', 'Reason') }}</th><th></th></tr></thead>
     <tbody>
     {% for b in blocks %}
     <tr>
@@ -33,7 +33,7 @@
         <td>
             <form method="post" action="{{ url_for('blocks.remove', block_id=b.id) }}" class="d-inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="btn btn-sm btn-outline-secondary">Unblock</button>
+                <button class="btn btn-sm btn-outline-secondary">{{ t('ui.unblock', 'Unblock') }}</button>
             </form>
         </td>
     </tr>

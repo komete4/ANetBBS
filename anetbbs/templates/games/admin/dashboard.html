@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h2><i class="bi bi-controller"></i> GAME CENTER ADMIN</h2>
+    <h2><i class="bi bi-controller"></i> {{ t('ui.heading.game_center_admin_uppercase', 'GAME CENTER ADMIN') }}</h2>
 </div>
 
 <!-- Stats Row -->
@@ -26,7 +26,7 @@
         <div class="card text-center p-3">
             <div style="font-size:2rem;"><i class="bi bi-play-circle"></i></div>
             <div style="font-size:1.5rem;">{{ total_plays }}</div>
-            <div class="small">Total Plays</div>
+            <div class="small">{{ t('ui.total_plays', 'Total Plays') }}</div>
         </div>
     </div>
     <div class="col-md-3">
@@ -47,7 +47,7 @@
         <i class="bi bi-plus-circle"></i> Add Game
     </a>
     <a href="{{ url_for('games_admin.list_categories') }}" class="btn btn-primary">
-        <i class="bi bi-tags"></i> Categories
+        <i class="bi bi-tags"></i> {{ t('ui.categories', 'Categories') }}
     </a>
     <a href="{{ url_for('games_admin.sessions') }}" class="btn btn-primary">
         <i class="bi bi-people"></i> Active Sessions
@@ -56,7 +56,7 @@
         <i class="bi bi-gear"></i> System Config
     </a>
     <a href="{{ url_for('games_admin.anet_import') }}" class="btn btn-outline-primary">
-        <i class="bi bi-cloud-download"></i> Add games from A-Net Game Server
+        <i class="bi bi-cloud-download"></i> {{ t('ui.heading.add_games_from_a_net_game_server', 'Add games from A-Net Game Server') }}
     </a>
 </div>
 
@@ -67,7 +67,7 @@
             <div class="card-header"><i class="bi bi-bar-chart"></i> Top Games by Plays</div>
             <div class="card-body p-0">
                 <table class="table table-sm mb-0">
-                    <thead><tr><th>Game</th><th>Type</th><th>Plays</th></tr></thead>
+                    <thead><tr><th>{{ t('ui.game', 'Game') }}</th><th>{{ t('ui.type', 'Type') }}</th><th>Plays</th></tr></thead>
                     <tbody>
                     {% for game in top_games %}
                     <tr>
@@ -86,7 +86,7 @@
             <div class="card-header"><i class="bi bi-clock-history"></i> Recent Sessions</div>
             <div class="card-body p-0">
                 <table class="table table-sm mb-0">
-                    <thead><tr><th>User</th><th>Game</th><th>Status</th></tr></thead>
+                    <thead><tr><th>{{ t('ui.user', 'User') }}</th><th>{{ t('ui.game', 'Game') }}</th><th>{{ t('ui.status', 'Status') }}</th></tr></thead>
                     <tbody>
                     {% for s in recent_sessions %}
                     <tr>

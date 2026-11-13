@@ -15,7 +15,7 @@
     </a>
     <a href="{{ url_for('netmail.sent') }}"
        class="btn btn-sm {% if folder == 'sent' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
-        <i class="bi bi-send"></i> Sent
+        <i class="bi bi-send"></i> {{ t('ui.sent', 'Sent') }}
     </a>
     <a href="{{ url_for('netmail.drafts') }}"
        class="btn btn-sm {% if folder == 'drafts' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
@@ -25,7 +25,7 @@
         <i class="bi bi-pencil-square"></i> Compose
     </a>
     <a href="{{ url_for('contacts.index') }}" class="btn btn-sm btn-outline-info">
-        <i class="bi bi-person-rolodex"></i> Address Book
+        <i class="bi bi-person-rolodex"></i> {{ t('ui.heading.address_book', 'Address Book') }}
     </a>
 </div>
 
@@ -34,11 +34,11 @@
     {% if messages %}
         <table class="table table-sm table-hover mb-0">
             <thead><tr>
-                <th>{% if folder == 'inbox' %}From{% else %}To{% endif %}</th>
-                <th>Address</th>
-                <th>Subject</th>
-                <th>Status</th>
-                <th>Date</th>
+                <th>{% if folder == 'inbox' %}{{ t('ui.from', 'From') }}{% else %}{{ t('ui.to', 'To') }}{% endif %}</th>
+                <th>{{ t('ui.address', 'Address') }}</th>
+                <th>{{ t('ui.subject', 'Subject') }}</th>
+                <th>{{ t('ui.status', 'Status') }}</th>
+                <th>{{ t('ui.date', 'Date') }}</th>
             </tr></thead>
             <tbody>
             {% for m in messages %}

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Pre-update backups{% endblock %}
+{% block title %}{{ t('admin.backups.pre_update_backups', 'Pre-update backups') }}{% endblock %}
 
 {% block head %}
 {{ super() if super }}
@@ -15,37 +15,32 @@
 {% block content %}
 <div class="container py-3">
   <div class="bk-banner">
-    <h1 class="m-0"><i class="bi bi-clock-history"></i> Pre-update backups</h1>
+    <h1 class="m-0"><i class="bi bi-clock-history"></i> {{ t('admin.backups.pre_update_backups', 'Pre-update backups') }}</h1>
     <div class="text-white-50 mt-1">
-      Snapshots taken automatically by <code>update.sh</code> before each
-      upgrade. Restore <code>.env</code> or the production DB from any
-      one of them.
+      {{ t('admin.backups.snapshots_taken_automatically_by', 'Snapshots taken automatically by') }} <code>update.sh</code> {{ t('admin.backups.before_each_upgrade_restore', 'before each upgrade. Restore') }} <code>.env</code> {{ t('admin.backups.or_the_production_db_from_any_one_of_them', 'or the production DB from any one of them.') }}
     </div>
   </div>
 
   {% if not restore_available %}
     <div class="alert alert-warning">
-      The restore helper isn't installed at <code>{{ helper_path }}</code>.
-      Delete is available; Restore buttons need <code>deploy/run_restore.sh</code>
-      plus the sudoers grant for it. Re-run <code>update.sh</code> on
-      this release to install both.
+      {{ t('admin.backups.the_restore_helper_isn_t_installed_at', "The restore helper isn't installed at") }} <code>{{ helper_path }}</code>{{ t('admin.backups.delete_is_available_restore_buttons_need', '. Delete is available; Restore buttons need') }} <code>deploy/run_restore.sh</code>
+      {{ t('admin.backups.plus_the_sudoers_grant_for_it_re_run', 'plus the sudoers grant for it. Re-run') }} <code>update.sh</code> {{ t('admin.backups.on_this_release_to_install_both', 'on this release to install both.') }}
     </div>
   {% endif %}
 
   {% if not rows %}
     <div class="alert alert-info">
-      No backups on disk yet. Backups land at
-      <code>/tmp/anetbbs-backup-*</code> the moment you start the next
-      upgrade. They survive reboots only if your distro persists
-      <code>/tmp</code> across boots (most don't).
+      {{ t('admin.backups.no_backups_on_disk_yet_backups_land_at', 'No backups on disk yet. Backups land at') }}
+      <code>/tmp/anetbbs-backup-*</code> {{ t('admin.backups.temp_storage_help', 'the moment you start the next upgrade. They survive reboots only if your distro persists') }}
+      <code>/tmp</code> {{ t('admin.backups.across_boots_most_don_t', "across boots (most don't).") }}
     </div>
   {% else %}
   <div class="card bk-card">
     <table class="table table-hover align-middle mb-0">
       <thead class="table-light">
         <tr>
-          <th>Created</th><th>Version change</th><th>Size</th>
-          <th>Files</th><th class="text-end">Actions</th>
+          <th>{{ t('admin.backups.created', 'Created') }}</th><th>{{ t('admin.backups.version_change', 'Version change') }}</th><th>{{ t('admin.backups.size', 'Size') }}</th>
+          <th>{{ t('admin.backups.files', 'Files') }}</th><th class="text-end">{{ t('admin.backups.actions', 'Actions') }}</th>
         </tr>
       </thead>
       <tbody>
@@ -68,27 +63,27 @@
             {% if restore_available %}
               {% if '.env.bak' in r.files %}
               <form method="POST" action="{{ url_for('backups_admin.restore_env', name=r.name) }}" style="display:inline"
-                    onsubmit="return confirm('Replace the live .env with the snapshot from {{ r.created_str }}? Restart anetbbs-web after.');">
+                    data-confirm="{{ t('admin.backups.restore_env_confirm', 'Replace the live .env with the snapshot from {date}? Restart anetbbs-web after.', date=r.created_str) }}" onsubmit="return confirm(this.dataset.confirm);">
                 {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                <button class="btn btn-sm btn-outline-warning" title="Restore .env">
+                <button class="btn btn-sm btn-outline-warning" title="{{ t('admin.backups.restore_env', 'Restore .env') }}">
                   <i class="bi bi-arrow-counterclockwise"></i> .env
                 </button>
               </form>
               {% endif %}
               {% if 'anetbbs.db.bak' in r.files %}
               <form method="POST" action="{{ url_for('backups_admin.restore_db', name=r.name) }}" style="display:inline"
-                    onsubmit="return confirm('Replace the live production DB with the snapshot from {{ r.created_str }}? anetbbs-web will restart. ALL changes since then will be LOST.');">
+                    data-confirm="{{ t('admin.backups.restore_db_confirm', 'Replace the live production DB with the snapshot from {date}? anetbbs-web will restart. ALL changes since then will be LOST.', date=r.created_str) }}" onsubmit="return confirm(this.dataset.confirm);">
                 {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                <button class="btn btn-sm btn-outline-danger" title="Restore DB">
-                  <i class="bi bi-arrow-counterclockwise"></i> DB
+                <button class="btn btn-sm btn-outline-danger" title="{{ t('admin.backups.restore_db', 'Restore DB') }}">
+                  <i class="bi bi-arrow-counterclockwise"></i> {{ t('admin.backups.db', 'DB') }}
                 </button>
               </form>
               {% endif %}
             {% endif %}
             <form method="POST" action="{{ url_for('backups_admin.delete', name=r.name) }}" style="display:inline"
-                  onsubmit="return confirm('Delete backup {{ r.name }} permanently?');">
+                  data-confirm="{{ t('admin.backups.delete_confirm', 'Delete backup {name} permanently?', name=r.name) }}" onsubmit="return confirm(this.dataset.confirm);">
               {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-              <button class="btn btn-sm btn-outline-secondary" title="Delete">
+              <button class="btn btn-sm btn-outline-secondary" title="{{ t('admin.backups.delete', 'Delete') }}">
                 <i class="bi bi-trash"></i>
               </button>
             </form>
@@ -98,10 +93,7 @@
       </tbody>
     </table>
     <div class="card-footer bk-meta">
-      Backups older than a week are usually safe to delete unless
-      you suspect data corruption that long ago. The DB
-      backup is a consistent SQLite snapshot
-      (sqlite3 <code>.backup</code>), safe to restore in-place.
+      {{ t('admin.backups.retention_help', 'Backups older than a week are usually safe to delete unless you suspect data corruption that long ago. The DB backup is a consistent SQLite snapshot (sqlite3') }} <code>.backup</code>{{ t('admin.backups.safe_to_restore_in_place', '), safe to restore in-place.') }}
     </div>
   </div>
   {% endif %}

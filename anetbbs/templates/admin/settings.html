@@ -1,23 +1,22 @@
 {% extends "base.html" %}
 
-{% block title %}System Settings - Admin{% endblock %}
+{% block title %}{{ t('admin.settings.system_settings_admin', 'System Settings - Admin') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-gear"></i> System Settings</h1>
+    <h1><i class="bi bi-gear"></i> {{ t('admin.settings.system_settings', 'System Settings') }}</h1>
 </div>
 
 <p class="text-muted">
-  Editable settings persist to <code>{{ config_info.ENV_FILE }}</code>. Changes
-  marked <span class="badge bg-warning text-dark">restart</span> require
+  {{ t('admin.settings.editable_settings_persist_to', 'Editable settings persist to') }} <code>{{ config_info.ENV_FILE }}</code>{{ t('admin.settings.changes_marked', '. Changes marked') }} <span class="badge bg-warning text-dark">{{ t('admin.settings.restart', 'restart') }}</span> {{ t('admin.settings.require', 'require') }}
   <code>sudo systemctl restart anetbbs.service</code>
-  to take effect.
+  {{ t('admin.settings.to_take_effect', 'to take effect.') }}
 </p>
 
 <div class="row g-3">
   <div class="col-lg-6">
     <div class="card">
-      <div class="card-header"><i class="bi bi-pencil"></i> Editable Settings</div>
+      <div class="card-header"><i class="bi bi-pencil"></i> {{ t('admin.settings.editable_settings', 'Editable Settings') }}</div>
       <div class="card-body">
         <form method="post">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -25,14 +24,14 @@
           <div class="mb-2">
             <label class="form-label small mb-1">
               {{ s.label }}
-              {% if s.requires_restart %}<span class="badge bg-warning text-dark ms-1">restart</span>{% endif %}
+              {% if s.requires_restart %}<span class="badge bg-warning text-dark ms-1">{{ t('admin.settings.restart', 'restart') }}</span>{% endif %}
             </label>
             <input type="{{ s.kind }}" name="{{ s.key }}" class="form-control form-control-sm"
-                   value="{{ s.value }}" placeholder="(empty)">
+                   value="{{ s.value }}" placeholder="{{ t('admin.settings.empty', '(empty)') }}">
           </div>
           {% endfor %}
           <button type="submit" class="btn btn-primary mt-2">
-            <i class="bi bi-save"></i> Save Settings
+            <i class="bi bi-save"></i> {{ t('admin.settings.save_settings', 'Save Settings') }}
           </button>
         </form>
       </div>
@@ -41,7 +40,7 @@
 
   <div class="col-lg-6">
     <div class="card mb-3">
-      <div class="card-header"><i class="bi bi-info-circle"></i> Read-Only Configuration</div>
+      <div class="card-header"><i class="bi bi-info-circle"></i> {{ t('admin.settings.read_only_configuration', 'Read-Only Configuration') }}</div>
       <div class="card-body">
         <table class="table table-sm mb-0">
           <tbody>
@@ -57,7 +56,7 @@
     </div>
 
     <div class="card">
-      <div class="card-header"><i class="bi bi-file-text"></i> Recent Log Entries (last 100)</div>
+      <div class="card-header"><i class="bi bi-file-text"></i> {{ t('admin.settings.recent_log_entries_last_100', 'Recent Log Entries (last 100)') }}</div>
       <div class="card-body p-0">
         <pre style="background:var(--theme-bg-dark);color:var(--theme-primary);font-size:0.7rem;max-height:380px;overflow-y:auto;padding:10px;margin:0;">{% for line in log_lines %}{{ line | e }}{% endfor %}</pre>
       </div>

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{% if game %}Edit{% else %}Add{% endif %} Game — Admin — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{% if game %}{{ t('ui.edit', 'Edit') }}{% else %}{{ t('ui.add', 'Add') }}{% endif %} Game — Admin — {{ config.BBS_NAME }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -17,10 +17,10 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3>{% if game %}<i class="bi bi-pencil"></i> Edit: {{ game.name }}
+    <h3>{% if game %}<i class="bi bi-pencil"></i> {{ t('ui.edit_label', 'Edit:') }} {{ game.name }}
         {% else %}<i class="bi bi-plus-circle"></i> Add New Game{% endif %}</h3>
     <a href="{{ url_for('games_admin.list_games') }}" class="btn btn-primary btn-sm">
-        <i class="bi bi-arrow-left"></i> Back
+        <i class="bi bi-arrow-left"></i> {{ t('ui.back', 'Back') }}
     </a>
 </div>
 
@@ -487,7 +487,7 @@
 
     <div class="mt-4">
         {{ form.submit(class="btn btn-primary") }}
-        <a href="{{ url_for('games_admin.list_games') }}" class="btn btn-primary ms-2">Cancel</a>
+        <a href="{{ url_for('games_admin.list_games') }}" class="btn btn-primary ms-2">{{ t('ui.cancel', 'Cancel') }}</a>
     </div>
 </form>
 {% endblock %}

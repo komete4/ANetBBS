@@ -1,18 +1,18 @@
 {% extends "base.html" %}
 
-{% block title %}Registration Attempts - Admin{% endblock %}
+{% block title %}{{ t('admin.registration_attempts.registration_attempts_admin', 'Registration Attempts - Admin') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-shield-exclamation"></i> Registration Attempts</h1>
-    <p>Successful and failed signup attempts (rate-limited per IP).</p>
+    <h1><i class="bi bi-shield-exclamation"></i> {{ t('admin.registration_attempts.registration_attempts', 'Registration Attempts') }}</h1>
+    <p>{{ t('admin.registration_attempts.successful_and_failed_signup_attempts_rate_limited_per_ip', 'Successful and failed signup attempts (rate-limited per IP).') }}</p>
 </div>
 
 <div class="card">
     <div class="card-body p-0">
         <table class="table table-sm table-striped mb-0">
             <thead><tr>
-                <th>When</th><th>IP</th><th>Username</th><th>Status</th><th>Reason</th>
+                <th>{{ t('admin.registration_attempts.when', 'When') }}</th><th>IP</th><th>{{ t('admin.registration_attempts.username', 'Username') }}</th><th>{{ t('admin.registration_attempts.status', 'Status') }}</th><th>{{ t('admin.registration_attempts.reason', 'Reason') }}</th>
             </tr></thead>
             <tbody>
             {% for a in pagination.items %}
@@ -22,15 +22,15 @@
                     <td>{{ a.username_attempted or '—' }}</td>
                     <td>
                         {% if a.success %}
-                            <span class="badge bg-success">success</span>
+                            <span class="badge bg-success">{{ t('admin.registration_attempts.success', 'success') }}</span>
                         {% else %}
-                            <span class="badge bg-danger">failed</span>
+                            <span class="badge bg-danger">{{ t('admin.registration_attempts.failed', 'failed') }}</span>
                         {% endif %}
                     </td>
                     <td>{{ a.error_reason or '' }}</td>
                 </tr>
             {% else %}
-                <tr><td colspan="5" class="text-muted text-center p-3">No registration attempts yet.</td></tr>
+                <tr><td colspan="5" class="text-muted text-center p-3">{{ t('admin.registration_attempts.no_registration_attempts_yet', 'No registration attempts yet.') }}</td></tr>
             {% endfor %}
             </tbody>
         </table>
@@ -40,9 +40,9 @@
 {% if pagination.pages > 1 %}
 <nav class="mt-3">
     <ul class="pagination">
-        {% if pagination.has_prev %}<li class="page-item"><a class="page-link" href="?page={{ pagination.prev_num }}">Prev</a></li>{% endif %}
+        {% if pagination.has_prev %}<li class="page-item"><a class="page-link" href="?page={{ pagination.prev_num }}">{{ t('admin.registration_attempts.prev', 'Prev') }}</a></li>{% endif %}
         <li class="page-item disabled"><span class="page-link">{{ pagination.page }}/{{ pagination.pages }}</span></li>
-        {% if pagination.has_next %}<li class="page-item"><a class="page-link" href="?page={{ pagination.next_num }}">Next</a></li>{% endif %}
+        {% if pagination.has_next %}<li class="page-item"><a class="page-link" href="?page={{ pagination.next_num }}">{{ t('admin.registration_attempts.next', 'Next') }}</a></li>{% endif %}
     </ul>
 </nav>
 {% endif %}

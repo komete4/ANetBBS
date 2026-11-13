@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-mailbox"></i> FTN AKAs</h1>
+    <h1><i class="bi bi-mailbox"></i> {{ t('ui.heading.ftn_akas', 'FTN AKAs') }}</h1>
     <p>Alternate FidoNet addresses you can send netmail FROM.</p>
 </div>
 
@@ -14,7 +14,7 @@
     {% if akas %}
         <table class="table table-sm mb-0">
             <thead><tr>
-                <th>Address</th><th>Domain</th><th>Primary</th><th></th>
+                <th>{{ t('ui.address', 'Address') }}</th><th>{{ t('ui.domain', 'Domain') }}</th><th>Primary</th><th></th>
             </tr></thead>
             <tbody>
             {% for a in akas %}
@@ -53,26 +53,26 @@
 </div>
 
 <div class="card">
-    <div class="card-header"><i class="bi bi-plus-square"></i> Add AKA</div>
+    <div class="card-header"><i class="bi bi-plus-square"></i> {{ t('ui.add_aka', 'Add AKA') }}</div>
     <div class="card-body">
         <form method="post" class="row g-2 align-items-end">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="action" value="add">
             <div class="col-md-5">
-                <label class="form-label">FTN Address</label>
+                <label class="form-label">{{ t('ui.ftn_address', 'FTN Address') }}</label>
                 <input type="text" name="address" class="form-control"
                        placeholder="1:234/5 or 21:1/100"
                        pattern="^\d+:\d+/\d+(\.\d+)?$" required>
                 <div class="form-text">Format: <code>zone:net/node[.point]</code></div>
             </div>
             <div class="col-md-4">
-                <label class="form-label">Domain</label>
+                <label class="form-label">{{ t('ui.domain', 'Domain') }}</label>
                 <input type="text" name="domain" class="form-control" value="fidonet"
                        pattern="[a-z0-9_-]+">
                 <div class="form-text">Network identifier (fidonet, fsxnet, retronet, ...)</div>
             </div>
             <div class="col-md-3">
-                <button class="btn btn-primary w-100">Add AKA</button>
+                <button class="btn btn-primary w-100">{{ t('ui.add_aka', 'Add AKA') }}</button>
             </div>
         </form>
     </div>

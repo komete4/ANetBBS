@@ -5,9 +5,9 @@
 <div class="container-fluid my-3">
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <div>
-            <h2 class="mb-1"><i class="bi bi-exclamation-triangle"></i> Bad Areas</h2>
+            <h2 class="mb-1"><i class="bi bi-exclamation-triangle"></i> {{ t('ui.bad_areas', 'Bad Areas') }}</h2>
             <p class="text-muted mb-0">
-                Echomail dropped on import, grouped by tag. <strong>Unknown</strong>
+                Echomail dropped on import, grouped by tag. <strong>{{ t('ui.unknown', 'Unknown') }}</strong>
                 = a tag we don't recognize at all. <strong>Unsubscribed</strong>
                 = an area we DO carry, but aren't currently subscribed to (or
                 have deactivated) -- mail for it is being silently dropped.
@@ -16,7 +16,7 @@
         </div>
         <div>
             <a href="{{ url_for('echomail_admin.dashboard') }}" class="btn btn-secondary btn-sm">
-                <i class="bi bi-arrow-left"></i> Echomail Dashboard
+                <i class="bi bi-arrow-left"></i> {{ t('ui.echomail_dashboard', 'Echomail Dashboard') }}
             </a>
             {% if rows %}
             <form method="post"
@@ -42,14 +42,14 @@
         <table class="table table-sm table-hover">
             <thead>
                 <tr>
-                    <th>Network</th>
-                    <th>Tag</th>
-                    <th>Reason</th>
+                    <th>{{ t('ui.network', 'Network') }}</th>
+                    <th>{{ t('ui.tag', 'Tag') }}</th>
+                    <th>{{ t('ui.reason', 'Reason') }}</th>
                     <th>Hits</th>
-                    <th>Last Seen</th>
+                    <th>{{ t('ui.last_seen', 'Last Seen') }}</th>
                     <th>Sample From</th>
                     <th>Sample Subject</th>
-                    <th class="text-end">Actions</th>
+                    <th class="text-end">{{ t('ui.actions', 'Actions') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -61,7 +61,7 @@
                         {% if row.reason == 'unsubscribed' %}
                         <span class="badge bg-warning text-dark">Unsubscribed</span>
                         {% else %}
-                        <span class="badge bg-secondary">Unknown</span>
+                        <span class="badge bg-secondary">{{ t('ui.unknown', 'Unknown') }}</span>
                         {% endif %}
                     </td>
                     <td>{{ row.count }}</td>

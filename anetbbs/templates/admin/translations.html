@@ -33,8 +33,19 @@
     </div>
 </form>
 
+<form method="get" action="{{ url_for('admin.translations') }}" class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <label for="translation-filter">{{ t('admin.translations.filter', 'Filter by language') }}</label>
+    <select id="translation-filter" name="lang" class="form-select w-auto">
+        <option value="" {% if not selected_language %}selected{% endif %}>{{ t('admin.translations.all_languages', 'All languages') }}</option>
+        {% for code in languages %}
+        <option value="{{ code }}" {% if selected_language == code %}selected{% endif %}>{{ code }}</option>
+        {% endfor %}
+    </select>
+    <button class="btn btn-outline-primary">{{ t('admin.translations.apply_filter', 'Apply filter') }}</button>
+</form>
+
 <div class="card">
-    <div class="card-body p-0">
+    <div class="card-body p-0 table-responsive">
     {% if rows %}
         <table class="table table-sm mb-0">
             <thead><tr>

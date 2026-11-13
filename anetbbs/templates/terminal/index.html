@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Web Terminal{% endblock %}
+{% block title %}{{ t('ui.heading.web_terminal', 'Web Terminal') }}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css">
@@ -16,7 +16,7 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-terminal-fill"></i> Web Terminal</h1>
+    <h1><i class="bi bi-terminal-fill"></i> {{ t('ui.heading.web_terminal', 'Web Terminal') }}</h1>
     <p>Telnet any BBS right in your browser (optionally TLS-wrapped via the
        SSL checkbox below). Defaults to this BBS's telnet port. CP437
        box-drawing renders via xterm.js with high-bit byte passthrough.</p>
@@ -25,12 +25,12 @@
 <div class="term-shell">
     <div class="term-config">
         <div>
-            <label class="form-label mb-0" style="font-size:0.75rem;">Host</label>
+            <label class="form-label mb-0" style="font-size:0.75rem;">{{ t('ui.host', 'Host') }}</label>
             <input id="cfg_host" type="text" class="form-control form-control-sm"
                    value="{{ default_host }}" style="width:200px;">
         </div>
         <div>
-            <label class="form-label mb-0" style="font-size:0.75rem;">Port</label>
+            <label class="form-label mb-0" style="font-size:0.75rem;">{{ t('ui.port', 'Port') }}</label>
             <input id="cfg_port" type="number" class="form-control form-control-sm"
                    value="{{ default_port }}" style="width:90px;">
         </div>
@@ -39,10 +39,10 @@
             <label for="cfg_ssl" class="form-check-label" style="font-size:0.85rem;">SSL</label>
         </div>
         <button id="btnConnect" class="btn btn-success btn-sm">
-            <i class="bi bi-plug"></i> Connect
+            <i class="bi bi-plug"></i> {{ t('ui.connect', 'Connect') }}
         </button>
         <button id="btnDisconnect" class="btn btn-danger btn-sm" disabled>
-            <i class="bi bi-x-circle"></i> Disconnect
+            <i class="bi bi-x-circle"></i> {{ t('ui.disconnect', 'Disconnect') }}
         </button>
         <span class="ms-auto small text-muted">
             Quick:

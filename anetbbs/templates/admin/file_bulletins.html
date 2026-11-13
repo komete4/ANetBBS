@@ -2,7 +2,7 @@
 {% block title %}File Bulletins - Admin{% endblock %}
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-file-earmark-text-fill"></i> File Bulletins</h1>
+    <h1><i class="bi bi-file-earmark-text-fill"></i> {{ t('ui.heading.file_bulletins', 'File Bulletins') }}</h1>
 </div>
 
 <p class="text-muted">
@@ -12,7 +12,7 @@
     Enable the ones you want visible; each shows in the terminal's
     <strong>ANSI/File Bulletins</strong> menu, viewed through the same
     scrollable ANSI-aware reader used for messages. This is separate from
-    the sysop-authored text <a href="{{ url_for('admin.bulletins') }}">Bulletins</a> menu.
+    the sysop-authored text <a href="{{ url_for('admin.bulletins') }}">{{ t('ui.bulletins', 'Bulletins') }}</a> menu.
 </p>
 
 {% if rows %}
@@ -20,12 +20,12 @@
 <table class="table table-sm table-hover align-middle">
     <thead>
         <tr>
-            <th>Sort</th>
-            <th>Title</th>
-            <th>File</th>
+            <th>{{ t('ui.sort', 'Sort') }}</th>
+            <th>{{ t('ui.title', 'Title') }}</th>
+            <th>{{ t('ui.file', 'File') }}</th>
             <th>Min Level</th>
-            <th>Active</th>
-            <th>Actions</th>
+            <th>{{ t('ui.active', 'Active') }}</th>
+            <th>{{ t('ui.actions', 'Actions') }}</th>
         </tr>
     </thead>
     <tbody>
@@ -49,7 +49,7 @@
                 </form>
             </td>
             <td>
-                <a href="{{ url_for('file_bulletins_admin.edit', row_id=row.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                <a href="{{ url_for('file_bulletins_admin.edit', row_id=row.id) }}" class="btn btn-sm btn-outline-primary">{{ t('ui.edit', 'Edit') }}</a>
                 <form method="post" action="{{ url_for('file_bulletins_admin.delete', row_id=row.id) }}" style="display:inline"
                       onsubmit="return confirm('Remove {{ row.title }} from the list? The file itself is not deleted.')">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

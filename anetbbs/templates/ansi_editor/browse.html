@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-folder2-open"></i> Browse ANSI files on disk</h1>
+    <h1><i class="bi bi-folder2-open"></i> {{ t('ui.heading.browse_ansi_files_on_disk', 'Browse ANSI files on disk') }}</h1>
     <p>Real <code>.ans</code> files under each configured directory (set via
         <code>ANSI_EDITOR_BROWSE_DIRS</code>) — separate from, and in addition
         to, the art library above.</p>
@@ -51,7 +51,7 @@
                             <input type="hidden" name="root" value="{{ root.label }}">
                             <input type="hidden" name="filename" value="{{ f }}">
                             <button class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-folder2-open"></i> Open
+                                <i class="bi bi-folder2-open"></i> {{ t('ui.open', 'Open') }}
                             </button>
                         </form>
                     </td>

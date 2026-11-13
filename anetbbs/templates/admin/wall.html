@@ -2,7 +2,7 @@
 {% block title %}Graffiti Wall Admin{% endblock %}
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-pen-fill"></i> Graffiti Wall</h1>
+    <h1><i class="bi bi-pen-fill"></i> {{ t('ui.heading.graffiti_wall', 'Graffiti Wall') }}</h1>
 </div>
 
 <div class="row g-3 mb-4">
@@ -29,9 +29,9 @@
                     </label>
                 </div>
                 <div class="d-flex align-items-center gap-2">
-                    <label for="interbbs_network_id" class="form-label mb-0">Network:</label>
+                    <label for="interbbs_network_id" class="form-label mb-0">{{ t('ui.network_label', 'Network:') }}</label>
                     <select class="form-select form-select-sm w-auto" name="interbbs_network_id" id="interbbs_network_id">
-                        <option value="">— pick a network —</option>
+                        <option value="">{{ t('ui.pick_a_network', '— pick a network —') }}</option>
                         {% for net in networks %}
                         <option value="{{ net.id }}" {{ 'selected' if interbbs_network_id|string == net.id|string }}>{{ net.name }}</option>
                         {% endfor %}
@@ -39,13 +39,13 @@
                 </div>
                 <div class="form-text w-100">BinkP networks only — QWK areas are identified by conference number, not by name, so a QWK network can never carry the InterBBS Wall's data area.</div>
 
-                <button type="submit" class="btn btn-sm btn-primary ms-2">Apply</button>
+                <button type="submit" class="btn btn-sm btn-primary ms-2">{{ t('ui.apply', 'Apply') }}</button>
             </form>
         </div>
     </div>
     <div class="col-md-4 d-flex align-items-end">
         <div class="d-flex gap-2">
-            <a href="{{ url_for('wall_admin.index') }}" class="btn btn-sm {{ 'btn-primary' if not show_deleted else 'btn-outline-secondary' }}">Active</a>
+            <a href="{{ url_for('wall_admin.index') }}" class="btn btn-sm {{ 'btn-primary' if not show_deleted else 'btn-outline-secondary' }}">{{ t('ui.active', 'Active') }}</a>
             <a href="{{ url_for('wall_admin.index', deleted=1) }}" class="btn btn-sm {{ 'btn-primary' if show_deleted else 'btn-outline-secondary' }}">Show Deleted</a>
             {% if not show_deleted %}
             <form method="post" action="{{ url_for('wall_admin.clear_all') }}"
@@ -64,13 +64,13 @@
     <thead>
         <tr>
             <th>#</th>
-            <th>User</th>
-            <th>Node</th>
-            <th>Source</th>
+            <th>{{ t('ui.user', 'User') }}</th>
+            <th>{{ t('ui.node', 'Node') }}</th>
+            <th>{{ t('ui.source', 'Source') }}</th>
             <th>Line 1</th>
             <th>Line 2</th>
-            <th>Posted</th>
-            <th>Action</th>
+            <th>{{ t('ui.posted', 'Posted') }}</th>
+            <th>{{ t('ui.action', 'Action') }}</th>
         </tr>
     </thead>
     <tbody>
@@ -93,7 +93,7 @@
                 <form method="post" action="{{ url_for('wall_admin.delete', post_id=post.id) }}" style="display:inline"
                       onsubmit="return confirm('Delete post #{{ post.id }}?')">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button class="btn btn-sm btn-outline-danger">Delete</button>
+                    <button class="btn btn-sm btn-outline-danger">{{ t('ui.delete', 'Delete') }}</button>
                 </form>
                 {% endif %}
             </td>

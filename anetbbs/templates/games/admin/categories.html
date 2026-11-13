@@ -3,27 +3,27 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3><i class="bi bi-tags"></i> Game Categories</h3>
+    <h3><i class="bi bi-tags"></i> {{ t('ui.heading.game_categories', 'Game Categories') }}</h3>
     <div class="d-flex gap-2">
         <a href="{{ url_for('games_admin.add_category') }}" class="btn btn-primary btn-sm">
-            <i class="bi bi-plus-circle"></i> Add Category
+            <i class="bi bi-plus-circle"></i> {{ t('ui.add_category', 'Add Category') }}
         </a>
         <form method="post" action="{{ url_for('games_admin.renumber_categories') }}" style="display:inline;"
               onsubmit="return confirm('Renumber every category to a clean 10/20/30/... sequence? For a category shown as a submenu entry, this is the number a player types in the top-level door menu -- update any hand-made ANSI door-menu art to match afterwards.');">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-sm btn-primary" title="Auto-renumber all categories">
-                <i class="bi bi-sort-numeric-down"></i> Renumber
+                <i class="bi bi-sort-numeric-down"></i> {{ t('ui.renumber', 'Renumber') }}
             </button>
         </form>
         <a href="{{ url_for('games_admin.dashboard') }}" class="btn btn-primary btn-sm">
-            <i class="bi bi-arrow-left"></i> Dashboard
+            <i class="bi bi-arrow-left"></i> {{ t('ui.dashboard', 'Dashboard') }}
         </a>
     </div>
 </div>
 
 <p class="small" style="color:#888;">
     <i class="bi bi-info-circle"></i>
-    For a category shown as a <strong>submenu section</strong>, <code>Sort Order</code> is the exact
+    For a category shown as a <strong>submenu section</strong>, <code>{{ t('ui.sort_order', 'Sort Order') }}</code> is the exact
     number a player types in the top-level terminal door menu to enter it. Drag the
     <i class="bi bi-grip-vertical"></i> handle to reorder; dropping writes new gapped Sort Order
     values automatically.
@@ -41,11 +41,11 @@
     <thead>
         <tr>
             <th style="width:2em;"></th>
-            <th>Name</th>
-            <th>Slug</th>
-            <th>Sort Order</th>
+            <th>{{ t('ui.name', 'Name') }}</th>
+            <th>{{ t('ui.slug', 'Slug') }}</th>
+            <th>{{ t('ui.sort_order', 'Sort Order') }}</th>
             <th>Menu</th>
-            <th>Actions</th>
+            <th>{{ t('ui.actions', 'Actions') }}</th>
         </tr>
     </thead>
     <tbody>
@@ -64,7 +64,7 @@
             </td>
             <td>
                 <a href="{{ url_for('games_admin.edit_category', cat_id=cat.id) }}"
-                   class="btn btn-sm btn-primary" title="Edit">
+                   class="btn btn-sm btn-primary" title="{{ t('ui.edit', 'Edit') }}">
                     <i class="bi bi-pencil"></i>
                 </a>
                 <form method="post"
@@ -74,7 +74,7 @@
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-sm"
                             style="background:#330000;border:1px solid #ff0000;color:#ff0000;"
-                            title="Delete">
+                            title="{{ t('ui.delete', 'Delete') }}">
                         <i class="bi bi-trash"></i>
                     </button>
                 </form>

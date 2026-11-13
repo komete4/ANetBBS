@@ -15,7 +15,7 @@ from flask_wtf import FlaskForm
 
 from sqlalchemy.exc import IntegrityError
 
-from ..features.i18n import translate
+from ..features.i18n import FormTranslations, current_language, translate
 from .validators import PermissiveEmail as Email
 from ..models import (db, User, Board, Post, Message, Theme, UserSession,
                        UserActivity, RegistrationAttempt, PasswordResetToken,
@@ -32,7 +32,48 @@ from .access_control import require_admin as admin_required
 
 # ---- Forms ----
 
-class AddUserForm(FlaskForm):
+class AdminForm(FlaskForm):
+    class Meta(FlaskForm.Meta):
+        def get_translations(self, form):
+            return FormTranslations()
+
+    _label_keys = {
+        'Username': 'username',
+        'Email': 'email',
+        'Password': 'password',
+        'Admin': 'admin',
+        'Add User': 'add_user',
+        'Active': 'active',
+        'New Password (leave blank to keep current)': 'new_password',
+        'Update User': 'update_user',
+        'Name': 'name',
+        'Description': 'description',
+        'Category / sub-conference (e.g. General, Tech)': 'category',
+        'Order': 'order',
+        'Min Read Level (0=all, 10=registered, 50=VIP, 100=sysop)': 'min_read_level',
+        'Min Write Level (blank = same as read level)': 'min_write_level',
+        'Save Board': 'save_board',
+        'Title': 'title',
+        'Content': 'content',
+        'Pinned': 'pinned',
+        'Expires At (Eastern time, YYYY-MM-DD HH:MM, leave blank for no expiry)': 'expires_at',
+        'Save Bulletin': 'save_bulletin',
+        'Name (slug)': 'slug',
+        'Display Name': 'display_name',
+        'CSS Variables (JSON)': 'css_variables',
+        'Default Theme': 'default_theme',
+        'Save Theme': 'save_theme',
+    }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self:
+            key = self._label_keys.get(field.label.text)
+            if key:
+                field.label.text = translate(f'admin.form.{key}', field.label.text)
+
+
+class AddUserForm(AdminForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=3, max=80)])
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
@@ -42,14 +83,14 @@ class AddUserForm(FlaskForm):
     def validate_username(self, field):
         if User.query.filter(
                 db.func.lower(User.username) == field.data.lower()).first():
-            raise ValidationError('Username already taken.')
+            raise ValidationError(translate("admin.form.username_taken", 'Username already taken.'))
 
     def validate_email(self, field):
         if User.query.filter_by(email=field.data).first():
-            raise ValidationError('Email already registered.')
+            raise ValidationError(translate("admin.form.email_registered", 'Email already registered.'))
 
 
-class EditUserForm(FlaskForm):
+class EditUserForm(AdminForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=3, max=80)])
     email = StringField('Email', validators=[DataRequired(), Email()])
     is_admin = BooleanField('Admin')
@@ -58,7 +99,7 @@ class EditUserForm(FlaskForm):
     submit = SubmitField('Update User')
 
 
-class BoardForm(FlaskForm):
+class BoardForm(AdminForm):
     name = StringField('Name', validators=[DataRequired(), Length(max=100)])
     description = TextAreaField('Description')
     category = StringField('Category / sub-conference (e.g. General, Tech)',
@@ -74,7 +115,7 @@ class BoardForm(FlaskForm):
     submit = SubmitField('Save Board')
 
 
-class BulletinForm(FlaskForm):
+class BulletinForm(AdminForm):
     title = StringField('Title', validators=[DataRequired(), Length(max=200)])
     content = TextAreaField('Content', validators=[DataRequired()])
     is_pinned = BooleanField('Pinned')
@@ -82,7 +123,7 @@ class BulletinForm(FlaskForm):
     submit = SubmitField('Save Bulletin')
 
 
-class ThemeForm(FlaskForm):
+class ThemeForm(AdminForm):
     name = StringField('Name (slug)', validators=[DataRequired(), Length(max=50)])
     display_name = StringField('Display Name', validators=[DataRequired(), Length(max=100)])
     description = TextAreaField('Description')
@@ -206,7 +247,7 @@ def dashboard():
     # "What's new" panel — pull the current VERSION's section out of
     # RELEASE.md so sysops see what changed when they upgrade. Pure best-
     # effort: a missing/unreadable RELEASE.md just hides the panel.
-    whats_new = _extract_release_notes_for(current_app.config)
+    whats_new = _extract_release_notes_for(current_app.config, current_language())
 
     # "Update available" banner — peek at the cached upstream-check the
     # /admin/upgrades/ page uses. If an upgrade is waiting, the dashboard
@@ -385,7 +426,7 @@ def hub(section):
     return render_template('admin/hub.html', section=section, cfg=cfg)
 
 
-def _extract_release_notes_for(cfg):
+def _extract_release_notes_for(cfg, language="en"):
     """Find the section of RELEASE.md that names the running VERSION.
 
     RELEASE.md sections look like:
@@ -408,31 +449,26 @@ def _extract_release_notes_for(cfg):
     import os, re
     install_root = cfg.get('INSTALL_DIR') or os.path.dirname(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    path = os.path.join(install_root, 'RELEASE.md')
-    try:
-        with open(path, 'r', encoding='utf-8') as f:
-            text = f.read()
-    except OSError:
-        return None
     # Find the first occurrence of "vX.YaZ.NN" matching VERSION; grab
     # from the line it lives on through to the next header that
     # references a DIFFERENT version, or end-of-file.
     ver_pat = re.escape(VERSION)
-    m = re.search(rf'^[#\s]*[^\n]*{ver_pat}[^\n]*$', text, re.MULTILINE)
-    if not m:
-        return None
-    start = m.start()
-    # Anchor the closing boundary at the next version header line that
-    # doesn't mention our current version -- either the beta/alpha form
-    # (v1.0aZ.NN) or the stable form (v1.0.Z, since the v1.0.0
-    # milestone).
-    rest = text[m.end():]
-    end_m = re.search(r'\n#{1,3} .*v\d+\.\d+(?:[ab]\d+\.\d+|\.\d+)', rest)
-    if end_m:
-        end = m.end() + end_m.start()
-    else:
-        end = len(text)
-    return text[start:end].strip()
+    filenames = ('RELEASE.es.md', 'RELEASE.md') if language == 'es' else ('RELEASE.md',)
+    for filename in filenames:
+        try:
+            with open(os.path.join(install_root, filename), encoding='utf-8') as f:
+                text = f.read()
+        except OSError:
+            continue
+        match = re.search(rf'^[#\s]*[^\n]*{ver_pat}[^\n]*$', text, re.MULTILINE)
+        if not match:
+            continue
+        rest = text[match.end():]
+        next_version = re.search(r'\n#{1,3} .*v\d+\.\d+(?:[ab]\d+\.\d+|\.\d+)', rest)
+        end = match.end() + next_version.start() if next_version else len(text)
+        return text[match.start():end].strip()
+    return None
+
 
 
 @admin_bp.route('/users')
@@ -469,9 +505,9 @@ def add_user():
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
-        flash(f'User {user.username} created successfully!', 'success')
+        flash(translate('admin.notice.user_created_successfully', 'User {user_username} created successfully!', user_username=user.username), 'success')
         return redirect(url_for('admin.users'))
-    return render_template('admin/user_form.html', form=form, title='Add User')
+    return render_template('admin/user_form.html', form=form, title=translate("admin.form.add_user", 'Add User'))
 
 
 @admin_bp.route('/users/<int:user_id>/edit', methods=['GET', 'POST'])
@@ -487,14 +523,14 @@ def edit_user(user_id):
         existing = User.query.filter(
             db.func.lower(User.username) == form.username.data.lower()).first()
         if existing and existing.id != user.id:
-            flash('Username already taken.', 'danger')
-            return render_template('admin/user_form.html', form=form, title='Edit User', user=user)
+            flash(translate("admin.form.username_taken", 'Username already taken.'), 'danger')
+            return render_template('admin/user_form.html', form=form, title=translate("admin.form.edit_user", 'Edit User'), user=user)
 
         # Check email uniqueness
         existing = User.query.filter_by(email=form.email.data).first()
         if existing and existing.id != user.id:
-            flash('Email already registered.', 'danger')
-            return render_template('admin/user_form.html', form=form, title='Edit User', user=user)
+            flash(translate("admin.form.email_registered", 'Email already registered.'), 'danger')
+            return render_template('admin/user_form.html', form=form, title=translate("admin.form.edit_user", 'Edit User'), user=user)
 
         user.username = form.username.data
         user.email = form.email.data
@@ -520,7 +556,7 @@ def edit_user(user_id):
             user.set_password(form.new_password.data)
 
         db.session.commit()
-        flash(f'User {user.username} updated successfully!', 'success')
+        flash(translate('admin.notice.user_updated_successfully', 'User {user_username} updated successfully!', user_username=user.username), 'success')
         return redirect(url_for('admin.users'))
     elif request.method == 'GET':
         form.username.data = user.username
@@ -528,7 +564,7 @@ def edit_user(user_id):
         form.is_admin.data = user.is_admin
         form.is_active.data = user.is_active
 
-    return render_template('admin/user_form.html', form=form, title='Edit User', user=user)
+    return render_template('admin/user_form.html', form=form, title=translate("admin.form.edit_user", 'Edit User'), user=user)
 
 
 @admin_bp.route('/users/<int:user_id>/delete', methods=['GET', 'POST'])
@@ -539,7 +575,7 @@ def delete_user(user_id):
     user = User.query.get_or_404(user_id)
 
     if user.id == current_user.id:
-        flash('You cannot delete your own account.', 'danger')
+        flash(translate('admin.notice.you_cannot_delete_your_own_account', 'You cannot delete your own account.'), 'danger')
         return redirect(url_for('admin.users'))
 
     if request.method == 'POST':
@@ -566,7 +602,7 @@ def delete_user(user_id):
         try:
             db.session.delete(user)
             db.session.commit()
-            flash(f'User {username} deleted.', 'success')
+            flash(translate('admin.notice.user_deleted', 'User {username} deleted.', username=username), 'success')
         except IntegrityError:
             db.session.rollback()
             flash(f'Could not delete {username} — they have related '
@@ -590,7 +626,7 @@ def toggle_ban(user_id):
     user = User.query.get_or_404(user_id)
 
     if user.id == current_user.id:
-        flash('You cannot ban yourself.', 'danger')
+        flash(translate('admin.notice.you_cannot_ban_yourself', 'You cannot ban yourself.'), 'danger')
         return redirect(url_for('admin.users'))
 
     user.is_active = not user.is_active
@@ -610,7 +646,7 @@ def bulk_users():
     user_ids = request.form.getlist('user_ids')
 
     if not user_ids:
-        flash('No users selected.', 'warning')
+        flash(translate('admin.notice.no_users_selected', 'No users selected.'), 'warning')
         return redirect(url_for('admin.users'))
 
     users = User.query.filter(User.id.in_(user_ids)).all()
@@ -633,7 +669,7 @@ def bulk_users():
                 db.session.rollback()
                 blocked.append(user.username)
         if deleted:
-            flash(f'Deleted {deleted} user(s).', 'success')
+            flash(translate('admin.notice.deleted_user_s', 'Deleted {deleted} user(s).', deleted=deleted), 'success')
         if blocked:
             flash(f'Could not delete {len(blocked)} user(s) with related '
                  f'records (games played, messages, etc.): '
@@ -643,12 +679,12 @@ def bulk_users():
         for user in users:
             user.is_active = False
         db.session.commit()
-        flash(f'Banned {len(users)} users.', 'success')
+        flash(translate('admin.notice.banned_users', 'Banned {len_users} users.', len_users=len(users)), 'success')
     elif action == 'unban':
         for user in users:
             user.is_active = True
         db.session.commit()
-        flash(f'Unbanned {len(users)} users.', 'success')
+        flash(translate('admin.notice.unbanned_users', 'Unbanned {len_users} users.', len_users=len(users)), 'success')
 
     return redirect(url_for('admin.users'))
 
@@ -682,9 +718,9 @@ def add_board():
         )
         db.session.add(board)
         db.session.commit()
-        flash(f'Board "{board.name}" created!', 'success')
+        flash(translate('admin.notice.board_created', 'Board "{board_name}" created!', board_name=board.name), 'success')
         return redirect(url_for('admin.boards'))
-    return render_template('admin/board_form.html', form=form, title='Add Board')
+    return render_template('admin/board_form.html', form=form, title=translate("admin.form.add_board", 'Add Board'))
 
 
 @admin_bp.route('/boards/<int:board_id>/edit', methods=['GET', 'POST'])
@@ -705,7 +741,7 @@ def edit_board(board_id):
         board.min_write_level = form.min_write_level.data
         board.is_active = form.is_active.data
         db.session.commit()
-        flash(f'Board "{board.name}" updated!', 'success')
+        flash(translate('admin.notice.board_updated', 'Board "{board_name}" updated!', board_name=board.name), 'success')
         return redirect(url_for('admin.boards'))
     elif request.method == 'GET':
         form.name.data = board.name
@@ -716,7 +752,7 @@ def edit_board(board_id):
         form.min_write_level.data = board.min_write_level
         form.is_active.data = board.is_active
 
-    return render_template('admin/board_form.html', form=form, title='Edit Board', board=board)
+    return render_template('admin/board_form.html', form=form, title=translate("admin.form.edit_board", 'Edit Board'), board=board)
 
 
 @admin_bp.route('/boards/<int:board_id>/delete', methods=['GET', 'POST'])
@@ -730,7 +766,7 @@ def delete_board(board_id):
     if request.method == 'POST':
         db.session.delete(board)
         db.session.commit()
-        flash(f'Board "{board.name}" deleted.', 'success')
+        flash(translate('admin.notice.board_deleted', 'Board "{board_name}" deleted.', board_name=board.name), 'success')
         return redirect(url_for('admin.boards'))
 
     return render_template('admin/confirm_delete.html',
@@ -754,21 +790,21 @@ def board_moderators(board_id):
             uname = (request.form.get('username') or '').strip()
             u = User.query.filter(User.username.ilike(uname)).first()
             if not u:
-                flash('User not found.', 'danger')
+                flash(translate('admin.notice.user_not_found', 'User not found.'), 'danger')
             elif BoardModerator.query.filter_by(board_id=board.id,
                                                 user_id=u.id).first():
-                flash('Already a moderator.', 'info')
+                flash(translate('admin.notice.already_a_moderator', 'Already a moderator.'), 'info')
             else:
                 db.session.add(BoardModerator(board_id=board.id,
                                               user_id=u.id))
                 db.session.commit()
-                flash(f'{u.username} added as moderator.', 'success')
+                flash(translate('admin.notice.added_as_moderator', '{u_username} added as moderator.', u_username=u.username), 'success')
         elif action == 'remove':
             mod_id = request.form.get('mod_id')
             row = BoardModerator.query.get(mod_id)
             if row and row.board_id == board.id:
                 db.session.delete(row); db.session.commit()
-                flash('Moderator removed.', 'success')
+                flash(translate('admin.notice.moderator_removed', 'Moderator removed.'), 'success')
         return redirect(url_for('admin.board_moderators', board_id=board.id))
 
     mods = BoardModerator.query.filter_by(board_id=board.id).all()
@@ -818,8 +854,8 @@ def add_bulletin():
                 from ..core.tz import from_eastern_input
                 expires_at = from_eastern_input(form.expires_at.data, '%Y-%m-%d %H:%M')
             except ValueError:
-                flash('Invalid date format. Use YYYY-MM-DD HH:MM', 'danger')
-                return render_template('admin/bulletin_form.html', form=form, title='Add Bulletin')
+                flash(translate('admin.notice.invalid_date_format_use_yyyy_mm_dd_hh_mm', 'Invalid date format. Use YYYY-MM-DD HH:MM'), 'danger')
+                return render_template('admin/bulletin_form.html', form=form, title=translate("admin.form.add_bulletin", 'Add Bulletin'))
 
         message = Message(
             author_id=current_user.id,
@@ -836,9 +872,9 @@ def add_bulletin():
                               'content': message.content})
         except Exception:
             pass
-        flash('Bulletin created!', 'success')
+        flash(translate('admin.notice.bulletin_created', 'Bulletin created!'), 'success')
         return redirect(url_for('admin.bulletins'))
-    return render_template('admin/bulletin_form.html', form=form, title='Add Bulletin')
+    return render_template('admin/bulletin_form.html', form=form, title=translate("admin.form.add_bulletin", 'Add Bulletin'))
 
 
 @admin_bp.route('/bulletins/<int:bulletin_id>/edit', methods=['GET', 'POST'])
@@ -861,15 +897,15 @@ def edit_bulletin(bulletin_id):
                 # silently shifts by the UTC offset on every edit.
                 expires_at = from_eastern_input(form.expires_at.data, '%Y-%m-%d %H:%M')
             except ValueError:
-                flash('Invalid date format. Use YYYY-MM-DD HH:MM', 'danger')
-                return render_template('admin/bulletin_form.html', form=form, title='Edit Bulletin', message=message)
+                flash(translate('admin.notice.invalid_date_format_use_yyyy_mm_dd_hh_mm', 'Invalid date format. Use YYYY-MM-DD HH:MM'), 'danger')
+                return render_template('admin/bulletin_form.html', form=form, title=translate("admin.form.edit_bulletin", 'Edit Bulletin'), message=message)
 
         message.title = form.title.data
         message.content = form.content.data
         message.is_pinned = form.is_pinned.data
         message.expires_at = expires_at
         db.session.commit()
-        flash('Bulletin updated!', 'success')
+        flash(translate('admin.notice.bulletin_updated', 'Bulletin updated!'), 'success')
         return redirect(url_for('admin.bulletins'))
     elif request.method == 'GET':
         form.title.data = message.title
@@ -878,7 +914,7 @@ def edit_bulletin(bulletin_id):
         if message.expires_at:
             form.expires_at.data = fmt_eastern(message.expires_at, '%Y-%m-%d %H:%M')
 
-    return render_template('admin/bulletin_form.html', form=form, title='Edit Bulletin', message=message)
+    return render_template('admin/bulletin_form.html', form=form, title=translate("admin.form.edit_bulletin", 'Edit Bulletin'), message=message)
 
 
 @admin_bp.route('/bulletins/<int:bulletin_id>/delete', methods=['GET', 'POST'])
@@ -891,7 +927,7 @@ def delete_bulletin(bulletin_id):
     if request.method == 'POST':
         db.session.delete(message)
         db.session.commit()
-        flash('Bulletin deleted.', 'success')
+        flash(translate('admin.notice.bulletin_deleted', 'Bulletin deleted.'), 'success')
         return redirect(url_for('admin.bulletins'))
 
     return render_template('admin/confirm_delete.html',
@@ -1099,7 +1135,7 @@ def registry_edit(entry_id):
         e.msp_port = int(request.form.get('msp_port', e.msp_port))
         e.systat_port = int(request.form.get('systat_port', e.systat_port))
     except (TypeError, ValueError):
-        flash('Ports must be integers.', 'danger')
+        flash(translate('admin.notice.ports_must_be_integers', 'Ports must be integers.'), 'danger')
         return redirect(url_for('admin.registry_index'))
     db.session.commit()
     flash(f'Updated {e.host}.', 'success')
@@ -1117,8 +1153,8 @@ def add_theme():
         try:
             json.loads(form.css_variables.data)
         except json.JSONDecodeError:
-            flash('CSS Variables must be valid JSON.', 'danger')
-            return render_template('admin/theme_form.html', form=form, title='Add Theme')
+            flash(translate('admin.notice.css_variables_must_be_valid_json', 'CSS Variables must be valid JSON.'), 'danger')
+            return render_template('admin/theme_form.html', form=form, title=translate("admin.form.add_theme", 'Add Theme'))
 
         if form.is_default.data:
             Theme.query.update({'is_default': False}, synchronize_session='fetch')
@@ -1133,9 +1169,9 @@ def add_theme():
         )
         db.session.add(theme)
         db.session.commit()
-        flash('Theme created!', 'success')
+        flash(translate('admin.notice.theme_created', 'Theme created!'), 'success')
         return redirect(url_for('admin.themes'))
-    return render_template('admin/theme_form.html', form=form, title='Add Theme')
+    return render_template('admin/theme_form.html', form=form, title=translate("admin.form.add_theme", 'Add Theme'))
 
 
 @admin_bp.route('/themes/<int:theme_id>/edit', methods=['GET', 'POST'])
@@ -1150,8 +1186,8 @@ def edit_theme(theme_id):
         try:
             json.loads(form.css_variables.data)
         except json.JSONDecodeError:
-            flash('CSS Variables must be valid JSON.', 'danger')
-            return render_template('admin/theme_form.html', form=form, title='Edit Theme', theme=theme)
+            flash(translate('admin.notice.css_variables_must_be_valid_json', 'CSS Variables must be valid JSON.'), 'danger')
+            return render_template('admin/theme_form.html', form=form, title=translate("admin.form.edit_theme", 'Edit Theme'), theme=theme)
 
         if form.is_default.data and not theme.is_default:
             Theme.query.update({'is_default': False}, synchronize_session='fetch')
@@ -1163,7 +1199,7 @@ def edit_theme(theme_id):
         theme.is_default = form.is_default.data
         theme.is_active = form.is_active.data
         db.session.commit()
-        flash('Theme updated!', 'success')
+        flash(translate('admin.notice.theme_updated', 'Theme updated!'), 'success')
         return redirect(url_for('admin.themes'))
     elif request.method == 'GET':
         form.name.data = theme.name
@@ -1173,7 +1209,7 @@ def edit_theme(theme_id):
         form.is_default.data = theme.is_default
         form.is_active.data = theme.is_active
 
-    return render_template('admin/theme_form.html', form=form, title='Edit Theme', theme=theme)
+    return render_template('admin/theme_form.html', form=form, title=translate("admin.form.edit_theme", 'Edit Theme'), theme=theme)
 
 
 @admin_bp.route('/themes/<int:theme_id>/toggle-active', methods=['POST'])
@@ -1197,13 +1233,13 @@ def delete_theme(theme_id):
     from ..models import User as _User
     theme = Theme.query.get_or_404(theme_id)
     if theme.is_default:
-        flash('Cannot delete the default theme. Set another theme as default first.', 'danger')
+        flash(translate('admin.notice.cannot_delete_the_default_theme_set_another_theme_as_default_first', 'Cannot delete the default theme. Set another theme as default first.'), 'danger')
         return redirect(url_for('admin.themes'))
     # Null out any user references so the FK doesn't block the delete
     _User.query.filter_by(theme_id=theme_id).update({'theme_id': None}, synchronize_session='fetch')
     db.session.delete(theme)
     db.session.commit()
-    flash(f'Theme "{theme.display_name}" deleted.', 'success')
+    flash(translate('admin.notice.theme_deleted', 'Theme "{theme_display_name}" deleted.', theme_display_name=theme.display_name), 'success')
     return redirect(url_for('admin.themes'))
 
 
@@ -1432,9 +1468,9 @@ def settings():
                     flash('Settings saved. Some changes require a service '
                           'restart: sudo systemctl restart anetbbs.service', 'warning')
                 else:
-                    flash('Settings saved.', 'success')
+                    flash(translate('admin.notice.settings_saved', 'Settings saved.'), 'success')
             except Exception as exc:
-                flash(f'Failed to save settings: {exc}', 'danger')
+                flash(translate('admin.notice.failed_to_save_settings', 'Failed to save settings: {exc}', exc=exc), 'danger')
         return redirect(url_for('admin.settings'))
 
     # Read last 100 lines of log file -- see _tail_lines()'s own
@@ -1459,7 +1495,7 @@ def settings():
     for key, label, kind, restart_flag in EDITABLE_SETTINGS:
         editable.append({
             'key': key,
-            'label': label,
+            'label': translate(f'admin.settings.option.{key.lower()}', label),
             'kind': kind,
             'requires_restart': restart_flag,
             'value': env_values.get(key, current_app.config.get(key, '')),
@@ -1554,7 +1590,7 @@ def chat_bans():
             user_id = request.form.get('user_id', type=int)
             target = User.query.get(user_id)
             if target is None:
-                flash('User not found.', 'danger')
+                flash(translate('admin.notice.user_not_found', 'User not found.'), 'danger')
                 return redirect(url_for('admin.chat_bans'))
             room = (request.form.get('room') or '').strip() or None
             reason = (request.form.get('reason') or '').strip()
@@ -1572,7 +1608,7 @@ def chat_bans():
             if b is not None:
                 db.session.delete(b)
                 db.session.commit()
-                flash('Ban lifted.', 'success')
+                flash(translate('admin.notice.ban_lifted', 'Ban lifted.'), 'success')
         return redirect(url_for('admin.chat_bans'))
 
     # Auto-clean expired bans on page render — natural moment since the
@@ -1616,7 +1652,7 @@ def default_echos():
                 a.is_subscribed = new_state
                 changed += 1
         db.session.commit()
-        flash(f'Updated {changed} echo area subscription(s).', 'success')
+        flash(translate('admin.notice.updated_echo_area_subscription_s', 'Updated {changed} echo area subscription(s).', changed=changed), 'success')
         return redirect(url_for('admin.default_echos'))
 
     networks = EchomailNetwork.query.filter_by(is_active=True).all()
@@ -1656,13 +1692,13 @@ def tic_rescan():
                   or os.path.join(current_app.config.get('DATA_DIR', 'data'),
                                   'binkp', 'inbound'))
     if not os.path.isdir(inbound_dir):
-        flash(f'Inbound directory does not exist: {inbound_dir}', 'danger')
+        flash(translate('admin.notice.inbound_directory_does_not_exist', 'Inbound directory does not exist: {inbound_dir}', inbound_dir=inbound_dir), 'danger')
         return redirect(url_for('admin.tic_log'))
     try:
         n = scan_inbound(inbound_dir)
     except Exception as exc:
         current_app.logger.exception('Manual TIC rescan failed')
-        flash(f'Rescan failed: {exc}', 'danger')
+        flash(translate('admin.notice.rescan_failed', 'Rescan failed: {exc}', exc=exc), 'danger')
         return redirect(url_for('admin.tic_log'))
     if n:
         flash(f'Rescanned {inbound_dir} — processed {n} TIC file(s). '
@@ -1701,7 +1737,7 @@ def tic_clear_processed():
                                   'binkp', 'inbound'))
     processed_dir = os.path.join(inbound_dir, 'processed')
     if not os.path.isdir(processed_dir):
-        flash(f'No processed/ directory found at {processed_dir}', 'info')
+        flash(translate('admin.notice.no_processed_directory_found_at', 'No processed/ directory found at {processed_dir}', processed_dir=processed_dir), 'info')
         return redirect(url_for('admin.tic_log'))
 
     cutoff = datetime.utcnow() - timedelta(days=days)
@@ -3370,10 +3406,20 @@ def translations():
             row = MenuTranslation.query.get_or_404(request.form.get('row_id', type=int))
             db.session.delete(row)
             db.session.commit()
-        return redirect(url_for('admin.translations'))
-    rows = (MenuTranslation.query
-           .order_by(MenuTranslation.lang, MenuTranslation.key).all())
-    return render_template('admin/translations.html', rows=rows)
+        return redirect(url_for('admin.translations', lang=request.args.get('lang')))
+    languages = [code for (code,) in (
+        db.session.query(MenuTranslation.lang).distinct().order_by(MenuTranslation.lang)
+    )]
+    selected_language = request.args.get('lang')
+    if selected_language is None:
+        preferred = current_language()
+        selected_language = preferred if preferred in languages else ''
+    query = MenuTranslation.query
+    if selected_language:
+        query = query.filter_by(lang=selected_language)
+    rows = query.order_by(MenuTranslation.lang, MenuTranslation.key).all()
+    return render_template('admin/translations.html', rows=rows, languages=languages,
+                           selected_language=selected_language)
 
 
 @admin_bp.route('/taglines', methods=['GET', 'POST'])
@@ -3796,7 +3842,7 @@ def time_budgets():
         user_id = request.form.get('user_id', type=int)
         u = User.query.get(user_id) if user_id else None
         if not u:
-            flash('User not found.', 'danger')
+            flash(translate('admin.notice.user_not_found', 'User not found.'), 'danger')
             return redirect(url_for('admin.time_budgets'))
         b = UserTimeBudget.query.filter_by(user_id=u.id).first()
         if not b:
@@ -4258,9 +4304,10 @@ def smtp_settings():
                 'This is a test message from your ANetBBS SMTP relay configuration.\n\nIf you received this, SMTP is working correctly.',
             )
             if ok:
-                flash(f'Test email sent to {current_user.email}. Check your inbox!', 'success')
+                flash(translate('admin.smtp.test_sent', 'Test email sent to {email}. Check your inbox!',
+                                email=current_user.email), 'success')
             else:
-                flash(f'Test failed: {err}', 'danger')
+                flash(translate('admin.smtp.test_failed', 'Test failed: {error}', error=err), 'danger')
             return redirect(url_for('admin.smtp_settings'))
 
         # Save settings
@@ -4280,7 +4327,7 @@ def smtp_settings():
         cfg.use_tls = bool(request.form.get('use_tls'))
         cfg.use_ssl = bool(request.form.get('use_ssl'))
         db.session.commit()
-        flash('SMTP settings saved.', 'success')
+        flash(translate('admin.smtp.settings_saved', 'SMTP settings saved.'), 'success')
         return redirect(url_for('admin.smtp_settings'))
 
     return render_template('admin/smtp.html', cfg=cfg)

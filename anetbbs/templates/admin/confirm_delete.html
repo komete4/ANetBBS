@@ -4,13 +4,13 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-trash"></i> Confirm Delete</h1>
+    <h1><i class="bi bi-trash"></i> {{ t('ui.heading.confirm_delete', 'Confirm Delete') }}</h1>
 </div>
 
 <div class="row justify-content-center">
     <div class="col-md-6">
         <div class="card">
-            <div class="card-header">Delete {{ item_type|title }}</div>
+            <div class="card-header">{{ t('ui.delete', 'Delete') }} {{ item_type|title }}</div>
             <div class="card-body">
                 <p>Are you sure you want to delete the {{ item_type }} <strong>{{ item_name }}</strong>?</p>
                 {% if warning %}
@@ -22,7 +22,7 @@
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Yes, Delete</button>
-                        <a href="{{ url_for('admin.' + item_type + 's') }}" class="btn btn-secondary">Cancel</a>
+                        <a href="{{ url_for('admin.' + item_type + 's') }}" class="btn btn-secondary">{{ t('ui.cancel', 'Cancel') }}</a>
                     </div>
                 </form>
             </div>

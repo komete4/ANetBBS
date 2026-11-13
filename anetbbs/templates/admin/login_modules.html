@@ -2,7 +2,7 @@
 {% block title %}Logon/Logoff Modules - Admin{% endblock %}
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-lightning-charge-fill"></i> Logon / Logoff Modules</h1>
+    <h1><i class="bi bi-lightning-charge-fill"></i> {{ t('ui.heading.logon_logoff_modules', 'Logon / Logoff Modules') }}</h1>
 </div>
 
 <div class="d-flex gap-3 align-items-center mb-4 flex-wrap">
@@ -26,13 +26,13 @@
 <table class="table table-sm table-hover align-middle">
     <thead>
         <tr>
-            <th>Sort</th>
-            <th>Name</th>
-            <th>Type</th>
+            <th>{{ t('ui.sort', 'Sort') }}</th>
+            <th>{{ t('ui.name', 'Name') }}</th>
+            <th>{{ t('ui.type', 'Type') }}</th>
             <th>Min Level</th>
             <th>Skip Fast?</th>
-            <th>Active</th>
-            <th>Actions</th>
+            <th>{{ t('ui.active', 'Active') }}</th>
+            <th>{{ t('ui.actions', 'Actions') }}</th>
         </tr>
     </thead>
     <tbody>
@@ -55,7 +55,7 @@
                 </form>
             </td>
             <td>
-                <a href="{{ url_for('login_modules_admin.edit', mod_id=mod.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                <a href="{{ url_for('login_modules_admin.edit', mod_id=mod.id) }}" class="btn btn-sm btn-outline-primary">{{ t('ui.edit', 'Edit') }}</a>
                 <form method="post" action="{{ url_for('login_modules_admin.delete', mod_id=mod.id) }}" style="display:inline"
                       onsubmit="return confirm('Delete module {{ mod.name }}?')">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -68,7 +68,7 @@
 </table>
 </div>
 {% else %}
-<p class="text-muted">No {{ event_label.lower() }} modules configured.</p>
+<p class="text-muted">{{ t('ui.no', 'No') }} {{ event_label.lower() }} modules configured.</p>
 {% endif %}
 {% endfor %}
 

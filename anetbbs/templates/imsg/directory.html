@@ -5,11 +5,11 @@
 <div class="container my-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <h2 class="mb-1"><i class="bi bi-globe2"></i> Inter-BBS Directory</h2>
+            <h2 class="mb-1"><i class="bi bi-globe2"></i> {{ t('ui.heading.inter_bbs_directory', 'Inter-BBS Directory') }}</h2>
             <p class="text-muted mb-0">
                 BBSes from the <code>sbbsimsg.lst</code> registry that participate
                 in inter-BBS instant messaging. Click <em>Who's online</em> to
-                query a remote system live, then <em>Send IM</em> to send a message.
+                query a remote system live, then <em>{{ t('ui.send_im', 'Send IM') }}</em> to send a message.
             </p>
         </div>
         <div>
@@ -38,7 +38,7 @@
                         {% if self_entry.is_listed %}
                             <span class="badge bg-success" title="Published in the federation directory">Listed</span>
                         {% elif self_entry.is_listed is false %}
-                            <span class="badge bg-warning text-dark" title="Registered but waiting for hub approval">Pending</span>
+                            <span class="badge bg-warning text-dark" title="Registered but waiting for hub approval">{{ t('ui.pending', 'Pending') }}</span>
                         {% else %}
                             <span class="badge bg-secondary" title="Not registered on the federation hub yet">Not registered</span>
                         {% endif %}
@@ -71,7 +71,7 @@
         <div class="input-group input-group-sm" style="max-width:480px;">
             <input type="text" name="q" value="{{ q }}"
                    class="form-control" placeholder="Filter by hostname or BBS name…">
-            <button class="btn btn-outline-primary">Filter</button>
+            <button class="btn btn-outline-primary">{{ t('ui.filter', 'Filter') }}</button>
         </div>
     </form>
 
@@ -84,12 +84,12 @@
         <table class="table table-sm table-hover">
             <thead>
                 <tr>
-                    <th>Name</th>
+                    <th>{{ t('ui.name', 'Name') }}</th>
                     <th>Hostname</th>
-                    <th>Software</th>
+                    <th>{{ t('ui.software', 'Software') }}</th>
                     <th>Sysop / Location</th>
-                    <th>Last Seen</th>
-                    <th class="text-end">Actions</th>
+                    <th>{{ t('ui.last_seen', 'Last Seen') }}</th>
+                    <th class="text-end">{{ t('ui.actions', 'Actions') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -122,7 +122,7 @@
                         </a>
                         <a href="{{ url_for('imsg.send', host=r.hostname) }}"
                            class="btn btn-success btn-sm">
-                            <i class="bi bi-send"></i> Send IM
+                            <i class="bi bi-send"></i> {{ t('ui.send_im', 'Send IM') }}
                         </a>
                     </td>
                 </tr>
