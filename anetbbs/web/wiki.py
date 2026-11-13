@@ -333,10 +333,16 @@ def _edit_gate_message(user):
         return None
     parts = []
     if post_count < min_posts:
-        parts.append(f'at least {min_posts} post{"s" if min_posts != 1 else ""}')
+        parts.append(
+            translate('wiki.edit_gate.post_one', 'at least 1 post') if min_posts == 1
+            else translate('wiki.edit_gate.posts', 'at least {count} posts', count=min_posts))
     if account_age < min_days:
-        parts.append(f'an account at least {min_days} day{"s" if min_days != 1 else ""} old')
-    return f'Wiki editing requires {" and ".join(parts)}.'
+        parts.append(
+            translate('wiki.edit_gate.day_one', 'an account at least 1 day old') if min_days == 1
+            else translate('wiki.edit_gate.days', 'an account at least {count} days old', count=min_days))
+    requirements = translate('wiki.edit_gate.and', ' and ').join(parts)
+    return translate('wiki.edit_gate.requirements', 'Wiki editing requires {requirements}.',
+                     requirements=requirements)
 
 
 @wiki_bp.route('/<slug>/edit', methods=['GET', 'POST'])

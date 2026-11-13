@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Release Downloads — {{ bbs_name }}{% endblock %}
+{% block title %}{{ t('downloads.title', 'Release Downloads — {bbs}', bbs=bbs_name) }}{% endblock %}
 
 {% block head %}
 {{ super() if super }}
@@ -40,7 +40,7 @@
     <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
         <div>
             <h1><i class="bi bi-cloud-download"></i> {{ t('ui.heading.release_downloads', 'Release Downloads') }}</h1>
-            <p>Releases, updates, and utilities from {{ bbs_name }}. Files are listed newest-first.</p>
+            <p>{{ t('downloads.intro', 'Releases, updates, and utilities from {bbs}. Files are listed newest-first.', bbs=bbs_name) }}</p>
         </div>
         {% if current_user.is_authenticated and current_user.is_admin %}
         <div class="text-light-emphasis small" style="opacity:.85;">
@@ -59,7 +59,7 @@
     <i class="bi bi-inbox" style="font-size:2.2rem; opacity:.55;"></i>
     <h4 class="mt-2">{{ t('web.user.no_downloads_available_yet', 'No downloads available yet') }}</h4>
     {% if current_user.is_authenticated and current_user.is_admin %}
-    <p class="mb-0">Drop a release into <code>{{ base_dir }}</code> and refresh — it will show up here automatically.</p>
+    <p class="mb-0">{{ t('downloads.admin_empty', 'Drop a release into {directory} and refresh — it will show up here automatically.', directory=base_dir) }}</p>
     {% else %}
     <p class="mb-0">{{ t('web.user.the_sysop_hasn_t_posted_any_releases_yet_check_back_soon_sentence', "The sysop hasn't posted any releases yet. Check back soon.") }}</p>
     {% endif %}
@@ -71,7 +71,7 @@
             <tr>
                 <th>{{ t('ui.file', 'File') }}</th>
                 <th class="text-end">{{ t('ui.size', 'Size') }}</th>
-                <th>Modified</th>
+                <th>{{ t('downloads.modified', 'Modified') }}</th>
                 <th class="text-end" style="width:1%;">&nbsp;</th>
             </tr>
         </thead>

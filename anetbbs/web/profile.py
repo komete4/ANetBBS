@@ -585,12 +585,60 @@ def ssh_keys():
     return render_template('profile/ssh_keys.html', keys=keys)
 
 
+# Match the seeded text before translating so SysOp edits stay visible.
+_STOCK_THEME_DESCRIPTIONS = {
+    'modern-dark': (
+        'High-contrast dark theme — easy to read everywhere'),
+    'classic-green': (
+        'The classic BBS green-on-black terminal look'),
+    'amber-terminal': (
+        'Warm amber on dark brown'),
+    'blue-ice': (
+        'Cyan accent on deep navy'),
+    'matrix': (
+        'Bright neon green on pure black with glow'),
+    'synthwave': (
+        'Hot pink + cyan accents on dark purple'),
+    'paper-white': (
+        'Light theme for daytime use — easy on the eyes outdoors'),
+    'enhanced': (
+        'Triple neon (green + cyan + magenta) on pure black — scanlines, brand glitch, animated card borders'),
+    'hackers': (
+        'Hack the Planet — neon violet + lime + cyan rave cyberpunk. For those who ride the information superhighway.'),
+    'graphite-teal': (
+        'A neutral graphite dark theme with a single refined teal accent and Manrope headings — built for long reading sessions.'),
+    'ivory-editorial': (
+        'A warm cream daytime theme with a deep forest-teal accent and serif headlines — reads like a well-set publication.'),
+    'retro-web': (
+        'Tiled pinstripe background, beveled Windows-95 chrome, underlined blue/purple links, Times New Roman. Best viewed in Netscape Navigator 4.0.'),
+    'command-deck': (
+        'A fixed icon-rail app shell instead of a top navbar — mission-control blue chrome + amber status lights, Sora + IBM Plex Mono. Real mobile support: a slide-in drawer plus a bottom tab bar on phones.'),
+    'ceefax-teletext': (
+        '1980s broadcast videotext — flat primary-colour blocks, chunky VT323 pixel type, hard right angles, no gradients.'),
+    'brass-oscilloscope': (
+        'A ham-radio control room — brushed walnut panels, brass rivets, oscilloscope-green LCD readouts.'),
+    'mahogany-study': (
+        "A gentleman's reading room — deep mahogany, brass nameplates, leather-bound cards, candlelight amber."),
+    'cyanotype-blueprint': (
+        'An engineering schematic — Prussian-blue grid paper, white/cyan line-art only, dashed part boxes, drafting type.'),
+    'riso-pop-art': (
+        'A pinball backglass poster — flat saturated red/blue/yellow on black ink, thick comic outlines, hard offset shadows.'),
+}
+
+
 @profile_bp.route('/themes')
 @login_required
 def themes():
     """Theme preview page"""
     all_themes = Theme.query.filter_by(is_active=True).all()
-    return render_template('profile/themes.html', themes=all_themes)
+    descriptions = {
+        theme.id: _t(f'profile.theme.description.{theme.name}', theme.description)
+        if theme.description and theme.description == _STOCK_THEME_DESCRIPTIONS.get(theme.name)
+        else theme.description
+        for theme in all_themes
+    }
+    return render_template('profile/themes.html', themes=all_themes,
+                           descriptions=descriptions)
 
 
 @profile_bp.route('/akas')

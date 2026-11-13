@@ -17,7 +17,7 @@
         <p>{{ t('web.guide.reply', 'Click on the post title to view it, then use the reply form at the bottom of the page.') }}</p>
         
         <h5>{{ t('web.user.how_do_i_access_the_chat', 'How do I access the chat?') }}</h5>
-        <p>{{ t('web.guide.chat_start', 'Click on the') }} <a href="{{ url_for('mrc.index') }}">MRC Chat</a> {{ t('web.guide.chat_middle', 'link in the navigation menu (or') }} <a href="{{ url_for('irc.index') }}">IRC</a> {{ t('web.guide.chat_end', 'for the inter-BBS IRC bridge). You must be logged in to use chat.') }}</p>
+        <p>{{ t('web.guide.chat_start', 'Click on the') }} <a href="{{ url_for('mrc.index') }}">{{ t('web.guide.mrc_link', 'MRC Chat') }}</a> {{ t('web.guide.chat_middle', 'link in the navigation menu (or') }} <a href="{{ url_for('irc.index') }}">IRC</a> {{ t('web.guide.chat_end', 'for the inter-BBS IRC bridge). You must be logged in to use chat.') }}</p>
         
         <h5>{{ t('web.user.how_do_i_edit_my_profile', 'How do I edit my profile?') }}</h5>
         <p>{{ t('web.guide.profile', 'Click on your username in the navigation bar, then click "Edit Profile".') }}</p>

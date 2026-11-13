@@ -21,7 +21,7 @@
                         <i class="bi bi-terminal"></i> ANetBBS
                     </div>
                     <p style="color:{{ vars.get('--theme-primary', '#00ff00') }};">{{ theme.display_name }}</p>
-                    <p style="color:{{ vars.get('--theme-primary', '#00ff00') }};font-size:0.8rem;">{{ theme.description }}</p>
+                    <p style="color:{{ vars.get('--theme-primary', '#00ff00') }};font-size:0.8rem;">{{ descriptions[theme.id] or "" }}</p>
                     <div style="background-color:{{ vars.get('--theme-input-bg', '#000') }};border:1px solid {{ vars.get('--theme-primary', '#00ff00') }};padding:5px;color:{{ vars.get('--theme-primary', '#00ff00') }};font-size:0.8rem;">
                         {{ t('profile.sample_input', 'Sample text input') }}
                     </div>

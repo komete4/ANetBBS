@@ -34,7 +34,7 @@
         </li>
         <li class="nav-item">
             <button class="nav-link" data-bs-toggle="tab" data-bs-target="#cheatTab" type="button">
-                <i class="bi bi-question-circle"></i> Cheatsheet
+                <i class="bi bi-question-circle"></i> {{ t('wiki.cheatsheet', 'Cheatsheet') }}
             </button>
         </li>
     </ul>
@@ -54,15 +54,15 @@
                     <h5>Markdown</h5>
                     <table class="table table-sm">
                         <tr><th><code># Heading 1</code></th><td>{{ t('web.user.top_level_heading', 'Top-level heading') }}</td></tr>
-                        <tr><th><code>## Heading 2</code></th><td>Subheading</td></tr>
-                        <tr><th><code>**bold**</code></th><td><strong>bold</strong></td></tr>
-                        <tr><th><code>*italic*</code></th><td><em>italic</em></td></tr>
-                        <tr><th><code>`code`</code></th><td><code>code</code></td></tr>
+                        <tr><th><code>## Heading 2</code></th><td>{{ t('wiki.subheading', 'Subheading') }}</td></tr>
+                        <tr><th><code>**bold**</code></th><td><strong>{{ t('wiki.bold', 'bold') }}</strong></td></tr>
+                        <tr><th><code>*italic*</code></th><td><em>{{ t('wiki.italic', 'italic') }}</em></td></tr>
+                        <tr><th><code>`code`</code></th><td><code>{{ t('wiki.code', 'code') }}</code></td></tr>
                         <tr><th><code>- item</code></th><td>{{ t('web.user.bulleted_list', 'Bulleted list') }}</td></tr>
                         <tr><th><code>1. item</code></th><td>{{ t('web.user.numbered_list', 'Numbered list') }}</td></tr>
-                        <tr><th><code>&gt; quote</code></th><td>Blockquote</td></tr>
+                        <tr><th><code>&gt; quote</code></th><td>{{ t('wiki.blockquote', 'Blockquote') }}</td></tr>
                         <tr><th><code>[text](url)</code></th><td>{{ t('web.user.external_link', 'External link') }}</td></tr>
-                        <tr><th><code>![alt](url)</code></th><td>Image</td></tr>
+                        <tr><th><code>![alt](url)</code></th><td>{{ t('wiki.image', 'Image') }}</td></tr>
                         <tr><th><code>---</code></th><td>{{ t('web.user.horizontal_rule', 'Horizontal rule') }}</td></tr>
                     </table>
                 </div>
@@ -72,25 +72,23 @@
                         <tr><th><code>[[Getting Started]]</code></th>
                             <td>→ <a href="{{ url_for('wiki.view', slug='getting-started') }}">{{ t('web.user.getting_started', 'Getting Started') }}</a></td></tr>
                         <tr><th><code>[[home|click here]]</code></th>
-                            <td>Pipe lets you change the link text</td></tr>
+                            <td>{{ t('wiki.pipe_hint', 'Pipe lets you change the link text') }}</td></tr>
                         <tr><th><code>[[Sysop Guide#Doors]]</code></th>
-                            <td>Anchor jumps inside the target page</td></tr>
+                            <td>{{ t('wiki.anchor_hint', 'Anchor jumps inside the target page') }}</td></tr>
                     </table>
                     <h5>{{ t('web.user.code_blocks', 'Code blocks') }}</h5>
                     <pre>```python
 def hello():
     print("hi")
 ```</pre>
-                    <p>Use <code>```</code> on its own line to start
-                       and end a fenced code block. Add a language
-                       name for syntax-coloured highlighting.</p>
+                    <p>{{ t('wiki.fenced_code', 'Use {marker} on its own line to start and end a fenced code block. Add a language name for syntax-coloured highlighting.', marker='```') }}</p>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="mb-3">
-        <label class="form-label">{{ t('web.user.edit_summary', 'Edit summary') }} <small class="text-muted">(optional, shown in history)</small></label>
+        <label class="form-label">{{ t('web.user.edit_summary', 'Edit summary') }} <small class="text-muted">{{ t('wiki.optional_summary', '(optional, shown in history)') }}</small></label>
         <input type="text" name="edit_summary" class="form-control"
                placeholder="{{ t('wiki.summary_example', 'e.g. Fixed typo, added installation steps…') }}"
                maxlength="300">
@@ -101,7 +99,7 @@ def hello():
         <a href="{{ url_for('wiki.view', slug=slug) }}" class="btn btn-outline-secondary">{{ t('ui.cancel', 'Cancel') }}</a>
         {% if not is_new %}
             <a href="{{ url_for('wiki.history', slug=slug) }}" class="btn btn-outline-secondary ms-auto">
-               <i class="bi bi-clock-history"></i> History</a>
+               <i class="bi bi-clock-history"></i> {{ t('wiki.history', 'History') }}</a>
         {% endif %}
     </div>
 </form>
@@ -109,6 +107,7 @@ def hello():
 <script>
 async function loadPreview() {
     const body = document.getElementById('bodyArea').value;
+    const preview = document.getElementById('previewBody');
     const fd = new FormData();
     fd.append('body', body);
     fd.append('csrf_token', '{{ csrf_token() }}');
@@ -116,11 +115,19 @@ async function loadPreview() {
         const r = await fetch('{{ url_for("wiki.preview", slug=slug) }}',
                               {method: 'POST', body: fd});
         const j = await r.json();
-        document.getElementById('previewBody').innerHTML = j.html
-            || '<p class="text-muted">(empty)</p>';
+        if (j.html) {
+            preview.innerHTML = j.html;
+        } else {
+            const message = document.createElement('p');
+            message.className = 'text-muted';
+            message.textContent = {{ t('wiki.preview_empty', '(empty)')|tojson }};
+            preview.replaceChildren(message);
+        }
     } catch (e) {
-        document.getElementById('previewBody').innerHTML =
-            '<p class="text-danger">Preview failed: ' + e + '</p>';
+        const message = document.createElement('p');
+        message.className = 'text-danger';
+        message.textContent = {{ t('wiki.preview_error', 'Preview failed:')|tojson }} + ' ' + e;
+        preview.replaceChildren(message);
     }
 }
 </script>

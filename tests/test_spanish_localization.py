@@ -878,3 +878,87 @@ def test_admin_import_and_dialout_validation_use_account_language(
     page = _soup(_post(client, dialout_path, {'action': 'add'}, token_path=dialout_path,
                       follow_redirects=True))
     assert missing_destination in page.get_text(' ', strip=True)
+
+
+@pytest.mark.parametrize('language, downloads, pages, theme_description, upload_error', [
+    ('es', 'Los archivos más recientes aparecen primero.', 'Hasta entonces, los archivos se guardan sin publicarse.',
+     'Tema oscuro de alto contraste', 'Selecciona un archivo.'),
+    ('en', 'Files are listed newest-first.', 'Until then, files you upload here are saved but not served.',
+     'High-contrast dark theme', 'No file selected.'),
+])
+def test_visitor_downloads_and_account_pages_match_language(
+        client, localized_app, make_user, monkeypatch, language, downloads, pages,
+        theme_description, upload_error):
+    from anetbbs.models import Theme
+
+    for setting, value in {
+        'DOWNLOADS_ENABLED': True,
+        'DOWNLOADS_REQUIRE_LOGIN': False,
+        'FILE_UPLOADS_ENABLED': True,
+        'PERSONAL_PAGES_ENABLED': False,
+        'PERSONAL_PAGES_STATIC_ORIGIN': '',
+    }.items():
+        monkeypatch.setitem(localized_app.config, setting, value)
+    _language(client, language)
+    assert downloads in _soup(client.get('/downloads/')).get_text(' ', strip=True)
+    help_page = _soup(client.get('/help'))
+    assert help_page.html['lang'] == language
+    assert ('Chat MRC' if language == 'es' else 'MRC Chat') in help_page.get_text(' ', strip=True)
+
+    user_id, _, _ = make_user(language)
+    _authenticate(client, user_id)
+    assert pages in _soup(client.get('/_pages/')).get_text(' ', strip=True)
+    assert theme_description in _soup(client.get('/profile/themes')).get_text(' ', strip=True)
+    with localized_app.app_context():
+        theme = Theme.query.filter_by(name='modern-dark').one()
+        original = theme.description
+        theme.description = 'Tema de prueba <GKS>'
+        db.session.commit()
+    try:
+        preview = _soup(client.get('/profile/themes'))
+        assert 'Tema de prueba <GKS>' in preview.get_text(' ', strip=True)
+        assert preview.find('gks') is None
+    finally:
+        with localized_app.app_context():
+            Theme.query.filter_by(name='modern-dark').one().description = original
+            db.session.commit()
+
+    upload = '/file-areas/smart-upload'
+    response = _post(client, upload, {}, token_path=upload, follow_redirects=True)
+    assert upload_error in _soup(response).get_text(' ', strip=True)
+
+
+def test_personal_pages_translate_confirmation_and_keep_filename(
+        client, localized_app, make_user, monkeypatch):
+    from io import BytesIO
+
+    monkeypatch.setitem(localized_app.config, 'PERSONAL_PAGES_STATIC_ORIGIN',
+                        'https://pages.example.test')
+    user_id, _, _ = make_user('es')
+    _authenticate(client, user_id)
+    response = _post(client, '/_pages/upload',
+                     {'file': (BytesIO(b'<p>GKS</p>'), 'index.html')},
+                     token_path='/_pages/', follow_redirects=True)
+    page = _soup(response)
+    button_form = page.select_one('form[action$="/delete/index.html"]')
+    assert button_form['data-confirm'] == '¿Eliminar este archivo?'
+    assert page.select_one('a[href$="/index.html"]').get_text(strip=True) == 'index.html'
+
+
+def test_wiki_edit_requirements_and_preview_use_spanish(
+        client, localized_app, make_user, monkeypatch):
+    user_id, _, _ = make_user('es')
+    _authenticate(client, user_id)
+    monkeypatch.setitem(localized_app.config, 'WIKI_MIN_POSTS', 2)
+    monkeypatch.setitem(localized_app.config, 'WIKI_MIN_DAYS', 1)
+    response = _soup(client.get('/wiki/home/edit', follow_redirects=True))
+    assert ('Para editar la wiki necesitas al menos 2 publicaciones y una cuenta '
+            'con al menos un día de antigüedad.') in response.get_text(' ', strip=True)
+
+    monkeypatch.setitem(localized_app.config, 'WIKI_MIN_POSTS', 0)
+    monkeypatch.setitem(localized_app.config, 'WIKI_MIN_DAYS', 0)
+    response = _soup(client.get('/wiki/home/edit'))
+    assert 'Guía rápida' in response.get_text(' ', strip=True)
+    preview_script = next(script for script in response.find_all('script')
+                          if 'async function loadPreview()' in script.get_text())
+    assert 'No se pudo mostrar la vista previa:' in preview_script.get_text()

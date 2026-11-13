@@ -5,9 +5,7 @@
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-cloud-arrow-up"></i> {{ t('ui.heading.smart_upload', 'Smart Upload') }}</h1>
-    <p>Upload a file. We auto-detect the target file area from the filename
-       (e.g. <code>FILES.GAMES_lord.zip</code> or <code>foo[FILES.UTILS].zip</code>),
-       or pick one manually.</p>
+    <p>{{ t('files.smart_help', 'Upload a file. We auto-detect the target file area from the filename (e.g. {prefix} or {tag}), or pick one manually.', prefix='FILES.GAMES_lord.zip', tag='foo[FILES.UTILS].zip') }}</p>
 </div>
 
 <form method="post" enctype="multipart/form-data" class="card">
@@ -16,8 +14,7 @@
         <div class="mb-3">
             <label class="form-label">{{ t('ui.file', 'File') }}</label>
             <input type="file" name="file" class="form-control" required>
-            <div class="form-text">Tip: prefix with <code>AREATAG_</code> or
-                include <code>[AREATAG]</code> for auto-detection.</div>
+            <div class="form-text">{{ t('files.smart_hint', 'Tip: prefix with {prefix} or include {tag} for auto-detection.', prefix='AREATAG_', tag='[AREATAG]') }}</div>
         </div>
         <div class="mb-3">
             <label class="form-label">{{ t('web.user.force_area_optional', 'Force area (optional)') }}</label>

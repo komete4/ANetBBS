@@ -28,6 +28,7 @@ from flask_login import login_required, current_user
 from ..models import db, FileArea, TicFile, SharedFileLink, UserActivity
 from ..features.archive_meta import extract_archive_description
 from ..features.access_control import evaluate_access
+from ..features.i18n import translate
 from ..features.rate_limit import rate_limit, _user_or_ip
 from .list_pagination import ListPagination
 
@@ -690,12 +691,13 @@ def upload(area_id):
 
     upload = request.files.get('file')
     if not upload or not upload.filename:
-        flash('No file selected.', 'danger')
+        flash(translate('files.no_file', 'No file selected.'), 'danger')
         return redirect(url_for('file_areas.view_area', area_id=area.id))
 
     too_big, max_size = _oversized_upload(upload)
     if too_big:
-        flash(f'File too large. Maximum size is {max_size // 1024 // 1024}MB.', 'danger')
+        flash(translate('files.too_large', 'File too large. Maximum size is {size}MB.',
+                            size=max_size // 1024 // 1024), 'danger')
         return redirect(url_for('file_areas.view_area', area_id=area.id))
 
     # Optional area password. Real gap found in a security/performance
@@ -706,7 +708,7 @@ def upload(area_id):
         if not hmac.compare_digest(
                 (request.form.get('password') or '').encode('utf-8', errors='replace'),
                 area.password.encode('utf-8', errors='replace')):
-            flash('Incorrect area password.', 'danger')
+            flash(translate('files.area.incorrect_password', 'Incorrect area password.'), 'danger')
             return redirect(url_for('file_areas.view_area', area_id=area.id))
 
     try:
@@ -714,7 +716,7 @@ def upload(area_id):
         # Sanitize the basename
         safe_name = os.path.basename(upload.filename)
         if not safe_name or safe_name.startswith('.'):
-            flash('Invalid filename.', 'danger')
+            flash(translate('files.area.invalid_filename', 'Invalid filename.'), 'danger')
             return redirect(url_for('file_areas.view_area', area_id=area.id))
 
         # Sysop moderation queue — non-admin uploads go to quarantine first
@@ -850,7 +852,7 @@ def create_share(area_id, filename):
     if not _visible_to(current_user, area):
         abort(403)
     if not area.storage_path or not os.path.isdir(area.storage_path):
-        flash('File not found.', 'danger')
+        flash(translate('files.area.missing', 'File not found.'), 'danger')
         return redirect(url_for('file_areas.view_area', area_id=area.id))
 
     # Real gap found in a full application-wide access-control audit:
@@ -869,10 +871,10 @@ def create_share(area_id, filename):
     # the same realpath() on both sides for consistency).
     full = os.path.realpath(os.path.join(area.storage_path, filename))
     if not full.startswith(os.path.realpath(area.storage_path) + os.sep):
-        flash('File not found.', 'danger')
+        flash(translate('files.area.missing', 'File not found.'), 'danger')
         return redirect(url_for('file_areas.view_area', area_id=area.id))
     if not os.path.isfile(full):
-        flash('File not found.', 'danger')
+        flash(translate('files.area.missing', 'File not found.'), 'danger')
         return redirect(url_for('file_areas.view_area', area_id=area.id))
 
     note = (request.form.get('note') or '').strip()[:200]
@@ -973,7 +975,7 @@ def revoke_share(link_id):
         abort(403)
     link.is_revoked = True
     db.session.commit()
-    flash('Share link revoked.', 'success')
+    flash(translate('files.area.share_revoked', 'Share link revoked.'), 'success')
     return redirect(url_for('file_areas.my_shares'))
 
 
@@ -1192,11 +1194,12 @@ def smart_upload():
     if request.method == 'POST':
         upload = request.files.get('file')
         if not upload or not upload.filename:
-            flash('No file selected.', 'danger')
+            flash(translate('files.no_file', 'No file selected.'), 'danger')
             return redirect(url_for('file_areas.smart_upload'))
         too_big, max_size = _oversized_upload(upload)
         if too_big:
-            flash(f'File too large. Maximum size is {max_size // 1024 // 1024}MB.', 'danger')
+            flash(translate('files.too_large', 'File too large. Maximum size is {size}MB.',
+                            size=max_size // 1024 // 1024), 'danger')
             return redirect(url_for('file_areas.smart_upload'))
         manual_area_id = request.form.get('area_id', type=int)
 
@@ -1216,21 +1219,21 @@ def smart_upload():
                     break
 
         if target is None:
-            flash('No matching file area — pick one manually.', 'danger')
+            flash(translate('files.area.no_match', 'No matching file area — pick one manually.'), 'danger')
             return redirect(url_for('file_areas.smart_upload'))
 
         perm = (target.upload_permission or 'users').lower()
         if perm == 'none':
-            flash('Uploads are disabled for that area.', 'danger')
+            flash(translate('files.area.uploads_disabled', 'Uploads are disabled for that area.'), 'danger')
             return redirect(url_for('file_areas.smart_upload'))
         if perm == 'sysop' and not getattr(current_user, 'is_admin', False):
-            flash('Only sysops can upload to that area.', 'danger')
+            flash(translate('files.area.sysop_only', 'Only sysops can upload to that area.'), 'danger')
             return redirect(url_for('file_areas.smart_upload'))
 
         try:
             safe = os.path.basename(upload.filename)
             if not safe or safe.startswith('.'):
-                flash('Invalid filename.', 'danger')
+                flash(translate('files.area.invalid_filename', 'Invalid filename.'), 'danger')
                 return redirect(url_for('file_areas.smart_upload'))
 
             # Real gap found in a full file-areas audit: the per-area

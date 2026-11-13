@@ -8,7 +8,7 @@
     <div class="ms-auto d-flex gap-2">
         <a href="{{ url_for('wiki.history', slug=page.slug) }}"
            class="btn btn-sm btn-outline-secondary">
-           <i class="bi bi-clock-history"></i> History</a>
+           <i class="bi bi-clock-history"></i> {{ t('wiki.history', 'History') }}</a>
         {% if current_user.is_authenticated %}
             {% if not page.is_locked or current_user.is_admin %}
             <a href="{{ url_for('wiki.edit', slug=page.slug) }}"
@@ -16,8 +16,8 @@
                <i class="bi bi-pencil"></i> {{ t('ui.edit', 'Edit') }}</a>
             {% else %}
             <button class="btn btn-sm btn-outline-secondary" disabled
-                    title="This page is locked. Only sysops can edit it.">
-                <i class="bi bi-lock"></i> Locked</button>
+                    title="{{ t('wiki.locked_hint', 'This page is locked. Only sysops can edit it.') }}">
+                <i class="bi bi-lock"></i> {{ t('wiki.locked', 'Locked') }}</button>
             {% endif %}
         {% endif %}
         {% if current_user.is_authenticated and current_user.is_admin %}
@@ -64,10 +64,10 @@
 <div class="wiki-meta">
     <i class="bi bi-clock"></i>
     {{ t('web.user.last_edited', 'Last edited') }} {{ page.updated_at|eastern('%Y-%m-%d %H:%M %Z') }}
-    {% if page.updated_by %}by <a href="{{ url_for('profile.view_user', username=page.updated_by.username) }}">{{ page.updated_by.username }}</a>{% endif %}
-    · <a href="{{ url_for('wiki.history', slug=page.slug) }}">history</a>
-    · {{ page.view_count or 0 }} view{{ '' if (page.view_count or 0) == 1 else 's' }}
-    {% if page.is_locked %}· <span class="badge bg-warning text-dark"><i class="bi bi-lock"></i> Locked</span>{% endif %}
+    {% if page.updated_by %}{{ t('wiki.edited_by', 'by') }} <a href="{{ url_for('profile.view_user', username=page.updated_by.username) }}">{{ page.updated_by.username }}</a>{% endif %}
+    · <a href="{{ url_for('wiki.history', slug=page.slug) }}">{{ t('wiki.history_lower', 'history') }}</a>
+    · {% if page.view_count == 1 %}{{ t('wiki.view_one', '1 view') }}{% else %}{{ t('wiki.view_many', '{count} views', count=page.view_count or 0) }}{% endif %}
+    {% if page.is_locked %}· <span class="badge bg-warning text-dark"><i class="bi bi-lock"></i> {{ t('wiki.locked', 'Locked') }}</span>{% endif %}
 </div>
 
 <article class="wiki-body">

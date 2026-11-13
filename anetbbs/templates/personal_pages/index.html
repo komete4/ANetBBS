@@ -8,22 +8,19 @@
 {% if static_url %}
 <p class="small text-muted">
     {{ t('web.user.your_page_is_published_at', 'Your page is published at') }} <a href="{{ static_url }}" target="_blank" rel="noopener noreferrer">{{ static_url }}</a>.
-    Start with <code>index.html</code> and link to your CSS with relative URLs.
+    {{ t('personal_pages.help.start', 'Start with {file} and link to your CSS with relative URLs.', file='index.html') }}
 </p>
 {% elif not enabled %}
 <div class="alert alert-warning">
     <strong>{{ t('web.user.personal_pages_aren_t_enabled_on_this_bbs_sentence', "Personal pages aren't enabled on this BBS.") }}</strong>
-    The sysop can turn them on by setting
-    <code>PERSONAL_PAGES_ENABLED=true</code> in the .env and restarting
-    <code>anetbbs-web</code>. Until then, files you upload here are
-    saved but not served.
+    {{ t('personal_pages.help.disabled', 'The sysop can turn them on by setting {setting} in the .env and restarting {service}. Until then, files you upload here are saved but not served.', setting='PERSONAL_PAGES_ENABLED=true', service='anetbbs-web') }}
 </div>
 {% else %}
 <p class="small text-muted">
-    Files you upload here are served at
+    {{ t('personal_pages.help.published', 'Files you upload here are served at') }}
     <code>{{ request.url_root }}~{{ username }}/</code>
-    (and individual files at <code>{{ request.url_root }}~{{ username }}/&lt;filename&gt;</code>).
-    Drop in an <code>index.html</code> to make the root URL render.
+    {{ t('personal_pages.help.individual', '(and individual files at') }} <code>{{ request.url_root }}~{{ username }}/&lt;filename&gt;</code>).
+    {{ t('personal_pages.help.index', 'Upload {file} to display the home page at the root URL.', file='index.html') }}
 </p>
 {% endif %}
 
@@ -43,11 +40,11 @@
     <tr>
         <td>
             <a href="{{ static_url or '/~' ~ username ~ '/' }}{{ f.name|urlencode }}" target="_blank" rel="noopener noreferrer">{{ f.name }}</a>
-            {% if f.is_index %}<span class="badge bg-success ms-1">index</span>{% endif %}
+            {% if f.is_index %}<span class="badge bg-success ms-1">{{ t('personal_pages.help.index_badge', 'index') }}</span>{% endif %}
         </td>
         <td><small>{{ '%.1f'|format(f.size / 1024) }} KB</small></td>
         <td>
-            <form method="post" action="{{ url_for('personal_pages.delete', filename=f.name) }}" class="d-inline" onsubmit="return confirm('Delete this file?');">
+            <form method="post" action="{{ url_for('personal_pages.delete', filename=f.name) }}" class="d-inline" onsubmit="return confirm(this.dataset.confirm);" data-confirm="{{ t('personal_pages.help.confirm_delete', 'Delete this file?') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
             </form>
@@ -60,16 +57,15 @@
 </table>
 
 <div class="card mt-3">
-    <div class="card-header">Tips</div>
+    <div class="card-header">{{ t('personal_pages.help.tips', 'Tips') }}</div>
     <div class="card-body small">
         <ul class="mb-0">
             {% if static_url %}
             <li>{{ t('web.user.publish_up_to_20_utf_8_html_and_css_files_up_to_512_kb_each_sentence', 'Publish up to 20 UTF-8 HTML and CSS files, up to 512 KB each.') }}</li>
             <li>{{ t('web.user.scripts_and_forms_are_disabled_sentence', 'Scripts and forms are disabled.') }}</li>
             {% else %}
-            <li>Index file lookup tries: {{ index_files|join(', ') }}</li>
-            <li>Sysop can also drop folders directly in <code>data/personal_pages/&lt;dir&gt;/</code>
-                — they'll be served at <code>/&lt;dir&gt;/</code> top-level.</li>
+            <li>{{ t('personal_pages.help.lookup', 'Index file lookup tries:') }} {{ index_files|join(', ') }}</li>
+            <li>{{ t('personal_pages.help.sysop_folders', 'The SysOp can also place folders directly in {directory}. They will be served at {url}.', directory='data/personal_pages/<dir>/', url='/<dir>/') }}</li>
             <li>{{ t('personal_pages.upload_types', 'Upload your own HTML, CSS, JS, images — full static-site freedom.') }}</li>
             {% endif %}
         </ul>
