@@ -43,7 +43,7 @@
 
 <div class="d-flex flex-wrap gap-2 mb-4">
   <a href="{{ url_for('rss.index') }}" class="btn btn-secondary">
-    <i class="bi bi-arrow-left"></i> All Feeds
+    <i class="bi bi-arrow-left"></i> {{ t('web.user.all_feeds', 'All Feeds') }}
   </a>
   <a href="{{ url_for('rss.river') }}" class="btn btn-outline-secondary">
     <i class="bi bi-water"></i> River
@@ -136,8 +136,7 @@
 
 {% else %}
 <div class="alert alert-info">
-  <i class="bi bi-info-circle"></i> No items yet. The poller fetches every ~30 minutes;
-  if this is a fresh subscription give it a moment.
+  <i class="bi bi-info-circle"></i> {{ t('web.user.no_items_yet_the_poller_fetches_every_30_minutes_if_this_is_a_fresh_subscription_give_it_a_moment_sentence', 'No items yet. The poller fetches every ~30 minutes; if this is a fresh subscription give it a moment.') }}
 </div>
 {% endif %}
 {% endblock %}

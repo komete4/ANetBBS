@@ -5,7 +5,7 @@
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-diagram-3-fill"></i> {{ t('ui.heading.nodelist_browser', 'Nodelist Browser') }}</h1>
-    <p>Search the FidoNet network directory.</p>
+    <p>{{ t('web.user.search_the_fidonet_network_directory_sentence', 'Search the FidoNet network directory.') }}</p>
 </div>
 
 <div class="card mb-3">
@@ -63,9 +63,9 @@
 <div class="alert alert-warning">
     No nodelists imported yet.
     {% if current_user.is_admin %}
-        <a href="{{ url_for('nodelist.admin_upload') }}">Upload one</a>.
+        <a href="{{ url_for('nodelist.admin_upload') }}">{{ t('web.user.upload_one', 'Upload one') }}</a>.
     {% else %}
-        Ask the sysop to import a nodelist.
+        {{ t('web.user.ask_the_sysop_to_import_a_nodelist_sentence', 'Ask the sysop to import a nodelist.') }}
     {% endif %}
 </div>
 {% endif %}
@@ -73,8 +73,7 @@
 {% if q %}
 <div class="card">
     <div class="card-header">
-        <i class="bi bi-list-check"></i> Search Results
-        ({{ entries|length }} match{{ '' if entries|length == 1 else 'es' }})
+        <i class="bi bi-list-check"></i> {{ t('web.user.search_results', 'Search Results (') }}{{ entries|length }} match{{ '' if entries|length == 1 else 'es' }})
     </div>
     <div class="card-body p-0">
         {% if entries %}
@@ -100,7 +99,7 @@
             </tbody>
         </table>
         {% else %}
-        <div class="p-3">No matches.</div>
+        <div class="p-3">{{ t('web.user.no_matches_sentence', 'No matches.') }}</div>
         {% endif %}
     </div>
 </div>

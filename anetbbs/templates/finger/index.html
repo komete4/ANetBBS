@@ -5,8 +5,7 @@
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-search"></i> Finger</h1>
-    <p>Query remote BBSes' finger services (RFC 1288). Leave the user blank to
-       list everyone online on the remote system.</p>
+    <p>{{ t('finger.intro', "Query remote BBSes' finger services (RFC 1288). Leave the user blank to list everyone online on the remote system.") }}</p>
 </div>
 
 <form method="post" class="card mb-3">
@@ -14,12 +13,12 @@
     <div class="card-body">
         <div class="row g-2 align-items-end">
             <div class="col-md-5">
-                <label class="form-label">Host (BBS hostname or IP)</label>
+                <label class="form-label">{{ t('web.user.host_bbs_hostname_or_ip', 'Host (BBS hostname or IP)') }}</label>
                 <input type="text" name="host" value="{{ host }}" class="form-control" required
                        placeholder="bbs.example.com">
             </div>
             <div class="col-md-3">
-                <label class="form-label">User (optional)</label>
+                <label class="form-label">{{ t('web.user.user_optional', 'User (optional)') }}</label>
                 <input type="text" name="user" value="{{ user }}" class="form-control"
                        placeholder="username">
             </div>
@@ -36,7 +35,7 @@
 
 {% if response %}
 <div class="card">
-    <div class="card-header">Response from <code>{{ host }}</code>{% if user %} for <code>{{ user }}</code>{% endif %}</div>
+    <div class="card-header">{{ t('web.user.response_from', 'Response from') }} <code>{{ host }}</code>{% if user %} for <code>{{ user }}</code>{% endif %}</div>
     <div class="card-body">
         <pre style="white-space:pre-wrap;font-family:monospace;margin:0;">{{ response }}</pre>
     </div>

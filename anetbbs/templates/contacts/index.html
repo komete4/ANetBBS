@@ -5,11 +5,11 @@
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-person-rolodex"></i> {{ t('ui.heading.address_book', 'Address Book') }}</h1>
-    <p>Saved FTN and email contacts. Used for netmail recipient lookup.</p>
+    <p>{{ t('web.user.saved_ftn_and_email_contacts_used_for_netmail_recipient_lookup_sentence', 'Saved FTN and email contacts. Used for netmail recipient lookup.') }}</p>
 </div>
 
 <div class="card mb-3">
-    <div class="card-header"><i class="bi bi-person-plus"></i> Add Contact</div>
+    <div class="card-header"><i class="bi bi-person-plus"></i> {{ t('web.user.add_contact', 'Add Contact') }}</div>
     <div class="card-body">
         <form method="post" class="row g-2">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -24,7 +24,7 @@
                        pattern="^\d+:\d+/\d+(\.\d+)?$">
             </div>
             <div class="col-md-3">
-                <label class="form-label">Email (optional)</label>
+                <label class="form-label">{{ t('web.user.email_optional', 'Email (optional)') }}</label>
                 <input type="email" name="email" class="form-control">
             </div>
             <div class="col-md-2 d-flex align-items-end">
@@ -37,7 +37,7 @@
             <div class="col-md-3 d-flex align-items-end">
                 <div class="form-check">
                     <input id="cb_crash" type="checkbox" name="crashmail_default" class="form-check-input">
-                    <label class="form-check-label" for="cb_crash">Always crash</label>
+                    <label class="form-check-label" for="cb_crash">{{ t('web.user.always_crash', 'Always crash') }}</label>
                 </div>
             </div>
         </form>
@@ -85,7 +85,7 @@
             </tbody>
         </table>
     {% else %}
-        <div class="p-3 text-muted">No contacts yet — add one above.</div>
+        <div class="p-3 text-muted">{{ t('web.user.no_contacts_yet_add_one_above_sentence', 'No contacts yet — add one above.') }}</div>
     {% endif %}
     </div>
 </div>

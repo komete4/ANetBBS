@@ -5,7 +5,7 @@
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-postcard"></i> {{ t('ui.heading.new_postcard', 'New Postcard') }}</h1>
-    <p class="text-muted">Compose some retro ANSI/PETSCII art and get a public link + image you can share anywhere.</p>
+    <p class="text-muted">{{ t('web.user.compose_some_retro_ansi_petscii_art_and_get_a_public_link_image_you_can_share_anywhere_sentence', 'Compose some retro ANSI/PETSCII art and get a public link + image you can share anywhere.') }}</p>
 </div>
 
 <form method="post" class="card">
@@ -15,7 +15,7 @@
             <div class="col-md-6">
                 <label class="form-label">{{ t('ui.name', 'Name') }}</label>
                 <input type="text" name="name" class="form-control" required
-                       placeholder="Greetings from ANetBBS!">
+                       placeholder="{{ t('web.user.greetings_from_anetbbs', 'Greetings from ANetBBS!') }}">
             </div>
             <div class="col-md-3">
                 <label class="form-label">Width</label>
@@ -26,7 +26,7 @@
                 <input type="number" name="height" class="form-control" value="20" min="5" max="40">
             </div>
         </div>
-        <button class="btn btn-primary"><i class="bi bi-easel"></i> Open Editor</button>
+        <button class="btn btn-primary"><i class="bi bi-easel"></i> {{ t('web.user.open_editor', 'Open Editor') }}</button>
         <a href="{{ url_for('postcards.index') }}" class="btn btn-link">{{ t('ui.cancel', 'Cancel') }}</a>
     </div>
 </form>

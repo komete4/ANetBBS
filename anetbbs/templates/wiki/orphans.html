@@ -1,13 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Orphan pages — Wiki{% endblock %}
+{% block title %}{{ t('web.user.orphan_pages_wiki', 'Orphan pages — Wiki') }}{% endblock %}
 {% block content %}
 {% include "wiki/_layout.html" %}
 
 <div class="bbs-header">
     <h1><i class="bi bi-snow"></i> {{ t('ui.heading.orphan_pages', 'Orphan pages') }}</h1>
-    <p class="text-muted">Pages that no other page links to. They might still
-       be in the navigation or directly bookmarked, but if not, consider
-       linking them from the relevant section.</p>
+    <p class="text-muted">{{ t('web.user.pages_that_no_other_page_links_to_they_might_still_be_in_the_navigation_or_directly_bookmarked_but_if_not_consider_linking_them_from_the_relevant_section_sentence', 'Pages that no other page links to. They might still be in the navigation or directly bookmarked, but if not, consider linking them from the relevant section.') }}</p>
 </div>
 
 {% if orphans %}
@@ -21,7 +19,7 @@
 </ul>
 {% else %}
 <div class="alert alert-success">
-    <i class="bi bi-check-circle"></i> No orphan pages.
+    <i class="bi bi-check-circle"></i> {{ t('web.user.no_orphan_pages_sentence', 'No orphan pages.') }}
 </div>
 {% endif %}
 {% endblock %}

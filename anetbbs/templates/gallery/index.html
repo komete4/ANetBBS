@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Image Galleries — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{{ t('web.user.image_galleries_suffix', 'Image Galleries —') }} {{ config.BBS_NAME }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-images"></i> {{ t('ui.heading.image_galleries', 'Image Galleries') }}</h1>
-    <p>Browse the BBS's photo and GIF collections.</p>
+    <p>{{ t('web.user.browse_the_bbs_s_photo_and_gif_collections_sentence', "Browse the BBS's photo and GIF collections.") }}</p>
 </div>
 
 <div class="row g-3">
@@ -17,10 +17,10 @@
                     <p class="text-muted">{{ g.count }} image{{ 's' if g.count != 1 else '' }}</p>
                     <a href="{{ url_for('gallery.browse', slug=g.slug) }}"
                        class="btn btn-primary btn-sm">
-                        <i class="bi bi-grid-3x3"></i> Open Gallery
+                        <i class="bi bi-grid-3x3"></i> {{ t('web.user.open_gallery', 'Open Gallery') }}
                     </a>
                 {% else %}
-                    <p class="text-muted"><em>Directory not found.</em></p>
+                    <p class="text-muted"><em>{{ t('web.user.directory_not_found_sentence', 'Directory not found.') }}</em></p>
                 {% endif %}
             </div>
         </div>

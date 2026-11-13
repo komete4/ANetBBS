@@ -5,7 +5,7 @@
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-bookmark-star-fill"></i> {{ t('ui.heading.saved_messages', 'Saved Messages') }}</h1>
-    <p>Messages you've bookmarked from echomail, netmail, boards, and PMs.</p>
+    <p>{{ t('web.user.messages_you_ve_bookmarked_from_echomail_netmail_boards_and_pms_sentence', "Messages you've bookmarked from echomail, netmail, boards, and PMs.") }}</p>
 </div>
 
 <div class="card">
@@ -41,7 +41,7 @@
             </tbody>
         </table>
     {% else %}
-        <div class="p-3 text-muted">Nothing saved yet — bookmark a message to see it here.</div>
+        <div class="p-3 text-muted">{{ t('web.user.nothing_saved_yet_bookmark_a_message_to_see_it_here_sentence', 'Nothing saved yet — bookmark a message to see it here.') }}</div>
     {% endif %}
     </div>
 </div>

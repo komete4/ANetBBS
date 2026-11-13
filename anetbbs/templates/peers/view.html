@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}{{ peer.name }} — BBS Directory{% endblock %}
+{% block title %}{{ peer.name }} {{ t('web.user.bbs_directory_dash', '— BBS Directory') }}{% endblock %}
 
 {% block content %}
 <div class="container my-4" style="max-width:640px;">
   <a href="{{ url_for('peers.index', tab='local') }}" class="btn btn-link ps-0 mb-2">
-    <i class="bi bi-arrow-left"></i> Back to Directory
+    <i class="bi bi-arrow-left"></i> {{ t('web.user.back_to_directory', 'Back to Directory') }}
   </a>
 
   <div class="card shadow-sm">
@@ -48,11 +48,11 @@
       <div class="d-flex gap-2 flex-wrap">
         <a href="telnet://{{ peer.hostname }}{% if peer.telnet_port and peer.telnet_port != 23 %}:{{ peer.telnet_port }}{% endif %}"
            class="btn btn-primary">
-          <i class="bi bi-terminal-fill"></i> Connect via Telnet
+          <i class="bi bi-terminal-fill"></i> {{ t('web.user.connect_via_telnet', 'Connect via Telnet') }}
         </a>
         {% if peer.web_url and _web_safe %}
         <a href="{{ _web }}" target="_blank" rel="noopener" class="btn btn-outline-info">
-          <i class="bi bi-box-arrow-up-right"></i> Visit Web
+          <i class="bi bi-box-arrow-up-right"></i> {{ t('web.user.visit_web', 'Visit Web') }}
         </a>
         {% endif %}
         {% if peer.ftn_address %}

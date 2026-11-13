@@ -10,7 +10,7 @@
 <form method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="mb-3">
-        <label class="form-label">Question</label>
+        <label class="form-label">{{ t('polls.question', 'Question') }}</label>
         <input type="text" name="question" class="form-control"
                value="{{ form.get('question', '') }}" maxlength="400" required>
     </div>
@@ -19,10 +19,10 @@
         <textarea name="description" rows="3" class="form-control">{{ form.get('description', '') }}</textarea>
     </div>
     <div class="mb-3">
-        <label class="form-label">Options (one per line, minimum 2)</label>
+        <label class="form-label">{{ t('web.user.options_one_per_line_minimum_2', 'Options (one per line, minimum 2)') }}</label>
         <textarea name="options" rows="6" class="form-control" required>{{ form.get('options', '') }}</textarea>
     </div>
-    <button class="btn btn-primary"><i class="bi bi-check2"></i> Create Poll</button>
+    <button class="btn btn-primary"><i class="bi bi-check2"></i> {{ t('web.user.create_poll', 'Create Poll') }}</button>
     <a href="{{ url_for('polls.index') }}" class="btn btn-link">{{ t('ui.cancel', 'Cancel') }}</a>
 </form>
 {% endblock %}

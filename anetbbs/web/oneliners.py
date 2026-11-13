@@ -3,6 +3,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
 
+from ..features.i18n import translate
 from ..models import db, OneLiner
 
 
@@ -24,7 +25,7 @@ def index():
 def post():
     text = (request.form.get('text') or '').strip()
     if not text:
-        flash('Empty one-liner.', 'warning')
+        flash(translate('oneliners.notice.empty', 'Empty one-liner.'), 'warning')
         return redirect(url_for('oneliners.index'))
     text = text[:120]
     try:
@@ -34,7 +35,7 @@ def post():
         pass
     db.session.add(OneLiner(user_id=current_user.id, text=text))
     db.session.commit()
-    flash('Posted.', 'success')
+    flash(translate('oneliners.notice.posted', 'Posted.'), 'success')
     return redirect(url_for('oneliners.index'))
 
 

@@ -5,7 +5,7 @@
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-bar-chart"></i> {{ t('ui.heading.polls', 'Polls') }}</h1>
-    <p>Vote in active polls or create your own.</p>
+    <p>{{ t('polls.intro', 'Vote in active polls or create your own.') }}</p>
 </div>
 
 <div class="mb-3">
@@ -19,7 +19,7 @@
     <div class="card-body p-0">
     {% if active %}
         <table class="table table-sm mb-0">
-            <thead><tr><th>Question</th><th>{{ t('ui.by', 'By') }}</th><th>Votes</th><th>{{ t('ui.created', 'Created') }}</th></tr></thead>
+            <thead><tr><th>{{ t('polls.question', 'Question') }}</th><th>{{ t('ui.by', 'By') }}</th><th>{{ t('polls.votes', 'Votes') }}</th><th>{{ t('ui.created', 'Created') }}</th></tr></thead>
             <tbody>
             {% for p in active %}
                 <tr>
@@ -31,16 +31,16 @@
             {% endfor %}
             </tbody>
         </table>
-    {% else %}<div class="p-3 text-muted">No active polls.</div>{% endif %}
+    {% else %}<div class="p-3 text-muted">{{ t('polls.empty', 'No active polls.') }}</div>{% endif %}
     </div>
 </div>
 
 {% if closed %}
 <div class="card">
-    <div class="card-header"><i class="bi bi-circle text-muted"></i> Recently Closed</div>
+    <div class="card-header"><i class="bi bi-circle text-muted"></i> {{ t('web.user.recently_closed', 'Recently Closed') }}</div>
     <div class="card-body p-0">
         <table class="table table-sm mb-0">
-            <thead><tr><th>Question</th><th>{{ t('ui.by', 'By') }}</th><th>Closed</th></tr></thead>
+            <thead><tr><th>{{ t('polls.question', 'Question') }}</th><th>{{ t('ui.by', 'By') }}</th><th>{{ t('polls.closed', 'Closed') }}</th></tr></thead>
             <tbody>
             {% for p in closed %}
                 <tr>

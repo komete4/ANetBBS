@@ -26,6 +26,7 @@ from flask_login import login_required, current_user
 from flask_socketio import emit
 
 from ..models import db, IrcServerConfig, IrcPreset
+from ..features.i18n import translate
 from ..features.irc_format import to_html as _irc_to_html, strip_codes as _irc_strip
 from ..core.net_safety import resolve_safe_destination
 
@@ -707,7 +708,7 @@ def register_socketio_handlers(socketio):
             _replay_scroll(current_user.id, sid, socketio)
         except Exception:
             logger.exception('IRC scrollback replay failed')
-        emit('irc_system', {'text': 'IRC namespace ready. Click Connect.'})
+        emit('irc_system', {'text': translate('irc.notice.ready', 'IRC namespace ready. Click Connect.')})
 
     @socketio.on('disconnect', namespace='/irc')
     def on_disconnect():
@@ -725,7 +726,7 @@ def register_socketio_handlers(socketio):
         with _sessions_lock:
             existing = _sessions.get(sid)
         if existing and existing.connected:
-            emit('irc_error', {'message': 'Already connected. Disconnect first.'})
+            emit('irc_error', {'message': translate('irc.notice.already_connected', 'Already connected. Disconnect first.')})
             return
 
         server = (data.get('server') or 'irc.libera.chat').strip()
@@ -793,7 +794,7 @@ def register_socketio_handlers(socketio):
         with _sessions_lock:
             sess = _sessions.get(sid)
         if not sess or not sess.connected:
-            emit('irc_error', {'message': 'Not connected.'})
+            emit('irc_error', {'message': translate('irc.notice.not_connected', 'Not connected.')})
             return
         line = (data.get('line') or '').strip()
         if not line:
@@ -848,7 +849,8 @@ def register_socketio_handlers(socketio):
                 sess.current_channel = target_nick
                 emit('irc_switch', {'channel': target_nick, 'switch': True})
             elif cmd == 'help':
-                emit('irc_system', {'text': (
+                emit('irc_system', {'text': translate(
+                    'irc.notice.commands',
                     'Commands: /join #chan [key], /part [#chan], /nick '
                     'newnick, /msg target text, /query nick, /switch '
                     'target, /me action, /whois nick, /list [pattern], '
@@ -886,7 +888,7 @@ def register_socketio_handlers(socketio):
                         f'PRIVMSG {target_nick} :\x01{ctcp_type}{extra}\x01')
                     emit('irc_system', {'text': f'CTCP {ctcp_type} → {target_nick}'})
                 else:
-                    emit('irc_error', {'message': 'Usage: /ctcp <nick> <TYPE> [args]'})
+                    emit('irc_error', {'message': translate('irc.notice.ctcp_usage', 'Usage: /ctcp <nick> <TYPE> [args]')})
             elif cmd in ('quit', 'q'):
                 sess.quit(message=arg or 'Goodbye')
             elif cmd in ('raw', 'quote') and arg:
@@ -895,13 +897,13 @@ def register_socketio_handlers(socketio):
                 sess.current_channel = arg.strip().split()[0]
                 emit('irc_switch', {'channel': sess.current_channel, 'switch': True})
             else:
-                emit('irc_error', {'message': f'Unknown command: /{cmd}'})
+                emit('irc_error', {'message': translate('irc.notice.unknown_command', 'Unknown command: /{command}', command=cmd)})
             return
 
         # Plain text → privmsg to current channel
         target = (data.get('target') or sess.current_channel).strip()
         if not target:
-            emit('irc_error', {'message': 'No channel selected.'})
+            emit('irc_error', {'message': translate('irc.notice.no_channel', 'No channel selected.')})
             return
         sess.send_raw(f'PRIVMSG {target} :{line}')
         # Echo ourselves locally — IRC servers don't echo your own PRIVMSGs back
@@ -918,7 +920,7 @@ def register_socketio_handlers(socketio):
             sess = _sessions.pop(sid, None)
         if sess:
             sess.quit()
-            emit('irc_disconnected', {'reason': 'user requested'})
+            emit('irc_disconnected', {'reason': translate('irc.notice.user_requested', 'user requested')})
 
     @socketio.on('irc_clear_scrollback', namespace='/irc')
     def on_clear_scrollback():
@@ -926,4 +928,4 @@ def register_socketio_handlers(socketio):
             return False
         with _scrollback_lock:
             _scrollback.pop(current_user.id, None)
-        emit('irc_system', {'text': 'Scrollback cleared.'})
+        emit('irc_system', {'text': translate('irc.notice.cleared', 'Scrollback cleared.')})

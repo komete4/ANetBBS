@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}All pages — Wiki{% endblock %}
+{% block title %}{{ t('web.user.all_pages_wiki', 'All pages — Wiki') }}{% endblock %}
 {% block content %}
 {% include "wiki/_layout.html" %}
 
@@ -29,6 +29,6 @@
 </div>
 {% endfor %}
 {% else %}
-<div class="alert alert-info">No pages yet.</div>
+<div class="alert alert-info">{{ t('web.user.no_pages_yet_sentence', 'No pages yet.') }}</div>
 {% endif %}
 {% endblock %}

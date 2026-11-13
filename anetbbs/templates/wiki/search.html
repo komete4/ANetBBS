@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Search — Wiki{% endblock %}
+{% block title %}{{ t('web.user.search_wiki', 'Search — Wiki') }}{% endblock %}
 {% block content %}
 {% include "wiki/_layout.html" %}
 
@@ -10,7 +10,7 @@
 <form method="get" action="{{ url_for('wiki.search') }}" class="mb-3">
     <div class="input-group">
         <input type="text" name="q" value="{{ q }}" class="form-control"
-               placeholder="Search titles, slugs, and body text…" autofocus>
+               placeholder="{{ t('web.user.search_titles_slugs_and_body_text', 'Search titles, slugs, and body text…') }}" autofocus>
         <button class="btn btn-primary">{{ t('ui.search', 'Search') }}</button>
     </div>
 </form>
@@ -29,9 +29,9 @@
         </ul>
     {% else %}
         <div class="alert alert-info">
-            No matches for <strong>{{ q }}</strong>.
+            {{ t('web.user.no_matches_for', 'No matches for') }} <strong>{{ q }}</strong>.
             {% if current_user.is_authenticated %}
-            You can <a href="{{ url_for('wiki.new') }}">create a new page</a>.
+            You can <a href="{{ url_for('wiki.new') }}">{{ t('web.user.create_a_new_page_lowercase', 'create a new page') }}</a>.
             {% endif %}
         </div>
     {% endif %}

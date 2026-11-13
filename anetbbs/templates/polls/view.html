@@ -7,8 +7,8 @@
     <h1><i class="bi bi-bar-chart-fill"></i> {{ poll.question }}</h1>
     {% if poll.description %}<p>{{ poll.description }}</p>{% endif %}
     <p class="text-muted small">
-        by {{ poll.creator.username }} on {{ poll.created_at|eastern('%Y-%m-%d') }}
-        {% if not poll.is_active %}<span class="badge bg-secondary">closed</span>{% endif %}
+        {{ t('polls.by_date', 'by {user} on {date}', user=poll.creator.username, date=poll.created_at|eastern('%Y-%m-%d')) }}
+        {% if not poll.is_active %}<span class="badge bg-secondary">{{ t('polls.closed_badge', 'closed') }}</span>{% endif %}
     </p>
 </div>
 
@@ -33,7 +33,7 @@
                 </div>
             {% endfor %}
             <button class="btn btn-primary mt-2">
-                <i class="bi bi-check2"></i> {% if user_vote %}Change Vote{% else %}Vote{% endif %}
+                <i class="bi bi-check2"></i> {% if user_vote %}{{ t('web.user.change_vote', 'Change Vote') }}{% else %}{{ t('polls.vote', 'Vote') }}{% endif %}
             </button>
         </form>
     {% else %}
@@ -51,20 +51,20 @@
 </div>
 
 <div>
-    <a href="{{ url_for('polls.index') }}" class="btn btn-link">← All polls</a>
+    <a href="{{ url_for('polls.index') }}" class="btn btn-link">{{ t('web.user.all_polls_back', '← All polls') }}</a>
     {% if poll.is_active and (current_user.is_admin or poll.creator_id == current_user.id) %}
         <form method="post" action="{{ url_for('polls.close', poll_id=poll.id) }}" style="display:inline;">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn btn-outline-danger btn-sm" onclick="return confirm('Close this poll?')">
-                <i class="bi bi-x-circle"></i> Close Poll
+            <button class="btn btn-outline-danger btn-sm" data-confirm="{{ t('polls.confirm.close', 'Close this poll?') }}" onclick="return confirm(this.dataset.confirm)">
+                <i class="bi bi-x-circle"></i> {{ t('web.user.close_poll', 'Close Poll') }}
             </button>
         </form>
     {% endif %}
     {% if current_user.is_admin %}
         <form method="post" action="{{ url_for('polls.delete', poll_id=poll.id) }}" style="display:inline;">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete this poll permanently, including all votes? This cannot be undone.')">
-                <i class="bi bi-trash"></i> Delete Poll
+            <button class="btn btn-outline-danger btn-sm" data-confirm="{{ t('polls.confirm.delete', 'Delete this poll permanently, including all votes? This cannot be undone.') }}" onclick="return confirm(this.dataset.confirm)">
+                <i class="bi bi-trash"></i> {{ t('web.user.delete_poll', 'Delete Poll') }}
             </button>
         </form>
     {% endif %}

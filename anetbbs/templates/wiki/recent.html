@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Recent changes — Wiki{% endblock %}
+{% block title %}{{ t('web.user.recent_changes_wiki', 'Recent changes — Wiki') }}{% endblock %}
 {% block content %}
 {% include "wiki/_layout.html" %}
 
 <div class="bbs-header">
     <h1><i class="bi bi-clock-history"></i> {{ t('ui.heading.recent_changes', 'Recent changes') }}</h1>
-    <p class="text-muted">Every edit, newest first.</p>
+    <p class="text-muted">{{ t('web.user.every_edit_newest_first_sentence', 'Every edit, newest first.') }}</p>
 </div>
 
 {% if pagination.items %}
@@ -17,7 +17,7 @@
                 <th>{{ t('ui.page', 'Page') }}</th>
                 <th>Rev</th>
                 <th>Who</th>
-                <th>Edit summary</th>
+                <th>{{ t('web.user.edit_summary', 'Edit summary') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -52,6 +52,6 @@
 {% endif %}
 
 {% else %}
-<div class="alert alert-info">No edits yet.</div>
+<div class="alert alert-info">{{ t('web.user.no_edits_yet_sentence', 'No edits yet.') }}</div>
 {% endif %}
 {% endblock %}

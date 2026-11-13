@@ -7,7 +7,7 @@
   <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
     <div>
       <h2 class="mb-0"><i class="bi bi-globe2"></i> {{ t('ui.heading.bbs_directory', 'BBS Directory') }}</h2>
-      <p class="text-muted small mb-0">Browse local and worldwide BBS listings</p>
+      <p class="text-muted small mb-0">{{ t('web.user.browse_local_and_worldwide_bbs_listings', 'Browse local and worldwide BBS listings') }}</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
       <a href="{{ url_for('peers.submit') }}" class="btn btn-success btn-sm">
@@ -28,7 +28,7 @@
     <div class="input-group input-group-sm" style="max-width:480px;">
       <span class="input-group-text"><i class="bi bi-search"></i></span>
       <input type="text" name="q" value="{{ q }}"
-             class="form-control" placeholder="Search BBS name, host, location, software…">
+             class="form-control" placeholder="{{ t('web.user.search_bbs_name_host_location_software', 'Search BBS name, host, location, software…') }}">
       <button class="btn btn-outline-primary" type="submit">{{ t('ui.search', 'Search') }}</button>
       {% if q %}<a href="{{ url_for('peers.index', tab=tab) }}" class="btn btn-outline-secondary">{{ t('ui.clear', 'Clear') }}</a>{% endif %}
     </div>
@@ -109,8 +109,8 @@
       </div>
     {% else %}
       <div class="alert alert-secondary">
-        No local BBSes listed yet.
-        <a href="{{ url_for('peers.submit') }}">Be the first to add yours!</a>
+        {{ t('web.user.no_local_bbses_listed_yet_sentence', 'No local BBSes listed yet.') }}
+        <a href="{{ url_for('peers.submit') }}">{{ t('web.user.be_the_first_to_add_yours', 'Be the first to add yours!') }}</a>
       </div>
     {% endif %}
 
@@ -122,10 +122,10 @@
       <div class="d-flex align-items-center justify-content-between mb-2">
         <p class="text-muted small mb-0">
           {% if d.last_updated %}
-            Last updated {{ d.last_updated|eastern('%Y-%m-%d %H:%M %Z') }}
+            {{ t('web.user.last_updated', 'Last updated') }} {{ d.last_updated|eastern('%Y-%m-%d %H:%M %Z') }}
             (refreshes every {{ 6 }} hours)
           {% else %}
-            Loading… check back in a moment.
+            {{ t('web.user.loading_check_back_in_a_moment_sentence', 'Loading… check back in a moment.') }}
           {% endif %}
         </p>
         {% if current_user.is_admin %}
@@ -134,7 +134,7 @@
           <input type="hidden" name="action" value="refresh_ext">
           <input type="hidden" name="source" value="{{ src }}">
           <button class="btn btn-outline-primary btn-sm">
-            <i class="bi bi-arrow-clockwise"></i> Refresh now
+            <i class="bi bi-arrow-clockwise"></i> {{ t('web.user.refresh_now', 'Refresh now') }}
           </button>
         </form>
         {% endif %}
@@ -193,9 +193,9 @@
       {% else %}
         <div class="alert alert-secondary">
           {% if d.last_updated %}
-            No entries match your search.
+            {{ t('web.user.no_entries_match_your_search_sentence', 'No entries match your search.') }}
           {% else %}
-            Data is loading in the background — refresh the page in a moment.
+            {{ t('web.user.data_is_loading_in_the_background_refresh_the_page_in_a_moment_sentence', 'Data is loading in the background — refresh the page in a moment.') }}
           {% endif %}
         </div>
       {% endif %}

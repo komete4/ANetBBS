@@ -43,7 +43,7 @@
 <div class="card mb-3">
     <div class="card-header py-1">
         <button type="button" id="toggleMd" class="btn btn-link btn-sm p-0">
-            <i class="bi bi-markdown"></i> Toggle Markdown view
+            <i class="bi bi-markdown"></i> {{ t('web.user.toggle_markdown_view', 'Toggle Markdown view') }}
         </button>
     </div>
     <div class="card-body">
@@ -78,7 +78,7 @@
 <div class="card mb-3">
     <div class="card-header">
         <a class="text-decoration-none" data-bs-toggle="collapse" href="#kludgesPanel">
-            <i class="bi bi-code-slash"></i> Kludges (click to expand)
+            <i class="bi bi-code-slash"></i> {{ t('web.user.kludges_click_to_expand', 'Kludges (click to expand)') }}
         </a>
     </div>
     <div id="kludgesPanel" class="collapse">
@@ -94,14 +94,14 @@
         <i class="bi bi-reply"></i> {{ t('ui.reply', 'Reply') }}
     </a>
     <button type="button" class="btn btn-outline-info copy-permalink-btn"
-            data-kind="netmail" data-id="{{ m.id }}" title="Copy permalink">
-        <i class="bi bi-link-45deg"></i> Copy Link
+            data-kind="netmail" data-id="{{ m.id }}" title="{{ t('web.user.copy_permalink', 'Copy permalink') }}">
+        <i class="bi bi-link-45deg"></i> {{ t('web.user.copy_link', 'Copy Link') }}
     </button>
     <form method="post" action="{{ url_for('saved.add') }}" style="display:inline;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="kind" value="netmail">
         <input type="hidden" name="target_id" value="{{ m.id }}">
-        <button class="btn btn-outline-warning" title="Bookmark this message">
+        <button class="btn btn-outline-warning" title="{{ t('web.user.bookmark_this_message', 'Bookmark this message') }}">
             <i class="bi bi-bookmark-star"></i> {{ t('ui.save', 'Save') }}
         </button>
     </form>

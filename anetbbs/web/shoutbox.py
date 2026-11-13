@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from flask import Blueprint, request, redirect, url_for, flash, abort, render_template
 from flask_login import login_required, current_user
 
+from ..features.i18n import translate
 from ..models import db, ShoutboxPost
 
 
@@ -26,9 +27,9 @@ def index():
     if request.method == 'POST':
         text = (request.form.get('text') or '').strip()
         if not text:
-            flash('Empty shout.', 'warning')
+            flash(translate('shoutbox.notice.empty', 'Empty shout.'), 'warning')
         elif len(text) > 280:
-            flash('Shout too long (max 280 chars).', 'danger')
+            flash(translate('shoutbox.notice.too_long', 'Shout too long (max 280 chars).'), 'danger')
         elif not getattr(current_user, 'is_admin', False):
             # Per-user rate limit. Sysops are exempt because they may
             # need to broadcast multiple announcements quickly.
@@ -38,7 +39,7 @@ def index():
                       .filter(ShoutboxPost.created_at >= window_start)
                       .count())
             if recent >= _SHOUT_LIMIT:
-                flash(f'Slow down — max {_SHOUT_LIMIT} shouts per minute.', 'danger')
+                flash(translate('shoutbox.notice.rate_limit', 'Slow down — max {shout_limit} shouts per minute.', shout_limit=_SHOUT_LIMIT), 'danger')
             else:
                 _post_shout(text)
         else:

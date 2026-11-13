@@ -13,21 +13,21 @@
   <h1><i class="bi bi-rss-fill"></i> {{ t('ui.heading.rss_reader', 'RSS Reader') }}</h1>
   <p class="mb-0">
     {% if total_unread %}
-      <strong>{{ total_unread }}</strong> unread item{{ '' if total_unread == 1 else 's' }}
+      <strong>{{ total_unread }}</strong> {{ t('web.user.unread_item_lowercase', 'unread item') }}{{ '' if total_unread == 1 else 's' }}
       across {{ feeds|length }} feed{{ '' if feeds|length == 1 else 's' }}.
     {% else %}
-      All caught up &mdash; {{ feeds|length }} feed{{ '' if feeds|length == 1 else 's' }} subscribed.
+      {{ t('web.user.all_caught_up_suffix', 'All caught up —') }} {{ feeds|length }} feed{{ '' if feeds|length == 1 else 's' }} subscribed.
     {% endif %}
   </p>
 </div>
 
 <div class="d-flex flex-wrap gap-2 mb-4">
   <a href="{{ url_for('rss.river') }}" class="btn btn-primary">
-    <i class="bi bi-water"></i> River (all feeds)
+    <i class="bi bi-water"></i> {{ t('web.user.river_all_feeds', 'River (all feeds)') }}
   </a>
   {% if current_user.is_admin %}
   <a href="{{ url_for('rss_admin.index') }}" class="btn btn-secondary">
-    <i class="bi bi-gear"></i> Manage Feeds
+    <i class="bi bi-gear"></i> {{ t('web.user.manage_feeds', 'Manage Feeds') }}
   </a>
   {% endif %}
   {% if total_unread %}
@@ -98,11 +98,11 @@
 
 {% else %}
 <div class="alert alert-info">
-  <i class="bi bi-info-circle"></i> No RSS feeds configured yet.
+  <i class="bi bi-info-circle"></i> {{ t('web.user.no_rss_feeds_configured_yet_sentence', 'No RSS feeds configured yet.') }}
   {% if current_user.is_admin %}
-  <a href="{{ url_for('rss_admin.add') }}" class="alert-link">Add one →</a>
+  <a href="{{ url_for('rss_admin.add') }}" class="alert-link">{{ t('web.user.add_one', 'Add one →') }}</a>
   {% else %}
-  Ask the sysop to add one.
+  {{ t('web.user.ask_the_sysop_to_add_one_sentence', 'Ask the sysop to add one.') }}
   {% endif %}
 </div>
 {% endif %}

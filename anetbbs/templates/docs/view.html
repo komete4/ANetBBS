@@ -24,7 +24,7 @@
         </ul>
         {% endfor %}
         <div class="card-footer small">
-            <a href="{{ url_for('docs.index') }}">← Documentation index</a>
+            <a href="{{ url_for('docs.index') }}">{{ t('web.user.documentation_index_back', '← Documentation index') }}</a>
         </div>
     </div>
 </div>
@@ -51,7 +51,7 @@
         {{ body | markdown }}
     </article>
     {% if pagination and pagination.pages > 1 %}
-    <nav aria-label="Changelog pages">
+    <nav aria-label="{{ t('web.user.changelog_pages', 'Changelog pages') }}">
         <ul class="pagination justify-content-center">
             {% if pagination.has_prev %}
             <li class="page-item"><a class="page-link" href="{{ url_for('docs.view', slug=slug, page=pagination.prev_num) }}">‹ Newer</a></li>
@@ -69,7 +69,7 @@
             <li class="page-item disabled"><span class="page-link">Older ›</span></li>
             {% endif %}
         </ul>
-        <p class="text-center text-muted small">{{ t('ui.page', 'Page') }} {{ pagination.page }} of {{ pagination.pages }} — newest releases first</p>
+        <p class="text-center text-muted small">{{ t('ui.page', 'Page') }} {{ pagination.page }} of {{ pagination.pages }} {{ t('web.user.newest_releases_first_dash_lowercase', '— newest releases first') }}</p>
     </nav>
     {% endif %}
 </div>

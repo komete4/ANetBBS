@@ -16,6 +16,7 @@ from flask import (Blueprint, send_file, request, redirect, url_for, flash,
                    render_template, current_app)
 from flask_login import login_required, current_user
 
+from ..features.i18n import translate
 from ..models import (db, EchomailMessage, EchoArea, EchomailLastRead)
 from ..features.access_control import evaluate_access
 from ..echomail.zip_safety import MAX_MEMBER_UNCOMPRESSED, ZipBombError
@@ -196,7 +197,7 @@ def download():
     from ..models import UserAccessFlags
     flags = UserAccessFlags.query.filter_by(user_id=current_user.id).first()
     if flags and flags.no_qwk:
-        flash('Your QWK download access has been suspended.', 'danger')
+        flash(translate('qwk_user.notice.download_suspended', 'Your QWK download access has been suspended.'), 'danger')
         return redirect(url_for('qwk_user.index'))
     blob = _build_qwk_blob(current_user)
     fname = f'{(os.environ.get("BBS_NAME","ANETBBS")[:8] or "ANETBBS").upper()}.QWK'
@@ -217,16 +218,16 @@ def upload():
     # could still upload REP replies and post messages.
     flags = UserAccessFlags.query.filter_by(user_id=current_user.id).first()
     if flags and flags.no_qwk:
-        flash('Your QWK access has been suspended.', 'danger')
+        flash(translate('qwk_user.notice.access_suspended', 'Your QWK access has been suspended.'), 'danger')
         return redirect(url_for('qwk_user.index'))
 
     upload = request.files.get('rep')
     if not upload or not upload.filename:
-        flash('No .REP file selected.', 'danger')
+        flash(translate('qwk_user.notice.rep_required', 'No .REP file selected.'), 'danger')
         return redirect(url_for('qwk_user.index'))
     raw = upload.read()
     if not raw or len(raw) < 200:
-        flash('REP packet looks empty/invalid.', 'danger')
+        flash(translate('qwk_user.notice.rep_invalid', 'REP packet looks empty/invalid.'), 'danger')
         return redirect(url_for('qwk_user.index'))
     try:
         with zipfile.ZipFile(io.BytesIO(raw)) as z:
@@ -234,7 +235,7 @@ def upload():
                            if n.upper().endswith('.MSG')
                            or n.upper() == 'MESSAGES.DAT'), None)
             if not target:
-                flash('No MESSAGES.DAT in the REP.', 'danger')
+                flash(translate('qwk_user.notice.messages_dat_missing', 'No MESSAGES.DAT in the REP.'), 'danger')
                 return redirect(url_for('qwk_user.index'))
             # Real gap found in a security/performance audit: z.read()
             # here had no cap on the DECLARED uncompressed size, letting
@@ -254,15 +255,15 @@ def upload():
                     f'(cap {MAX_MEMBER_UNCOMPRESSED}) -- refusing to extract')
             data = z.read(target)
     except ZipBombError:
-        flash('REP packet rejected: declared size too large.', 'danger')
+        flash(translate('qwk_user.notice.rep_too_large', 'REP packet rejected: declared size too large.'), 'danger')
         return redirect(url_for('qwk_user.index'))
     except Exception as exc:
-        flash(f'Could not unzip: {exc}', 'danger')
+        flash(translate('qwk_user.notice.unzip_failed', 'Could not unzip: {exc}', exc=exc), 'danger')
         return redirect(url_for('qwk_user.index'))
 
     # Skip the first 128-byte filler header.
     if len(data) < 128:
-        flash('Truncated REP packet.', 'danger')
+        flash(translate('qwk_user.notice.rep_truncated', 'Truncated REP packet.'), 'danger')
         return redirect(url_for('qwk_user.index'))
 
     pos = 128
@@ -340,5 +341,5 @@ def upload():
         except Exception:
             continue
     db.session.commit()
-    flash(f'Imported {imported} reply message(s).', 'success')
+    flash(translate('qwk_user.notice.replies_imported', 'Imported {imported} reply message(s).', imported=imported), 'success')
     return redirect(url_for('qwk_user.index'))

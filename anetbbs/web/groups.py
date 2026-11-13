@@ -3,6 +3,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
 from flask_login import login_required, current_user
 
+from ..features.i18n import translate
 from ..models import db, User, UserGroup, UserGroupMember
 
 
@@ -24,10 +25,10 @@ def new():
         desc = (request.form.get('description') or '').strip() or None
         is_open = bool(request.form.get('is_open'))
         if not name:
-            flash('Name required.', 'danger')
+            flash(translate('groups.notice.name_required', 'Name required.'), 'danger')
             return redirect(url_for('groups.new'))
         if UserGroup.query.filter_by(name=name).first():
-            flash('Group name already taken.', 'danger')
+            flash(translate('groups.notice.name_taken', 'Group name already taken.'), 'danger')
             return redirect(url_for('groups.new'))
         g = UserGroup(name=name, tag=tag or None, description=desc,
                       leader_id=current_user.id, is_open=is_open)
@@ -35,7 +36,7 @@ def new():
         db.session.add(UserGroupMember(group_id=g.id,
                                        user_id=current_user.id))
         db.session.commit()
-        flash(f'Group "{name}" created.', 'success')
+        flash(translate('groups.notice.created', 'Group "{name}" created.', name=name), 'success')
         return redirect(url_for('groups.view', group_id=g.id))
     return render_template('groups/new.html')
 
@@ -59,17 +60,17 @@ def view(group_id):
 def join(group_id):
     g = UserGroup.query.get_or_404(group_id)
     if not g.is_open and g.leader_id != current_user.id:
-        flash('This group is invite-only — ask the leader.', 'warning')
+        flash(translate('groups.notice.invite_only', 'This group is invite-only — ask the leader.'), 'warning')
         return redirect(url_for('groups.view', group_id=g.id))
     existing = UserGroupMember.query.filter_by(group_id=g.id,
                                                user_id=current_user.id).first()
     if existing:
-        flash('Already a member.', 'info')
+        flash(translate('groups.notice.already_member', 'Already a member.'), 'info')
     else:
         db.session.add(UserGroupMember(group_id=g.id,
                                        user_id=current_user.id))
         db.session.commit()
-        flash(f'Joined {g.name}.', 'success')
+        flash(translate('groups.notice.joined', 'Joined {name}.', name=g.name), 'success')
     return redirect(url_for('groups.view', group_id=g.id))
 
 
@@ -81,10 +82,10 @@ def leave(group_id):
                                           user_id=current_user.id).first()
     if row:
         if g.leader_id == current_user.id:
-            flash('Transfer leadership before leaving.', 'warning')
+            flash(translate('groups.notice.transfer_leadership', 'Transfer leadership before leaving.'), 'warning')
             return redirect(url_for('groups.view', group_id=g.id))
         db.session.delete(row); db.session.commit()
-        flash(f'Left {g.name}.', 'success')
+        flash(translate('groups.notice.left', 'Left {name}.', name=g.name), 'success')
     return redirect(url_for('groups.view', group_id=g.id))
 
 
@@ -98,16 +99,16 @@ def invite(group_id):
     name = (request.form.get('username') or '').strip()
     target = User.query.filter(User.username.ilike(name)).first()
     if not target:
-        flash('User not found.', 'danger')
+        flash(translate('groups.notice.user_missing', 'User not found.'), 'danger')
         return redirect(url_for('groups.view', group_id=g.id))
     if UserGroupMember.query.filter_by(group_id=g.id,
                                        user_id=target.id).first():
-        flash('Already a member.', 'info')
+        flash(translate('groups.notice.already_member', 'Already a member.'), 'info')
     else:
         db.session.add(UserGroupMember(group_id=g.id,
                                        user_id=target.id))
         db.session.commit()
-        flash(f'{target.username} added to {g.name}.', 'success')
+        flash(translate('groups.notice.member_added', '{username} added to {name}.', username=target.username, name=g.name), 'success')
     return redirect(url_for('groups.view', group_id=g.id))
 
 
@@ -121,7 +122,7 @@ def kick(group_id):
     row = UserGroupMember.query.get(member_id)
     if row and row.group_id == g.id and row.user_id != g.leader_id:
         db.session.delete(row); db.session.commit()
-        flash('Member removed.', 'success')
+        flash(translate('groups.notice.member_removed', 'Member removed.'), 'success')
     return redirect(url_for('groups.view', group_id=g.id))
 
 
@@ -132,5 +133,5 @@ def delete(group_id):
     if g.leader_id != current_user.id and not current_user.is_admin:
         abort(403)
     db.session.delete(g); db.session.commit()
-    flash('Group deleted.', 'success')
+    flash(translate('groups.notice.deleted', 'Group deleted.'), 'success')
     return redirect(url_for('groups.index'))

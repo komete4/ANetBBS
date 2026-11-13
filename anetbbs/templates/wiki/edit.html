@@ -6,7 +6,7 @@
 <div class="bbs-header">
     <h1>
         <i class="bi bi-{% if is_new %}plus-square{% else %}pencil-square{% endif %}"></i>
-        {% if is_new %}Create new page{% else %}Edit page{% endif %}
+        {% if is_new %}{{ t('web.user.create_new_page', 'Create new page') }}{% else %}{{ t('web.user.edit_page', 'Edit page') }}{% endif %}
         <small class="text-muted">/wiki/{{ slug }}</small>
     </h1>
 </div>
@@ -45,7 +45,7 @@
         </div>
         <div class="tab-pane fade" id="previewTab">
             <div id="previewBody" class="wiki-body">
-                <p class="text-muted">Click the Preview tab to render.</p>
+                <p class="text-muted">{{ t('web.user.click_the_preview_tab_to_render_sentence', 'Click the Preview tab to render.') }}</p>
             </div>
         </div>
         <div class="tab-pane fade wiki-cheatsheet" id="cheatTab">
@@ -53,30 +53,30 @@
                 <div class="col-md-6">
                     <h5>Markdown</h5>
                     <table class="table table-sm">
-                        <tr><th><code># Heading 1</code></th><td>Top-level heading</td></tr>
+                        <tr><th><code># Heading 1</code></th><td>{{ t('web.user.top_level_heading', 'Top-level heading') }}</td></tr>
                         <tr><th><code>## Heading 2</code></th><td>Subheading</td></tr>
                         <tr><th><code>**bold**</code></th><td><strong>bold</strong></td></tr>
                         <tr><th><code>*italic*</code></th><td><em>italic</em></td></tr>
                         <tr><th><code>`code`</code></th><td><code>code</code></td></tr>
-                        <tr><th><code>- item</code></th><td>Bulleted list</td></tr>
-                        <tr><th><code>1. item</code></th><td>Numbered list</td></tr>
+                        <tr><th><code>- item</code></th><td>{{ t('web.user.bulleted_list', 'Bulleted list') }}</td></tr>
+                        <tr><th><code>1. item</code></th><td>{{ t('web.user.numbered_list', 'Numbered list') }}</td></tr>
                         <tr><th><code>&gt; quote</code></th><td>Blockquote</td></tr>
-                        <tr><th><code>[text](url)</code></th><td>External link</td></tr>
+                        <tr><th><code>[text](url)</code></th><td>{{ t('web.user.external_link', 'External link') }}</td></tr>
                         <tr><th><code>![alt](url)</code></th><td>Image</td></tr>
-                        <tr><th><code>---</code></th><td>Horizontal rule</td></tr>
+                        <tr><th><code>---</code></th><td>{{ t('web.user.horizontal_rule', 'Horizontal rule') }}</td></tr>
                     </table>
                 </div>
                 <div class="col-md-6">
-                    <h5>Wiki links</h5>
+                    <h5>{{ t('web.user.wiki_links', 'Wiki links') }}</h5>
                     <table class="table table-sm">
                         <tr><th><code>[[Getting Started]]</code></th>
-                            <td>→ <a href="{{ url_for('wiki.view', slug='getting-started') }}">Getting Started</a></td></tr>
+                            <td>→ <a href="{{ url_for('wiki.view', slug='getting-started') }}">{{ t('web.user.getting_started', 'Getting Started') }}</a></td></tr>
                         <tr><th><code>[[home|click here]]</code></th>
                             <td>Pipe lets you change the link text</td></tr>
                         <tr><th><code>[[Sysop Guide#Doors]]</code></th>
                             <td>Anchor jumps inside the target page</td></tr>
                     </table>
-                    <h5>Code blocks</h5>
+                    <h5>{{ t('web.user.code_blocks', 'Code blocks') }}</h5>
                     <pre>```python
 def hello():
     print("hi")
@@ -90,9 +90,9 @@ def hello():
     </div>
 
     <div class="mb-3">
-        <label class="form-label">Edit summary <small class="text-muted">(optional, shown in history)</small></label>
+        <label class="form-label">{{ t('web.user.edit_summary', 'Edit summary') }} <small class="text-muted">(optional, shown in history)</small></label>
         <input type="text" name="edit_summary" class="form-control"
-               placeholder="e.g. Fixed typo, added installation steps…"
+               placeholder="{{ t('wiki.summary_example', 'e.g. Fixed typo, added installation steps…') }}"
                maxlength="300">
     </div>
 

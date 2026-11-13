@@ -32,6 +32,7 @@ from flask_login import login_required, current_user
 from sqlalchemy import or_, func
 from sqlalchemy.exc import IntegrityError
 
+from ..features.i18n import translate
 from ..models import db, WikiPage, WikiRevision, Post
 from ..wiki.slug import slugify
 from ..wiki.render import render as render_wiki, extract_outgoing_links
@@ -259,7 +260,7 @@ def new():
         slug_in = (request.form.get('slug') or '').strip()
         slug = slugify(slug_in or title)
         if not title or not slug:
-            flash('Title is required.', 'warning')
+            flash(translate('wiki.notice.title_required', 'Title is required.'), 'warning')
             return render_template('wiki/new.html', title=title, slug=slug_in,
                                    nav=_topnav_pages())
         # Existing? send to edit form for it.
@@ -350,7 +351,7 @@ def edit(slug):
     # Lock check (admin override).
     if (page and page.is_locked
             and not getattr(current_user, 'is_admin', False)):
-        flash('This page is locked. Only sysops can edit it.', 'warning')
+        flash(translate('wiki.notice.locked', 'This page is locked. Only sysops can edit it.'), 'warning')
         return redirect(url_for('wiki.view', slug=canonical))
 
     # Edit gate — minimum post count + account age (admins exempt).
@@ -364,14 +365,14 @@ def edit(slug):
         body = request.form.get('body') or ''
         edit_summary = (request.form.get('edit_summary') or '').strip()
         if not title:
-            flash('Title is required.', 'warning')
+            flash(translate('wiki.notice.title_required', 'Title is required.'), 'warning')
             return render_template('wiki/edit.html', page=page,
                                    title=title, body=body,
                                    edit_summary=edit_summary,
                                    slug=canonical, is_new=is_new,
                                    nav=_topnav_pages())
         if len(body) > _WIKI_BODY_MAX_CHARS:
-            flash(f'Page body too long (max {_WIKI_BODY_MAX_CHARS:,} characters).',
+            flash(translate('wiki.notice.body_too_long', 'Page body too long (max {wiki_body_max_chars:,} characters).', wiki_body_max_chars=_WIKI_BODY_MAX_CHARS),
                  'danger')
             return render_template('wiki/edit.html', page=page,
                                    title=title, body=body,
@@ -390,10 +391,10 @@ def edit(slug):
         _save_revision(page, body, title, edit_summary, current_user)
         try:
             db.session.commit()
-            flash(f'Saved "{title}".', 'success')
+            flash(translate('wiki.notice.saved', 'Saved "{title}".', title=title), 'success')
         except Exception as exc:  # pylint: disable=broad-except
             db.session.rollback()
-            flash(f'Save failed: {exc}', 'danger')
+            flash(translate('wiki.notice.save_failed', 'Save failed: {exc}', exc=exc), 'danger')
             return render_template('wiki/edit.html', page=page,
                                    title=title, body=body,
                                    edit_summary=edit_summary,
@@ -483,10 +484,10 @@ def revert(slug, rev_num):
                    f'Reverted to revision {rev_num}', current_user)
     try:
         db.session.commit()
-        flash(f'Reverted to revision {rev_num}.', 'success')
+        flash(translate('wiki.notice.reverted', 'Reverted to revision {rev_num}.', rev_num=rev_num), 'success')
     except Exception as exc:  # pylint: disable=broad-except
         db.session.rollback()
-        flash(f'Revert failed: {exc}', 'danger')
+        flash(translate('wiki.notice.revert_failed', 'Revert failed: {exc}', exc=exc), 'danger')
     return redirect(url_for('wiki.view', slug=page.slug))
 
 

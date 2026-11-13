@@ -1,14 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Send IM — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{{ t('web.user.send_im_suffix', 'Send IM —') }} {{ config.BBS_NAME }}{% endblock %}
 
 {% block content %}
 <div class="container my-4" style="max-width:720px;">
     <h2><i class="bi bi-send"></i> {{ t('ui.heading.send_inter_bbs_instant_message', 'Send Inter-BBS Instant Message') }}</h2>
     <p class="text-muted">
-        Real-time delivery to a user on another BBS over MSP (TCP port 18).
-        The remote BBS must be running Synchronet (sbbsimsg) or another
-        compatible MSP server. There is no acknowledgement — "delivered"
-        means the bytes hit the wire and the remote did not reject.
+        {{ t('imsg.delivery_help', 'Real-time delivery to a user on another BBS over MSP (TCP port 18). The remote BBS must be running Synchronet (sbbsimsg) or another compatible MSP server. There is no acknowledgement — "delivered" means the bytes hit the wire and the remote did not reject.') }}
     </p>
 
     <form method="post">

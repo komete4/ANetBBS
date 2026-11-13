@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>{{ card.name }} — ANetBBS Postcard</title>
+<title>{{ card.name }} {{ t('web.user.anetbbs_postcard_dash', '— ANetBBS Postcard') }}</title>
 <meta name="description" content="A retro ANSI/PETSCII postcard made on {{ card.created_by.username if card.created_by else 'ANetBBS' }}'s BBS.">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta property="og:title" content="{{ card.name }}">
@@ -153,18 +153,17 @@
 </div>
 
 <div class="actions">
-  <a class="btn" href="{{ url_for('postcards.png', slug=card.slug) }}" download><i class="bi bi-image"></i> Download PNG</a>
-  <a class="btn" href="{{ url_for('postcards.raw_ansi', slug=card.slug) }}"><i class="bi bi-download"></i> Download .ans</a>
+  <a class="btn" href="{{ url_for('postcards.png', slug=card.slug) }}" download><i class="bi bi-image"></i> {{ t('web.user.download_png', 'Download PNG') }}</a>
+  <a class="btn" href="{{ url_for('postcards.raw_ansi', slug=card.slug) }}"><i class="bi bi-download"></i> {{ t('web.user.download_ans', 'Download .ans') }}</a>
 </div>
 
 <div class="share-row">
   <input type="text" readonly value="{{ share_url }}" onclick="this.select();" id="shareUrl">
-  <button class="btn" onclick="navigator.clipboard && navigator.clipboard.writeText(document.getElementById('shareUrl').value)">Copy Link</button>
+  <button class="btn" onclick="navigator.clipboard && navigator.clipboard.writeText(document.getElementById('shareUrl').value)">{{ t('web.user.copy_link', 'Copy Link') }}</button>
 </div>
 
 <footer>
-  Made with <a href="https://github.com/anetonline/ANetBBS" target="_blank" rel="noopener">ANetBBS</a> —
-  old-school terminal BBS, meet the modern web.
+  {{ t('web.user.made_with', 'Made with') }} <a href="https://github.com/anetonline/ANetBBS" target="_blank" rel="noopener">ANetBBS</a> {{ t('web.user.old_school_terminal_bbs_meet_the_modern_web_sentence', '— old-school terminal BBS, meet the modern web.') }}
 </footer>
 
 </body>

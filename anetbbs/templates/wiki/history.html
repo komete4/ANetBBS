@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}History — {{ page.title }}{% endblock %}
+{% block title %}{{ t('web.user.full_history', 'Full history') }} — {{ page.title }}{% endblock %}
 {% block content %}
 {% include "wiki/_layout.html" %}
 
@@ -12,8 +12,8 @@
     <div class="card">
         <div class="card-header">
             <i class="bi bi-arrow-left-right"></i>
-            Pick two revisions and click Compare to see the diff.
-            <button class="btn btn-sm btn-primary ms-3"><i class="bi bi-arrow-left-right"></i> Compare selected</button>
+            {{ t('web.user.pick_two_revisions_and_click_compare_to_see_the_diff_sentence', 'Pick two revisions and click Compare to see the diff.') }}
+            <button class="btn btn-sm btn-primary ms-3"><i class="bi bi-arrow-left-right"></i> {{ t('web.user.compare_selected', 'Compare selected') }}</button>
         </div>
         <table class="table table-sm mb-0">
             <thead>
@@ -23,7 +23,7 @@
                     <th>Rev</th>
                     <th>{{ t('ui.when', 'When') }}</th>
                     <th>Who</th>
-                    <th>Edit summary</th>
+                    <th>{{ t('web.user.edit_summary', 'Edit summary') }}</th>
                     <th></th>
                 </tr>
             </thead>
@@ -46,7 +46,7 @@
                     <form method="post" action="{{ url_for('wiki.revert', slug=page.slug, rev_num=r.rev_num) }}" class="d-inline"
                           onsubmit="return confirm('Revert to revision r{{ r.rev_num }}? A new revision will be written with this content.');">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button class="btn btn-sm btn-outline-warning" title="Revert to this revision">
+                        <button class="btn btn-sm btn-outline-warning" title="{{ t('web.user.revert_to_this_revision', 'Revert to this revision') }}">
                             <i class="bi bi-arrow-counterclockwise"></i>
                         </button>
                     </form>

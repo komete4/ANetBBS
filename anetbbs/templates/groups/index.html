@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Groups — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{{ t('ui.heading.user_groups_clans', 'User Groups / Clans') }} — {{ config.BBS_NAME }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-people-fill"></i> {{ t('ui.heading.user_groups_clans', 'User Groups / Clans') }}</h1>
@@ -24,7 +24,7 @@
             <p class="small text-muted">
                 Leader: {{ g.leader.username if g.leader else '?' }} ·
                 Members: {{ g.members.count() }} ·
-                {% if g.is_open %}{{ t('ui.open', 'Open') }}{% else %}Invite-only{% endif %}
+                {% if g.is_open %}{{ t('ui.open', 'Open') }}{% else %}{{ t('web.user.invite_only', 'Invite-only') }}{% endif %}
             </p>
             {% if g.description %}<p>{{ g.description[:140] }}{% if g.description|length > 140 %}...{% endif %}</p>{% endif %}
             <a href="{{ url_for('groups.view', group_id=g.id) }}" class="btn btn-sm btn-primary">{{ t('ui.view', 'View') }}</a>
@@ -34,6 +34,6 @@
 {% endfor %}
 </div>
 {% else %}
-<p class="text-muted">No groups yet. {% if current_user.is_authenticated %}<a href="{{ url_for('groups.new') }}">Start one.</a>{% endif %}</p>
+<p class="text-muted">{{ t('web.user.no_groups_yet_sentence', 'No groups yet.') }} {% if current_user.is_authenticated %}<a href="{{ url_for('groups.new') }}">{{ t('web.user.start_one_sentence', 'Start one.') }}</a>{% endif %}</p>
 {% endif %}
 {% endblock %}

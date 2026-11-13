@@ -31,7 +31,7 @@
         </div>
         <pre class="ansi-body" style="white-space:pre-wrap;font-family:monospace;font-size:0.85rem;margin:0;">{{ (m.body[:600] if m.body else '') | msgbody(m.chrs) }}{% if m.body and m.body|length > 600 %}...{% endif %}</pre>
         <div class="mt-1">
-            <a href="{{ url_for('echomail.read', area_id=echo_area.id, message_id=m.id) }}" class="btn btn-sm btn-link p-0">Read full</a>
+            <a href="{{ url_for('echomail.read', area_id=echo_area.id, message_id=m.id) }}" class="btn btn-sm btn-link p-0">{{ t('web.user.read_full', 'Read full') }}</a>
             <a href="{{ url_for('echomail.compose', area_id=echo_area.id, reply_to_id=m.id) }}" class="btn btn-sm btn-link p-0">{{ t('ui.reply', 'Reply') }}</a>
         </div>
     </div>

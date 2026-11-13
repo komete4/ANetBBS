@@ -6,6 +6,7 @@ and PMs. Renders a unified list with links back to the source.
 from flask import Blueprint, request, redirect, url_for, flash, abort, render_template
 from flask_login import login_required, current_user
 
+from ..features.i18n import translate
 from ..models import (db, SavedMessage, EchomailMessage, NetmailMessage,
                       Post, PrivateMessage, EchoArea)
 
@@ -147,11 +148,11 @@ def add():
     target_id = request.form.get('target_id', type=int)
     notes = (request.form.get('notes') or '').strip()
     if kind not in _KIND_LABELS or not target_id:
-        flash('Invalid save target.', 'danger')
+        flash(translate('saved.notice.invalid_target', 'Invalid save target.'), 'danger')
         return redirect(request.referrer or url_for('saved.index'))
     target = _resolve(kind, target_id)
     if target is None:
-        flash('Target not found.', 'danger')
+        flash(translate('saved.notice.missing_target', 'Target not found.'), 'danger')
         return redirect(request.referrer or url_for('saved.index'))
     # Real gap found in a full message-boards security audit: bookmarking
     # a board post had no access check at all -- a below-level user
@@ -162,7 +163,7 @@ def add():
     # closed in a later audit pass via the shared _can_view() above,
     # which applies to every kind uniformly now.
     if not _can_view(kind, target):
-        flash('Target not found.', 'danger')
+        flash(translate('saved.notice.missing_target', 'Target not found.'), 'danger')
         return redirect(request.referrer or url_for('saved.index'))
     existing = SavedMessage.query.filter_by(
         user_id=current_user.id, kind=kind, target_id=target_id).first()
@@ -170,13 +171,13 @@ def add():
         if notes:
             existing.notes = notes
             db.session.commit()
-        flash('Already saved.', 'info')
+        flash(translate('saved.notice.already_saved', 'Already saved.'), 'info')
     else:
         db.session.add(SavedMessage(
             user_id=current_user.id, kind=kind,
             target_id=target_id, notes=notes or None))
         db.session.commit()
-        flash('Saved.', 'success')
+        flash(translate('saved.notice.saved', 'Saved.'), 'success')
     return redirect(request.referrer or url_for('saved.index'))
 
 

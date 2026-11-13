@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, Response
 from flask_login import login_required, current_user
 
+from ..features.i18n import translate
 from ..models import db, GeminiCapsule, User
 
 
@@ -132,7 +133,7 @@ def edit():
         cap.is_published = bool(request.form.get('is_published'))
         cap.updated_at = datetime.utcnow()
         db.session.commit()
-        flash('Capsule saved.', 'success')
+        flash(translate('gemini.notice.saved', 'Capsule saved.'), 'success')
         if cap.is_published:
             return redirect(url_for('gemini.view', username=current_user.username))
     return render_template('gemini/edit.html', capsule=cap)

@@ -15,8 +15,8 @@
         {% endfor %}
     </select>
     <select name="period" class="form-control" style="max-width:160px;">
-        <option value="all" {% if period == 'all' %}selected{% endif %}>All Time</option>
-        <option value="monthly" {% if period == 'monthly' %}selected{% endif %}>This Month</option>
+        <option value="all" {% if period == 'all' %}selected{% endif %}>{{ t('games.all_time', 'All Time') }}</option>
+        <option value="monthly" {% if period == 'monthly' %}selected{% endif %}>{{ t('games.this_month', 'This Month') }}</option>
     </select>
     <button type="submit" class="btn btn-primary">
         <i class="bi bi-funnel"></i> {{ t('ui.filter', 'Filter') }}
@@ -41,7 +41,7 @@
             <td>
                 {{ score.display_username }}
                 {% if score.origin_bbs %}
-                <span class="badge bg-secondary" title="Imported via InterBBS score sharing">{{ score.origin_bbs }}</span>
+                <span class="badge bg-secondary" title="{{ t('games.score_imported', 'Imported via InterBBS score sharing') }}">{{ score.origin_bbs }}</span>
                 {% endif %}
             </td>
             <td>

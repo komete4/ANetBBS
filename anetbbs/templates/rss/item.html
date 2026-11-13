@@ -37,7 +37,7 @@
     {% if item.link %}
     <a href="{{ item.link }}" target="_blank" rel="noopener"
        class="btn btn-outline-primary ms-auto">
-      <i class="bi bi-box-arrow-up-right"></i> Original article
+      <i class="bi bi-box-arrow-up-right"></i> {{ t('web.user.original_article', 'Original article') }}
     </a>
     {% endif %}
   </div>
@@ -79,11 +79,11 @@
       {{ content_safe }}
     {% else %}
       <p class="text-muted fst-italic">
-        No article body &mdash;
+        {{ t('web.user.no_article_body_suffix', 'No article body —') }}
         {% if item.link %}
-        <a href="{{ item.link }}" target="_blank" rel="noopener">read it on the source site</a>.
+        <a href="{{ item.link }}" target="_blank" rel="noopener">{{ t('web.user.read_it_on_the_source_site_lowercase', 'read it on the source site') }}</a>.
         {% else %}
-        no link available.
+        {{ t('web.user.no_link_available_sentence', 'no link available.') }}
         {% endif %}
       </p>
     {% endif %}

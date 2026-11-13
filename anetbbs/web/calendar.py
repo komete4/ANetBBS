@@ -4,6 +4,7 @@ from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
 
+from ..features.i18n import translate
 from ..models import db, CalendarEvent
 
 
@@ -37,7 +38,7 @@ def new_event():
         loc = (request.form.get('location') or '').strip() or None
         desc = (request.form.get('description') or '').strip() or None
         if not title:
-            flash('Title is required.', 'danger')
+            flash(translate('calendar.notice.title_required', 'Title is required.'), 'danger')
             return redirect(url_for('calendar.new_event'))
         # The <input type="datetime-local"> field is timezone-agnostic
         # by spec -- just wall-clock numbers -- and a submitter picks a
@@ -50,7 +51,7 @@ def new_event():
         try:
             starts_dt = from_eastern_input(starts, '%Y-%m-%dT%H:%M')
         except ValueError:
-            flash('Invalid start date.', 'danger')
+            flash(translate('calendar.notice.invalid_start_date', 'Invalid start date.'), 'danger')
             return redirect(url_for('calendar.new_event'))
         ends_dt = None
         if ends:
@@ -66,9 +67,9 @@ def new_event():
         db.session.add(ev)
         db.session.commit()
         if is_admin:
-            flash(f'Event "{title}" published.', 'success')
+            flash(translate('calendar.notice.published', 'Event "{title}" published.', title=title), 'success')
         else:
-            flash(f'Event "{title}" submitted for sysop review.', 'success')
+            flash(translate('calendar.notice.submitted', 'Event "{title}" submitted for sysop review.', title=title), 'success')
         return redirect(url_for('calendar.index'))
     return render_template('calendar/new.html')
 
@@ -83,7 +84,7 @@ def delete(event_id):
         abort(403)
     db.session.delete(ev)
     db.session.commit()
-    flash('Event deleted.', 'success')
+    flash(translate('calendar.notice.deleted', 'Event deleted.'), 'success')
     return redirect(url_for('calendar.index'))
 
 

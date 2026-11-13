@@ -257,8 +257,8 @@
         if (!header || !list) return;
         const set = channelNames[currentChannel];
         if (!set || !currentChannel.startsWith('#')) {
-            header.textContent = 'Users';
-            list.innerHTML = '<div class="text-muted small">— pick a channel —</div>';
+            header.textContent = {{ t('ui.users', 'Users') | tojson }};
+            list.innerHTML = '<div class="text-muted small">' + escapeHtml({{ t('irc.status.pick_channel', '— pick a channel —') | tojson }}) + '</div>';
             return;
         }
         const modes = channelModes[currentChannel] || {};
@@ -270,7 +270,7 @@
             if (r) return r;
             return a.toLowerCase().localeCompare(b.toLowerCase());
         });
-        header.textContent = `Users in ${currentChannel} (${arr.length})`;
+        header.textContent = {{ t('irc.status.users_count', 'Users in {channel} ({count})') | tojson }}.replace('{channel}', () => currentChannel).replace('{count}', () => arr.length);
         list.innerHTML = arr.map(n => {
             const m = modes[n] || '';
             const cls = m === '@' ? 'op' : m === '+' ? 'voice' : '';
@@ -319,24 +319,24 @@
     }
 
     // --- Socket events ---
-    socket.on('connect', () => addLine('(server)', '[socketio connected]', 'system'));
+    socket.on('connect', () => addLine('(server)', escapeHtml({{ t('irc.status.socket_connected', '[socketio connected]') | tojson }}), 'system'));
     socket.on('disconnect', reason => {
-        addLine('(server)', '[socketio disconnected: ' + reason + ']', 'error');
+        addLine('(server)', escapeHtml({{ t('irc.status.socket_disconnected', '[socketio disconnected: {reason}]') | tojson }}.replace('{reason}', () => reason)), 'error');
         input.disabled = true; btnSend.disabled = true;
         btnConnect.disabled = false; btnDisconnect.disabled = true;
     });
     socket.on('connect_error', err => {
-        addLine('(server)', '[socketio connect error: ' + (err.message || err) + ']', 'error');
+        addLine('(server)', escapeHtml({{ t('irc.status.socket_error', '[socketio connect error: {error}]') | tojson }}.replace('{error}', () => err.message || err)), 'error');
     });
     socket.io.on('reconnect_attempt', n => {
-        addLine('(server)', `[reconnecting… attempt ${n}]`, 'system');
+        addLine('(server)', escapeHtml({{ t('irc.status.reconnecting', '[reconnecting… attempt {attempt}]') | tojson }}.replace('{attempt}', () => n)), 'system');
     });
     socket.io.on('reconnect', n => {
-        addLine('(server)', `[reconnected after ${n} attempts]`, 'system');
+        addLine('(server)', escapeHtml({{ t('irc.status.reconnected', '[reconnected after {attempts} attempts]') | tojson }}.replace('{attempts}', () => n)), 'system');
     });
     socket.io.on('reconnect_failed', () => {
         addLine('(server)',
-            '[reconnect failed — auto-refreshing page in 30s…]', 'error');
+            escapeHtml({{ t('irc.status.reconnect_failed', '[reconnect failed — auto-refreshing page in 30s…]') | tojson }}), 'error');
         // After 50 backoff'd attempts (~5+ minutes total) failed, the
         // network is genuinely down or our worker is stuck. Auto-refresh
         // so the user gets a fresh socketio handshake without manual
@@ -348,7 +348,7 @@
     socket.on('irc_system', d => addLine('(server)', escapeHtml(d.text), 'system'));
     socket.on('irc_error', d => addLine(currentChannel, '⚠ ' + escapeHtml(d.message), 'error'));
     socket.on('irc_connected', d => {
-        addLine('(server)', `Connected to ${escapeHtml(d.server)}:${d.port} as ${escapeHtml(d.nick)}`, 'system');
+        addLine('(server)', escapeHtml({{ t('irc.status.connected', 'Connected to {server}:{port} as {nick}') | tojson }}.replace('{server}', () => d.server).replace('{port}', () => d.port).replace('{nick}', () => d.nick)), 'system');
         myNick = d.nick;
         input.disabled = false; btnSend.disabled = false;
         btnConnect.disabled = true; btnDisconnect.disabled = false;
@@ -359,7 +359,7 @@
                 notifyEnabled = (p === 'granted');
                 if (notifyEnabled) {
                     addLine('(server)',
-                        '[notifications enabled — you will be alerted on mention]',
+                        escapeHtml({{ t('irc.status.notifications_enabled', '[notifications enabled — you will be alerted on mention]') | tojson }}),
                         'system');
                 }
             });
@@ -369,7 +369,7 @@
         if (d.old === myNick) myNick = d.new;
     });
     socket.on('irc_disconnected', d => {
-        addLine('(server)', `Disconnected: ${escapeHtml(d.reason || '')}`, 'system');
+        addLine('(server)', escapeHtml({{ t('irc.status.disconnected', 'Disconnected: {reason}') | tojson }}.replace('{reason}', () => d.reason || '')), 'system');
         input.disabled = true; btnSend.disabled = true;
         btnConnect.disabled = false; btnDisconnect.disabled = true;
     });
@@ -405,20 +405,20 @@
         ensureChannel(d.channel);
         if (!channelNames[d.channel]) channelNames[d.channel] = new Set();
         channelNames[d.channel].add(d.nick);
-        addLine(d.channel, `→ ${escapeHtml(d.nick)} joined ${escapeHtml(d.channel)}`, 'joinpart');
+        addLine(d.channel, escapeHtml({{ t('irc.status.joined', '→ {nick} joined {channel}') | tojson }}.replace('{nick}', () => d.nick).replace('{channel}', () => d.channel)), 'joinpart');
         if (d.channel === currentChannel) refreshUsersPanel();
     });
     socket.on('irc_part', d => {
         const r = d.reason ? ` (${escapeHtml(d.reason)})` : '';
         if (channelNames[d.channel]) channelNames[d.channel].delete(d.nick);
         if (channelModes[d.channel]) delete channelModes[d.channel][d.nick];
-        addLine(d.channel, `← ${escapeHtml(d.nick)} left ${escapeHtml(d.channel)}${r}`, 'joinpart');
+        addLine(d.channel, escapeHtml({{ t('irc.status.parted', '← {nick} left {channel}') | tojson }}.replace('{nick}', () => d.nick).replace('{channel}', () => d.channel)) + r, 'joinpart');
         if (d.channel === currentChannel) refreshUsersPanel();
     });
     socket.on('irc_kick', d => {
         if (channelNames[d.channel]) channelNames[d.channel].delete(d.victim);
         if (channelModes[d.channel]) delete channelModes[d.channel][d.victim];
-        addLine(d.channel, `‼ ${escapeHtml(d.kicker)} kicked ${escapeHtml(d.victim)}: ${escapeHtml(d.reason || '')}`, 'error');
+        addLine(d.channel, escapeHtml({{ t('irc.status.kicked', '‼ {kicker} kicked {victim}: {reason}') | tojson }}.replace('{kicker}', () => d.kicker).replace('{victim}', () => d.victim).replace('{reason}', () => d.reason || '')), 'error');
         if (d.channel === currentChannel) refreshUsersPanel();
     });
     socket.on('irc_mode', d => {
@@ -427,8 +427,8 @@
     });
     socket.on('irc_topic', d => {
         ensureChannel(d.channel);
-        const by = d.by ? ` (set by ${escapeHtml(d.by)})` : '';
-        addLine(d.channel, `Topic for ${escapeHtml(d.channel)}: ${escapeHtml(d.topic)}${by}`, 'system');
+        const by = d.by ? escapeHtml({{ t('irc.status.topic_author', ' (set by {nick})') | tojson }}.replace('{nick}', () => d.by)) : '';
+        addLine(d.channel, escapeHtml({{ t('irc.status.topic', 'Topic for {channel}: {topic}') | tojson }}.replace('{channel}', () => d.channel).replace('{topic}', () => d.topic)) + by, 'system');
     });
     socket.on('irc_whois', d => {
         addLine('(server)', `WHOIS ${escapeHtml(d.target)}: ${escapeHtml(d.text)}`, 'system');
@@ -454,7 +454,7 @@
         const sorted = [...listAccum].sort((a, b) =>
             (parseInt(b.users) || 0) - (parseInt(a.users) || 0));
         let html = '<div class="card mb-2"><div class="card-header py-1">' +
-                   `Channel list (${sorted.length}) — click to /join` +
+                   escapeHtml({{ t('irc.status.channel_list', 'Channel list ({count}) — click to /join') | tojson }}.replace('{count}', () => sorted.length)) +
                    '</div><div class="card-body p-0" style="max-height:300px;overflow-y:auto;">' +
                    '<table class="table table-sm table-hover mb-0">';
         for (const r of sorted.slice(0, 200)) {
@@ -489,14 +489,14 @@
         });
         channelNames[d.channel] = new Set(cleanNames);
         channelModes[d.channel] = modes;
-        addLine(d.channel, `Users in ${escapeHtml(d.channel)}: ${escapeHtml(d.names.join(', '))}`, 'system');
+        addLine(d.channel, escapeHtml({{ t('irc.status.users_list', 'Users in {channel}: {users}') | tojson }}.replace('{channel}', () => d.channel).replace('{users}', () => d.names.join(', '))), 'system');
         if (d.channel === currentChannel) refreshUsersPanel();
     });
     socket.on('irc_quit', d => {
         // Quit removes nick from every channel
         Object.values(channelNames).forEach(s => s.delete(d.nick));
         Object.values(channelModes).forEach(m => delete m[d.nick]);
-        addLine('(server)', `← ${escapeHtml(d.nick)} quit (${escapeHtml(d.reason || '')})`, 'joinpart');
+        addLine('(server)', escapeHtml({{ t('irc.status.quit', '← {nick} quit ({reason})') | tojson }}.replace('{nick}', () => d.nick).replace('{reason}', () => d.reason || '')), 'joinpart');
         refreshUsersPanel();
     });
     socket.on('irc_nick', d => {
@@ -506,7 +506,7 @@
         Object.values(channelModes).forEach(m => {
             if (m[d.old] !== undefined) { m[d.new] = m[d.old]; delete m[d.old]; }
         });
-        addLine('(server)', `${escapeHtml(d.old)} is now ${escapeHtml(d.new)}`, 'system');
+        addLine('(server)', escapeHtml({{ t('irc.status.nick_change', '{old} is now {new}') | tojson }}.replace('{old}', () => d.old).replace('{new}', () => d.new)), 'system');
         refreshUsersPanel();
     });
     socket.on('irc_raw', d => {
@@ -573,7 +573,7 @@
             body: fd,
         });
         addLine('(server)',
-            r.ok ? '[Settings saved.]' : '[Save failed.]', 'system');
+            r.ok ? escapeHtml({{ t('irc.status.settings_saved', '[Settings saved.]') | tojson }}) : escapeHtml({{ t('irc.status.settings_failed', '[Save failed.]') | tojson }}), 'system');
     });
 
     btnSend.addEventListener('click', sendInput);

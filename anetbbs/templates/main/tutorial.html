@@ -58,11 +58,11 @@
                 it on first boot. <strong>Change it on first login.</strong></p>
                 <ul>
                     <li>Login as <code>admin</code> with that password</li>
-                    <li>Top-right user menu → <strong>Change Password</strong></li>
+                    <li>Top-right user menu → <strong>{{ t('web.user.change_password', 'Change Password') }}</strong></li>
                     <li>Or sysop-side: <strong>Admin → Users → ✏️ Edit</strong></li>
                 </ul>
                 <a href="{{ url_for('profile.change_password') }}" class="btn btn-primary">
-                    Change my password
+                    {{ t('web.user.change_my_password', 'Change my password') }}
                 </a>
             </div>
         </div>
@@ -144,8 +144,8 @@ BBS_NODES=8</pre>
                 <ul>
                     <li><strong>Admin → Echomail Networks</strong></li>
                     <li>Add a network (BinkP for FidoNet-style, QWK for Dove-Net)</li>
-                    <li>Subscribe to areas you care about</li>
-                    <li>Set up your AKA addresses on Profile</li>
+                    <li>{{ t('web.user.subscribe_to_areas_you_care_about', 'Subscribe to areas you care about') }}</li>
+                    <li>{{ t('web.user.set_up_your_aka_addresses_on_profile', 'Set up your AKA addresses on Profile') }}</li>
                     <li>Per-user QWK download/upload at <code>/qwk/</code></li>
                 </ul>
             </div>
@@ -162,7 +162,7 @@ BBS_NODES=8</pre>
                         (web, telnet, SSH, rlogin, MRC bridge)</li>
                     <li>NodeSpy — see what every terminal user is doing
                         in real time, with screen snapshots</li>
-                    <li>Live who's-online list (web + terminal)</li>
+                    <li>{{ t('web.user.live_who_s_online_list_web_terminal', "Live who's-online list (web + terminal)") }}</li>
                     <li>One-click journal viewer for each service</li>
                 </ul>
                 <p>For service control to work, the account your
@@ -225,7 +225,7 @@ sudo chmod 0440 /etc/sudoers.d/anetbbs</pre>
                 is in the docs.</p>
                 <p>
                     <a href="{{ url_for('docs.index') }}" class="btn btn-primary">
-                        <i class="bi bi-book"></i> Full documentation
+                        <i class="bi bi-book"></i> {{ t('web.user.full_documentation', 'Full documentation') }}
                     </a>
                     <a href="{{ url_for('admin.checklist') }}" class="btn btn-secondary">
                         <i class="bi bi-check2-square"></i> Launch checklist

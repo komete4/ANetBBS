@@ -7,6 +7,7 @@ from flask import Flask, request
 from flask_login import LoginManager, UserMixin
 from jinja2 import ChoiceLoader, DictLoader, FileSystemLoader
 
+from anetbbs.features.i18n import translate
 from anetbbs.web.personal_pages import pages_bp, serve_root_page
 
 
@@ -36,7 +37,7 @@ class StaticPersonalPagesTests(unittest.TestCase):
             DictLoader({'base.html': '{% block content %}{% endblock %}'}),
             FileSystemLoader(Path(__file__).resolve().parents[1] / 'anetbbs' / 'templates'),
         ])
-        self.app.jinja_env.globals['csrf_token'] = lambda: 'unused-test-token'
+        self.app.jinja_env.globals.update(csrf_token=lambda: 'unused-test-token', t=translate)
         login = LoginManager(self.app)
         login.user_loader(PageOwner)
         self.app.register_blueprint(pages_bp)

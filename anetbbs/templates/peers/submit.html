@@ -4,8 +4,8 @@
 {% block content %}
 <div class="container my-4" style="max-width:640px;">
   <h2><i class="bi bi-plus-circle"></i> {{ t('ui.heading.add_your_bbs', 'Add Your BBS') }}</h2>
-  <p class="text-muted">Submit your BBS to the local directory.
-    {% if not current_user.is_admin %}The sysop will review and approve it before it appears.{% endif %}
+  <p class="text-muted">{{ t('web.user.submit_your_bbs_to_the_local_directory_sentence', 'Submit your BBS to the local directory.') }}
+    {% if not current_user.is_admin %}{{ t('web.user.the_sysop_will_review_and_approve_it_before_it_appears_sentence', 'The sysop will review and approve it before it appears.') }}{% endif %}
   </p>
 
   <div class="card shadow-sm">
@@ -21,7 +21,7 @@
 
         <div class="row g-2 mb-3">
           <div class="col-8">
-            <label class="form-label fw-semibold">Telnet Address <span class="text-danger">*</span></label>
+            <label class="form-label fw-semibold">{{ t('web.user.telnet_address', 'Telnet Address') }} <span class="text-danger">*</span></label>
             <input type="text" name="hostname" class="form-control" required maxlength="160"
                    placeholder="bbs.example.com">
           </div>
@@ -33,20 +33,20 @@
         </div>
 
         <div class="mb-3">
-          <label class="form-label fw-semibold">Web Address</label>
+          <label class="form-label fw-semibold">{{ t('web.user.web_address', 'Web Address') }}</label>
           <input type="url" name="web_url" class="form-control" maxlength="400"
                  placeholder="https://bbs.example.com">
-          <div class="form-text">If your BBS has a web interface or info page.</div>
+          <div class="form-text">{{ t('web.user.if_your_bbs_has_a_web_interface_or_info_page_sentence', 'If your BBS has a web interface or info page.') }}</div>
         </div>
 
         <div class="mb-3">
           <label class="form-label fw-semibold">{{ t('ui.location', 'Location') }}</label>
           <input type="text" name="location" class="form-control" maxlength="120"
-                 placeholder="City, State, Country">
+                 placeholder="{{ t('web.user.city_state_country', 'City, State, Country') }}">
         </div>
 
         <div class="mb-3">
-          <label class="form-label fw-semibold">BBS Software</label>
+          <label class="form-label fw-semibold">{{ t('web.user.bbs_software', 'BBS Software') }}</label>
           <input type="text" name="software" class="form-control" maxlength="80"
                  placeholder="e.g. ANetBBS, Synchronet, Mystic, …">
         </div>

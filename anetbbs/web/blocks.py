@@ -7,6 +7,7 @@ notifications stop firing for them.
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
 from flask_login import login_required, current_user
 
+from ..features.i18n import translate
 from ..models import db, User, UserBlock
 
 
@@ -27,25 +28,25 @@ def add():
     name = (request.form.get('username') or '').strip()
     reason = (request.form.get('reason') or '').strip() or None
     if not name:
-        flash('Username required.', 'danger')
+        flash(translate('blocks.notice.username_required', 'Username required.'), 'danger')
         return redirect(url_for('blocks.index'))
     target = User.query.filter(User.username.ilike(name)).first()
     if not target:
-        flash('User not found.', 'danger')
+        flash(translate('blocks.notice.user_missing', 'User not found.'), 'danger')
         return redirect(url_for('blocks.index'))
     if target.id == current_user.id:
-        flash("You can't block yourself.", 'warning')
+        flash(translate('blocks.notice.cannot_block_self', "You can't block yourself."), 'warning')
         return redirect(url_for('blocks.index'))
     existing = UserBlock.query.filter_by(blocker_id=current_user.id,
                                          blocked_id=target.id).first()
     if existing:
-        flash('Already blocked.', 'info')
+        flash(translate('blocks.notice.already_blocked', 'Already blocked.'), 'info')
         return redirect(url_for('blocks.index'))
     db.session.add(UserBlock(blocker_id=current_user.id,
                              blocked_id=target.id,
                              reason=reason))
     db.session.commit()
-    flash(f'Blocked {target.username}.', 'success')
+    flash(translate('blocks.notice.blocked', 'Blocked {username}.', username=target.username), 'success')
     return redirect(url_for('blocks.index'))
 
 
@@ -57,7 +58,7 @@ def remove(block_id):
         abort(403)
     db.session.delete(b)
     db.session.commit()
-    flash('Block removed.', 'success')
+    flash(translate('blocks.notice.removed', 'Block removed.'), 'success')
     return redirect(url_for('blocks.index'))
 
 

@@ -13,23 +13,23 @@
     <div class="card-body">
         <div class="row g-2 mb-3">
             <div class="col-md-5">
-                <label class="form-label">To Address (FTN)</label>
+                <label class="form-label">{{ t('web.user.to_address_ftn', 'To Address (FTN)') }}</label>
                 <input type="text" name="to_address" class="form-control" required
                        value="{{ form.to_address or '' }}"
                        pattern="^\d+:\d+/\d+(\.\d+)?$"
                        placeholder="zone:net/node[.point]">
                 <div class="form-text">
-                    <a href="{{ url_for('nodelist.browse') }}" target="_blank">Find an address in the nodelist</a>
+                    <a href="{{ url_for('nodelist.browse') }}" target="_blank">{{ t('web.user.find_an_address_in_the_nodelist', 'Find an address in the nodelist') }}</a>
                 </div>
             </div>
             <div class="col-md-5">
-                <label class="form-label">To User</label>
+                <label class="form-label">{{ t('web.user.to_user', 'To User') }}</label>
                 <input type="text" name="to_name" class="form-control" required
                        value="{{ form.to_name or '' }}">
             </div>
         </div>
         <div class="mb-3">
-            <label class="form-label">Telegram (max 1000 chars)</label>
+            <label class="form-label">{{ t('web.user.telegram_max_1000_chars', 'Telegram (max 1000 chars)') }}</label>
             <textarea name="body" rows="4" maxlength="1000" required
                       class="form-control" style="font-family:monospace;">{{ form.body or '' }}</textarea>
         </div>

@@ -1,36 +1,36 @@
 {% extends "base.html" %}
 
-{% block title %}BBS Stats{% endblock %}
+{% block title %}{{ t('web.user.bbs_stats', 'BBS Stats') }}{% endblock %}
 
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-graph-up"></i> {{ t('ui.statistics', 'Statistics') }}</h1>
-    <p>Activity, milestones, and recent badge earners.</p>
+    <p>{{ t('stats.intro', 'Activity, milestones, and recent badge earners.') }}</p>
 </div>
 
 <div class="row g-3 mb-3">
     <div class="col-md-6">
         <div class="card">
-            <div class="card-header">All-time totals</div>
+            <div class="card-header">{{ t('web.user.all_time_totals', 'All-time totals') }}</div>
             <div class="card-body">
                 <div class="row text-center">
                     <div class="col"><h3>{{ overall.users }}</h3><small class="text-muted">users</small></div>
-                    <div class="col"><h3>{{ overall.posts }}</h3><small class="text-muted">board posts</small></div>
+                    <div class="col"><h3>{{ overall.posts }}</h3><small class="text-muted">{{ t('web.user.board_posts_lowercase', 'board posts') }}</small></div>
                     <div class="col"><h3>{{ overall.echomail }}</h3><small class="text-muted">echomail</small></div>
                     <div class="col"><h3>{{ overall.netmail }}</h3><small class="text-muted">netmail</small></div>
                 </div>
                 <div class="row text-center mt-3">
                     <div class="col"><h3>{{ overall.pms }}</h3><small class="text-muted">PMs</small></div>
                     <div class="col"><h3>{{ overall.shouts }}</h3><small class="text-muted">shouts</small></div>
-                    <div class="col"><h3>{{ overall.file_areas }}</h3><small class="text-muted">file areas</small></div>
-                    <div class="col"><h3>{{ overall.achievements }}</h3><small class="text-muted">badges earned</small></div>
+                    <div class="col"><h3>{{ overall.file_areas }}</h3><small class="text-muted">{{ t('web.user.file_areas_lowercase', 'file areas') }}</small></div>
+                    <div class="col"><h3>{{ overall.achievements }}</h3><small class="text-muted">{{ t('web.user.badges_earned_lowercase', 'badges earned') }}</small></div>
                 </div>
             </div>
         </div>
     </div>
     <div class="col-md-6">
         <div class="card">
-            <div class="card-header">Last 24 hours</div>
+            <div class="card-header">{{ t('web.user.last_24_hours', 'Last 24 hours') }}</div>
             <div class="card-body">
                 <div class="row text-center">
                     <div class="col"><h3>{{ last24.logins }}</h3><small class="text-muted">logins</small></div>
@@ -46,7 +46,7 @@
 <div class="row g-3">
     <div class="col-md-6">
         <div class="card">
-            <div class="card-header">Top posters (last 7 days)</div>
+            <div class="card-header">{{ t('web.user.top_posters_last_7_days', 'Top posters (last 7 days)') }}</div>
             <div class="card-body p-0">
             {% if top_posters %}
                 <ol class="list-group list-group-flush list-group-numbered">
@@ -57,13 +57,13 @@
                     </li>
                 {% endfor %}
                 </ol>
-            {% else %}<div class="p-3 text-muted">No recent posts.</div>{% endif %}
+            {% else %}<div class="p-3 text-muted">{{ t('web.user.no_recent_posts_sentence', 'No recent posts.') }}</div>{% endif %}
             </div>
         </div>
     </div>
     <div class="col-md-6">
         <div class="card">
-            <div class="card-header">Recent badge earners</div>
+            <div class="card-header">{{ t('web.user.recent_badge_earners', 'Recent badge earners') }}</div>
             <div class="card-body p-0">
             {% if recent_awards %}
                 <ul class="list-group list-group-flush">
@@ -78,7 +78,7 @@
                     </li>
                 {% endfor %}
                 </ul>
-            {% else %}<div class="p-3 text-muted">No badges earned yet.</div>{% endif %}
+            {% else %}<div class="p-3 text-muted">{{ t('web.user.no_badges_earned_yet_sentence', 'No badges earned yet.') }}</div>{% endif %}
             </div>
         </div>
     </div>
@@ -86,7 +86,7 @@
 
 {% if daily_logins %}
 <div class="card mt-3">
-    <div class="card-header">Daily logins (last 30 days)</div>
+    <div class="card-header">{{ t('web.user.daily_logins_last_30_days', 'Daily logins (last 30 days)') }}</div>
     <div class="card-body p-2">
         <div style="display:flex;align-items:flex-end;height:120px;gap:4px;">
             {% set max_count = (daily_logins | map(attribute='count') | list | max) or 1 %}

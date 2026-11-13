@@ -18,6 +18,7 @@ from flask import (Blueprint, render_template, request, redirect, url_for,
                    flash, abort, jsonify)
 from flask_login import login_required, current_user
 
+from ..features.i18n import translate
 from ..features.rate_limit import rate_limit, _user_or_ip
 
 from ..models import (db, NetmailMessage, EchomailNetwork, UserAka,
@@ -234,7 +235,7 @@ def compose(reply_to=None):
             to_name = parent.from_name or ''
 
         if not parse_address(to_address):
-            flash(f'Invalid FTN address: {to_address!r}', 'danger')
+            flash(translate('netmail.notice.invalid_ftn', 'Invalid FTN address: {to_address!r}', to_address=to_address), 'danger')
             from ..models import get_active_taglines
             return render_template('netmail/compose.html',
                                    networks=networks, user_akas=user_akas,
@@ -243,7 +244,7 @@ def compose(reply_to=None):
                                    is_direct_crash_reply=is_direct_crash_reply,
                                    taglines=get_active_taglines())
         if not to_name:
-            flash('Recipient name is required.', 'danger')
+            flash(translate('netmail.notice.recipient_required', 'Recipient name is required.'), 'danger')
             from ..models import get_active_taglines
             return render_template('netmail/compose.html',
                                    networks=networks, user_akas=user_akas,
@@ -282,7 +283,7 @@ def compose(reply_to=None):
             # Pick the network that matches the destination zone
             network = find_network_for_address(to_address)
             if network is None:
-                flash(f'No active FTN network covers zone of {to_address}.', 'danger')
+                flash(translate('netmail.notice.no_ftn_network', 'No active FTN network covers zone of {to_address}.', to_address=to_address), 'danger')
                 from ..models import get_active_taglines
                 return render_template('netmail/compose.html',
                                        networks=networks, user_akas=user_akas,
@@ -424,7 +425,7 @@ def compose(reply_to=None):
         db.session.add(m)
         db.session.commit()
         if save_as_draft:
-            flash('Saved as draft.', 'info')
+            flash(translate('netmail.notice.draft_saved', 'Saved as draft.'), 'info')
             return redirect(url_for('netmail.drafts'))
 
         if is_direct_crash_reply:
@@ -474,9 +475,9 @@ def compose(reply_to=None):
                     _app.logger.error('Crash immediate-delivery thread error: %s', exc)
 
             threading.Thread(target=_run, daemon=True).start()
-            flash('Crash-flagged -- attempting immediate delivery now.', 'info')
+            flash(translate('netmail.notice.crash_immediate', 'Crash-flagged -- attempting immediate delivery now.'), 'info')
             return redirect(url_for('netmail.read', msg_id=m.id))
-        flash('Netmail queued for next outbound poll.', 'success')
+        flash(translate('netmail.notice.queued', 'Netmail queued for next outbound poll.'), 'success')
         return redirect(url_for('netmail.read', msg_id=m.id))
 
     # GET — render form. Sources of pre-fill, in priority order:
@@ -534,7 +535,7 @@ def delete(msg_id):
     else:
         m.deleted_by_sender = True
     db.session.commit()
-    flash('Message deleted from your view.', 'success')
+    flash(translate('netmail.notice.deleted', 'Message deleted from your view.'), 'success')
     return redirect(url_for('netmail.inbox' if m.direction == 'inbound'
                             else 'netmail.sent'))
 

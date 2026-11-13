@@ -71,7 +71,7 @@
                             <td>{{ loop.index }}</td>
                             <td>{{ score.display_username }}
                                 {% if score.origin_bbs %}
-                                <span class="badge bg-secondary" title="Imported via InterBBS score sharing">{{ score.origin_bbs }}</span>
+                                <span class="badge bg-secondary" title="{{ t('games.score_imported', 'Imported via InterBBS score sharing') }}">{{ score.origin_bbs }}</span>
                                 {% endif %}
                             </td>
                             <td>{% if is_casino %}${{ '{:,}'.format(score.score) }}{% else %}{{ score.score }}{% endif %}</td>

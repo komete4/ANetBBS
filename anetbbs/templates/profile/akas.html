@@ -5,11 +5,11 @@
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-mailbox"></i> {{ t('ui.heading.ftn_akas', 'FTN AKAs') }}</h1>
-    <p>Alternate FidoNet addresses you can send netmail FROM.</p>
+    <p>{{ t('web.user.alternate_fidonet_addresses_you_can_send_netmail_from_sentence', 'Alternate FidoNet addresses you can send netmail FROM.') }}</p>
 </div>
 
 <div class="card mb-3">
-    <div class="card-header"><i class="bi bi-list"></i> Your AKAs</div>
+    <div class="card-header"><i class="bi bi-list"></i> {{ t('web.user.your_akas', 'Your AKAs') }}</div>
     <div class="card-body p-0">
     {% if akas %}
         <table class="table table-sm mb-0">
@@ -29,7 +29,7 @@
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="action" value="set_primary">
                                 <input type="hidden" name="aka_id" value="{{ a.id }}">
-                                <button class="btn btn-link btn-sm p-0">make primary</button>
+                                <button class="btn btn-link btn-sm p-0">{{ t('web.user.make_primary_lowercase', 'make primary') }}</button>
                             </form>
                         {% endif %}
                     </td>
@@ -47,7 +47,7 @@
             </tbody>
         </table>
     {% else %}
-        <div class="p-3 text-muted">No AKAs configured yet. Outgoing netmail will use the network's default `our_address`.</div>
+        <div class="p-3 text-muted">{{ t('web.user.no_akas_configured_yet_outgoing_netmail_will_use_the_network_s_default_our_address_sentence', "No AKAs configured yet. Outgoing netmail will use the network's default `our_address`.") }}</div>
     {% endif %}
     </div>
 </div>
@@ -69,7 +69,7 @@
                 <label class="form-label">{{ t('ui.domain', 'Domain') }}</label>
                 <input type="text" name="domain" class="form-control" value="fidonet"
                        pattern="[a-z0-9_-]+">
-                <div class="form-text">Network identifier (fidonet, fsxnet, retronet, ...)</div>
+                <div class="form-text">{{ t('web.user.network_identifier_fidonet_fsxnet_retronet', 'Network identifier (fidonet, fsxnet, retronet, ...)') }}</div>
             </div>
             <div class="col-md-3">
                 <button class="btn btn-primary w-100">{{ t('ui.add_aka', 'Add AKA') }}</button>
@@ -79,6 +79,6 @@
 </div>
 
 <div class="mt-3">
-    <a href="{{ url_for('profile.index') }}" class="btn btn-link">← Back to profile</a>
+    <a href="{{ url_for('profile.index') }}" class="btn btn-link">{{ t('web.user.back_to_profile_back', '← Back to profile') }}</a>
 </div>
 {% endblock %}

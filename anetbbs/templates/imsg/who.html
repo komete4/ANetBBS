@@ -29,7 +29,7 @@
          style="background:#0a0a0a; border:1px solid #00ff00; padding:16px;">{{ text }}</pre>
     {% else %}
     <div class="alert alert-warning">
-        No reply from <code>{{ entry.hostname }}</code>:11 (UDP). The remote
+        {{ t('web.user.no_reply_from', 'No reply from') }} <code>{{ entry.hostname }}</code>:11 (UDP). The remote
         BBS may not be online, may not run a SYSTAT/Finger UDP service,
         or may be blocking inbound UDP at the firewall.
     </div>

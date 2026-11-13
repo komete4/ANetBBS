@@ -1,13 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Compose Netmail — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{{ t('web.user.compose_netmail_suffix', 'Compose Netmail —') }} {{ config.BBS_NAME }}{% endblock %}
 
 {% block content %}
 <div class="container my-4" style="max-width: 800px;">
     <h2><i class="bi bi-envelope-fill"></i> {{ t('ui.heading.compose_qwk_netmail', 'Compose QWK Netmail') }}</h2>
     <p class="text-muted">
-        Send a private 1-on-1 message to a user on another BBS via DOVE-Net or
-        another QWK network. The message will be queued and delivered on the
-        next poll. The recipient's BBS routes it to them by name.
+        {{ t('netmail.qwk_help', "Send a private 1-on-1 message to a user on another BBS via DOVE-Net or another QWK network. The message will be queued and delivered on the next poll. The recipient's BBS routes it to them by name.") }}
     </p>
 
     <form method="post" novalidate>
@@ -23,7 +21,7 @@
             {{ form.to_name(class="form-control",
                 placeholder="e.g. Rob Swindell, SYSOP, or a user handle") }}
             <div class="form-text">
-                The name as it appears on the recipient's BBS.
+                {{ t('netmail.recipient_help', "The name as it appears on the recipient's BBS.") }}
             </div>
         </div>
 
@@ -45,7 +43,7 @@
         </div>
 
         <div class="mb-2">
-            <label for="qwknm_tagline_id" class="form-label">Add a tagline (optional)</label>
+            <label for="qwknm_tagline_id" class="form-label">{{ t('web.user.add_a_tagline_optional', 'Add a tagline (optional)') }}</label>
             <select name="tagline_id" id="qwknm_tagline_id" class="form-select" size="6">
                 <option value="">-- None --</option>
                 {% for t in taglines %}

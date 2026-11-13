@@ -12,6 +12,7 @@ Routes:
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, abort
 from flask_login import login_required, current_user
 
+from ..features.i18n import translate
 from ..models import db, AddressBookEntry
 from ..echomail.routing import parse_address
 
@@ -29,11 +30,11 @@ def index():
         crashmail = bool(request.form.get('crashmail_default'))
 
         if not name:
-            flash('Name is required.', 'danger')
+            flash(translate('contacts.notice.name_required', 'Name is required.'), 'danger')
         elif ftn and not parse_address(ftn):
-            flash(f'Invalid FTN address: {ftn!r}', 'danger')
+            flash(translate('contacts.notice.invalid_ftn', 'Invalid FTN address: {ftn!r}', ftn=ftn), 'danger')
         elif not (ftn or email):
-            flash('Provide at least an FTN address or an email.', 'danger')
+            flash(translate('contacts.notice.address_required', 'Provide at least an FTN address or an email.'), 'danger')
         else:
             entry = AddressBookEntry(
                 user_id=current_user.id,
@@ -43,7 +44,7 @@ def index():
             )
             db.session.add(entry)
             db.session.commit()
-            flash(f'Added contact {name}.', 'success')
+            flash(translate('contacts.notice.added', 'Added contact {name}.', name=name), 'success')
         return redirect(url_for('contacts.index'))
 
     entries = (AddressBookEntry.query
@@ -62,7 +63,7 @@ def delete(entry_id):
         abort(403)
     db.session.delete(e)
     db.session.commit()
-    flash('Contact removed.', 'success')
+    flash(translate('contacts.notice.removed', 'Contact removed.'), 'success')
     return redirect(url_for('contacts.index'))
 
 

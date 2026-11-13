@@ -53,13 +53,13 @@
                             border-radius:3px; }
 </style>
 
-<nav class="wiki-nav" aria-label="Wiki navigation">
+<nav class="wiki-nav" aria-label="{{ t('web.user.wiki_navigation', 'Wiki navigation') }}">
     <a href="{{ url_for('wiki.index') }}"
        class="{% if request.endpoint == 'wiki.index' %}current{% endif %}">
        <i class="bi bi-house"></i> {{ t('ui.home', 'Home') }}</a>
     <a href="{{ url_for('wiki.all_pages') }}"
        class="{% if request.endpoint == 'wiki.all_pages' %}current{% endif %}">
-       <i class="bi bi-list-ul"></i> All pages</a>
+       <i class="bi bi-list-ul"></i> {{ t('web.user.all_pages', 'All pages') }}</a>
     <a href="{{ url_for('wiki.recent') }}"
        class="{% if request.endpoint == 'wiki.recent' %}current{% endif %}">
        <i class="bi bi-clock-history"></i> {{ t('ui.heading.recent_changes', 'Recent changes') }}</a>
@@ -75,6 +75,6 @@
     {% if current_user.is_authenticated %}
     <a href="{{ url_for('wiki.new') }}"
        class="{% if request.endpoint == 'wiki.new' %}current{% endif %}">
-       <i class="bi bi-plus-square"></i> New page</a>
+       <i class="bi bi-plus-square"></i> {{ t('web.user.new_page', 'New page') }}</a>
     {% endif %}
 </nav>

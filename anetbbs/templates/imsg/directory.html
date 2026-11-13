@@ -8,7 +8,7 @@
             <h2 class="mb-1"><i class="bi bi-globe2"></i> {{ t('ui.heading.inter_bbs_directory', 'Inter-BBS Directory') }}</h2>
             <p class="text-muted mb-0">
                 BBSes from the <code>sbbsimsg.lst</code> registry that participate
-                in inter-BBS instant messaging. Click <em>Who's online</em> to
+                in inter-BBS instant messaging. Click <em>{{ t('web.user.who_s_online', "Who's online") }}</em> to
                 query a remote system live, then <em>{{ t('ui.send_im', 'Send IM') }}</em> to send a message.
             </p>
         </div>
@@ -33,14 +33,14 @@
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
                 <div>
                     <div class="d-flex align-items-center gap-2 mb-1">
-                        <span class="badge bg-primary"><i class="bi bi-star-fill"></i> Your BBS</span>
+                        <span class="badge bg-primary"><i class="bi bi-star-fill"></i> {{ t('web.user.your_bbs', 'Your BBS') }}</span>
                         <h5 class="mb-0">{{ self_entry.name }}</h5>
                         {% if self_entry.is_listed %}
                             <span class="badge bg-success" title="Published in the federation directory">Listed</span>
                         {% elif self_entry.is_listed is false %}
                             <span class="badge bg-warning text-dark" title="Registered but waiting for hub approval">{{ t('ui.pending', 'Pending') }}</span>
                         {% else %}
-                            <span class="badge bg-secondary" title="Not registered on the federation hub yet">Not registered</span>
+                            <span class="badge bg-secondary" title="Not registered on the federation hub yet">{{ t('web.user.not_registered', 'Not registered') }}</span>
                         {% endif %}
                     </div>
                     <div class="text-muted small">
@@ -53,7 +53,7 @@
                 <div class="d-flex gap-2">
                     <a href="{{ url_for('imsg.send', host=self_entry.hostname) }}"
                        class="btn btn-success btn-sm">
-                        <i class="bi bi-send"></i> Send IM to self
+                        <i class="bi bi-send"></i> {{ t('web.user.send_im_to_self', 'Send IM to self') }}
                     </a>
                     {% if current_user.is_admin and self_entry.is_listed is none %}
                     <a href="{{ url_for('admin.registry_self') }}"
@@ -70,7 +70,7 @@
     <form method="get" class="mb-3">
         <div class="input-group input-group-sm" style="max-width:480px;">
             <input type="text" name="q" value="{{ q }}"
-                   class="form-control" placeholder="Filter by hostname or BBS name…">
+                   class="form-control" placeholder="{{ t('web.user.filter_by_hostname_or_bbs_name', 'Filter by hostname or BBS name…') }}">
             <button class="btn btn-outline-primary">{{ t('ui.filter', 'Filter') }}</button>
         </div>
     </form>
@@ -87,7 +87,7 @@
                     <th>{{ t('ui.name', 'Name') }}</th>
                     <th>Hostname</th>
                     <th>{{ t('ui.software', 'Software') }}</th>
-                    <th>Sysop / Location</th>
+                    <th>{{ t('web.user.sysop_location', 'Sysop / Location') }}</th>
                     <th>{{ t('ui.last_seen', 'Last Seen') }}</th>
                     <th class="text-end">{{ t('ui.actions', 'Actions') }}</th>
                 </tr>
@@ -118,7 +118,7 @@
                     <td class="text-end">
                         <a href="{{ url_for('imsg.directory_who', entry_id=r.id) }}"
                            class="btn btn-outline-primary btn-sm">
-                            <i class="bi bi-people"></i> Who's online
+                            <i class="bi bi-people"></i> {{ t('web.user.who_s_online', "Who's online") }}
                         </a>
                         <a href="{{ url_for('imsg.send', host=r.hostname) }}"
                            class="btn btn-success btn-sm">

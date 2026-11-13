@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>{{ bbs_name }} — Watch It Live</title>
+<title>{{ bbs_name }} {{ t('web.user.watch_it_live_dash', '— Watch It Live') }}</title>
 <meta name="description" content="Real-time activity on {{ bbs_name }}, an ANetBBS-powered bulletin board system.">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
@@ -191,12 +191,11 @@
     </thead>
     <tbody id="sessions-body"></tbody>
   </table>
-  <div class="empty" id="empty-state">Nobody's online right now — check back soon.</div>
+  <div class="empty" id="empty-state">{{ t('web.user.nobody_s_online_right_now_check_back_soon_sentence', "Nobody's online right now — check back soon.") }}</div>
 </main>
 
 <footer>
-  Powered by <a href="https://github.com/anetonline/ANetBBS" target="_blank" rel="noopener">ANetBBS</a> —
-  old-school terminal BBS, meet the modern web.
+  {{ t('web.user.powered_by', 'Powered by') }} <a href="https://github.com/anetonline/ANetBBS" target="_blank" rel="noopener">ANetBBS</a> {{ t('web.user.old_school_terminal_bbs_meet_the_modern_web_sentence', '— old-school terminal BBS, meet the modern web.') }}
 </footer>
 
 <script>

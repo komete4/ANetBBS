@@ -13,11 +13,11 @@
 <div class="bbs-header d-flex justify-content-between align-items-center flex-wrap gap-2">
     <div>
         <h1 class="mb-1"><i class="bi bi-envelope-paper"></i> {{ t('ui.heading.echomail_networks', 'Echomail Networks') }}</h1>
-        <p class="mb-0 text-muted small">FidoNet / QWK networked message areas — choose a network</p>
+        <p class="mb-0 text-muted small">{{ t('web.user.fidonet_qwk_networked_message_areas_choose_a_network', 'FidoNet / QWK networked message areas — choose a network') }}</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
         <a href="{{ url_for('echomail.netmail_inbox') }}" class="btn btn-outline-success btn-sm">
-            <i class="bi bi-mailbox"></i> QWK Netmail
+            <i class="bi bi-mailbox"></i> {{ t('web.user.qwk_netmail', 'QWK Netmail') }}
         </a>
         <a href="{{ url_for('echomail.netmail_compose') }}" class="btn btn-success btn-sm">
             <i class="bi bi-pencil-square"></i> {{ t('ui.compose_netmail', 'Compose Netmail') }}
@@ -74,7 +74,7 @@
       <div class="card-footer">
         <a href="{{ url_for('echomail.network', network_id=net.id) }}"
            class="btn btn-primary btn-sm w-100">
-          <i class="bi bi-folder2-open"></i> Enter Network
+          <i class="bi bi-folder2-open"></i> {{ t('web.user.enter_network', 'Enter Network') }}
           {% if item.total_unread %}
             <span class="ms-1 badge bg-success text-dark">{{ item.total_unread }} unread</span>
           {% endif %}
@@ -88,7 +88,7 @@
 <div class="card mt-3">
     <div class="card-body text-center" style="padding: 40px;">
         <i class="bi bi-inbox" style="font-size: 3rem;"></i>
-        <p class="mt-3">No echomail networks are currently available.</p>
+        <p class="mt-3">{{ t('web.user.no_echomail_networks_are_currently_available_sentence', 'No echomail networks are currently available.') }}</p>
         {% if current_user.is_admin %}
         <a href="{{ url_for('echomail_admin.dashboard') }}" class="btn btn-primary">
             <i class="bi bi-gear"></i> Configure Echomail

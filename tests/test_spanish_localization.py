@@ -815,3 +815,28 @@ def test_spanish_games_lobby_translates_navigation_and_stock_categories(
     assert page.h1.get_text(strip=True) == 'JUEGOS'
     assert page.select_one('option[value="classic"]').get_text(strip=True) == 'Clásicos de DOS'
     assert 'No se encontraron juegos.' in page.get_text(' ', strip=True)
+    scores = _soup(client.get('/games/scores?period=monthly'))
+    assert scores.select_one('option[value="all"]').get_text(strip=True) == 'Desde el principio'
+    assert scores.select_one('option[value="monthly"]').get_text(strip=True) == 'Este mes'
+
+
+def test_spanish_user_tools_render_and_report_validation(client, make_user):
+    user_id, _, _ = make_user('es')
+    _authenticate(client, user_id)
+    pages = {
+        '/help': 'Preguntas frecuentes',
+        '/tour': 'Visita de bienvenida',
+        '/tools/info': 'Información y ayuda',
+        '/search?q=texto-sin-resultados-123': 'No se encontraron publicaciones.',
+        '/contacts/': 'Libreta de direcciones',
+        '/groups/': 'Grupos y clanes',
+        '/polls/': 'Encuestas',
+        '/notifications/settings': 'Configuración de notificaciones',
+    }
+    for path, label in pages.items():
+        assert label in _soup(client.get(path)).get_text(' ', strip=True), path
+
+    path = '/polls/new'
+    response = _post(client, path, {'question': '', 'options': 'Uno\nDos'},
+                     token_path=path, follow_redirects=True)
+    assert 'Escribe una pregunta para la encuesta.' in _soup(response).get_text(' ', strip=True)

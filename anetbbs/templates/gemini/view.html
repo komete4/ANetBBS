@@ -3,9 +3,9 @@
 {% block content %}
 <div class="bbs-header">
     <h1>{{ capsule.title or user.username + "'s capsule" }}</h1>
-    <p class="text-muted">by {{ user.username }} — last updated
+    <p class="text-muted">by {{ user.username }} {{ t('web.user.last_updated_dash_lowercase', '— last updated') }}
         {{ capsule.updated_at|eastern('%Y-%m-%d') }}
-        — <a href="{{ url_for('gemini.raw_gemtext', username=user.username) }}">raw .gmi</a></p>
+        — <a href="{{ url_for('gemini.raw_gemtext', username=user.username) }}">{{ t('web.user.raw_gmi_lowercase', 'raw .gmi') }}</a></p>
 </div>
 <div class="card">
     <div class="card-body" style="font-family:monospace;line-height:1.5;">
@@ -32,6 +32,6 @@
     </div>
 </div>
 <div class="mt-3">
-    <a href="{{ url_for('gemini.index') }}" class="btn btn-link">← All capsules</a>
+    <a href="{{ url_for('gemini.index') }}" class="btn btn-link">{{ t('web.user.all_capsules_back', '← All capsules') }}</a>
 </div>
 {% endblock %}

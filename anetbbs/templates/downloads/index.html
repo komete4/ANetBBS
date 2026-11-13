@@ -47,7 +47,7 @@
             <i class="bi bi-folder"></i>
             <code class="text-light-emphasis">{{ base_dir }}</code>
             <div class="small text-light" style="opacity:.7;">
-                Drop files in that directory to make them appear here.
+                {{ t('web.user.drop_files_in_that_directory_to_make_them_appear_here_sentence', 'Drop files in that directory to make them appear here.') }}
             </div>
         </div>
         {% endif %}
@@ -57,11 +57,11 @@
 {% if not entries %}
 <div class="dl-empty">
     <i class="bi bi-inbox" style="font-size:2.2rem; opacity:.55;"></i>
-    <h4 class="mt-2">No downloads available yet</h4>
+    <h4 class="mt-2">{{ t('web.user.no_downloads_available_yet', 'No downloads available yet') }}</h4>
     {% if current_user.is_authenticated and current_user.is_admin %}
     <p class="mb-0">Drop a release into <code>{{ base_dir }}</code> and refresh — it will show up here automatically.</p>
     {% else %}
-    <p class="mb-0">The sysop hasn't posted any releases yet. Check back soon.</p>
+    <p class="mb-0">{{ t('web.user.the_sysop_hasn_t_posted_any_releases_yet_check_back_soon_sentence', "The sysop hasn't posted any releases yet. Check back soon.") }}</p>
     {% endif %}
 </div>
 {% else %}
@@ -94,7 +94,7 @@
                     </a>
                     <a class="btn btn-outline-secondary dl-btn"
                        href="{{ url_for('downloads.sha256_for', filename=e.name) }}"
-                       title="SHA-256 checksum">
+                       title="{{ t('web.user.sha_256_checksum', 'SHA-256 checksum') }}">
                         <i class="bi bi-shield-check"></i>
                     </a>
                 </td>

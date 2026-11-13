@@ -12,7 +12,7 @@
 <div class="row g-3">
 <div class="col-md-6">
     <div class="card">
-        <div class="card-header"><i class="bi bi-pencil"></i> Top Posters</div>
+        <div class="card-header"><i class="bi bi-pencil"></i> {{ t('web.user.top_posters', 'Top Posters') }}</div>
         <ol class="list-group list-group-flush list-group-numbered">
             {% for u, n in top_posters %}
                 <li class="list-group-item d-flex justify-content-between">
@@ -20,7 +20,7 @@
                     <span class="badge bg-primary">{{ n }}</span>
                 </li>
             {% else %}
-                <li class="list-group-item text-muted">No posts in this window.</li>
+                <li class="list-group-item text-muted">{{ t('web.user.no_posts_in_this_window_sentence', 'No posts in this window.') }}</li>
             {% endfor %}
         </ol>
     </div>
@@ -28,7 +28,7 @@
 
 <div class="col-md-6">
     <div class="card">
-        <div class="card-header"><i class="bi bi-collection"></i> Most Active Boards</div>
+        <div class="card-header"><i class="bi bi-collection"></i> {{ t('web.user.most_active_boards', 'Most Active Boards') }}</div>
         <ol class="list-group list-group-flush list-group-numbered">
             {% for name, bid, n in top_boards %}
                 <li class="list-group-item d-flex justify-content-between">
@@ -36,7 +36,7 @@
                     <span class="badge bg-primary">{{ n }}</span>
                 </li>
             {% else %}
-                <li class="list-group-item text-muted">No board activity.</li>
+                <li class="list-group-item text-muted">{{ t('web.user.no_board_activity_sentence', 'No board activity.') }}</li>
             {% endfor %}
         </ol>
     </div>
@@ -44,7 +44,7 @@
 
 <div class="col-md-6">
     <div class="card">
-        <div class="card-header"><i class="bi bi-megaphone"></i> Top Shouters</div>
+        <div class="card-header"><i class="bi bi-megaphone"></i> {{ t('web.user.top_shouters', 'Top Shouters') }}</div>
         <ol class="list-group list-group-flush list-group-numbered">
             {% for u, n in top_shouters %}
                 <li class="list-group-item d-flex justify-content-between">
@@ -52,7 +52,7 @@
                     <span class="badge bg-primary">{{ n }}</span>
                 </li>
             {% else %}
-                <li class="list-group-item text-muted">No shouts in this window.</li>
+                <li class="list-group-item text-muted">{{ t('web.user.no_shouts_in_this_window_sentence', 'No shouts in this window.') }}</li>
             {% endfor %}
         </ol>
     </div>
@@ -60,7 +60,7 @@
 
 <div class="col-md-6">
     <div class="card">
-        <div class="card-header"><i class="bi bi-emoji-smile"></i> Top Reactors</div>
+        <div class="card-header"><i class="bi bi-emoji-smile"></i> {{ t('web.user.top_reactors', 'Top Reactors') }}</div>
         <ol class="list-group list-group-flush list-group-numbered">
             {% for u, n in top_reactors %}
                 <li class="list-group-item d-flex justify-content-between">
@@ -68,7 +68,7 @@
                     <span class="badge bg-primary">{{ n }}</span>
                 </li>
             {% else %}
-                <li class="list-group-item text-muted">No reactions yet.</li>
+                <li class="list-group-item text-muted">{{ t('web.user.no_reactions_yet_sentence', 'No reactions yet.') }}</li>
             {% endfor %}
         </ol>
     </div>

@@ -9,7 +9,7 @@
     <div class="form-check mb-2">
         <input type="checkbox" id="k_{{ kind }}" name="{{ kind }}" class="form-check-input"
                {% if prefs.get(kind, True) %}checked{% endif %}>
-        <label class="form-check-label" for="k_{{ kind }}">{{ label }}</label>
+        <label class="form-check-label" for="k_{{ kind }}">{{ t('notifications.kind.' ~ kind, label) }}</label>
     </div>
     {% endfor %}
     {% if admin_kinds %}
@@ -28,5 +28,5 @@
         <a href="{{ url_for('notifications.index') }}" class="btn btn-secondary">{{ t('ui.cancel', 'Cancel') }}</a>
     </div>
 </form>
-<p class="small text-muted mt-2">Newly created notifications honor these preferences. Existing notifications are not affected.</p>
+<p class="small text-muted mt-2">{{ t('web.user.newly_created_notifications_honor_these_preferences_existing_notifications_are_not_affected_sentence', 'Newly created notifications honor these preferences. Existing notifications are not affected.') }}</p>
 {% endblock %}

@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Edit My Capsule{% endblock %}
+{% block title %}{{ t('web.user.edit_my_capsule', 'Edit My Capsule') }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-pencil-square"></i> {{ t('ui.heading.edit_my_gemini_capsule', 'Edit My Gemini Capsule') }}</h1>
-    <p>Gemtext is line-oriented: <code># Heading</code>, <code>## Sub</code>,
+    <p>{{ t('web.user.gemtext_is_line_oriented_label', 'Gemtext is line-oriented:') }} <code># Heading</code>, <code>## Sub</code>,
        <code>* List item</code>, <code>=&gt; URL Description</code>,
        <code>&gt; Quote</code>, <code>```</code> for preformatted blocks.</p>
 </div>

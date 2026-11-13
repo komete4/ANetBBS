@@ -5,7 +5,7 @@
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-pencil-square"></i>
-        {% if parent %}Reply to Netmail{% else %}New Netmail{% endif %}
+        {% if parent %}{{ t('web.user.reply_to_netmail', 'Reply to Netmail') }}{% else %}{{ t('web.user.new_netmail', 'New Netmail') }}{% endif %}
     </h1>
 </div>
 
@@ -25,7 +25,7 @@
 
     <div class="row g-2 mb-3">
         <div class="col-md-6">
-            <label class="form-label">To Address (FTN)</label>
+            <label class="form-label">{{ t('web.user.to_address_ftn', 'To Address (FTN)') }}</label>
             <input type="text" name="to_address" class="form-control"
                    value="{{ form.to_address or '' }}"
                    placeholder="zone:net/node[.point]"
@@ -33,15 +33,15 @@
                    {% if is_direct_crash_reply %}readonly{% endif %} required>
             <div class="form-text">
                 {% if is_direct_crash_reply %}
-                Fixed to the sender's own address for a direct crash reply.
+                {{ t('web.user.fixed_to_the_sender_s_own_address_for_a_direct_crash_reply_sentence', "Fixed to the sender's own address for a direct crash reply.") }}
                 {% else %}
-                Need to look up an address?
-                <a href="{{ url_for('nodelist.browse') }}" target="_blank">Search the nodelist</a>.
+                {{ t('web.user.need_to_look_up_an_address', 'Need to look up an address?') }}
+                <a href="{{ url_for('nodelist.browse') }}" target="_blank">{{ t('web.user.search_the_nodelist', 'Search the nodelist') }}</a>.
                 {% endif %}
             </div>
         </div>
         <div class="col-md-6">
-            <label class="form-label">To Name</label>
+            <label class="form-label">{{ t('web.user.to_name', 'To Name') }}</label>
             <input type="text" name="to_name" class="form-control"
                    value="{{ form.to_name or '' }}"
                    {% if is_direct_crash_reply %}readonly{% endif %} required>
@@ -50,9 +50,9 @@
 
     <div class="row g-2 mb-3">
         <div class="col-md-6">
-            <label class="form-label">From AKA (optional)</label>
+            <label class="form-label">{{ t('web.user.from_aka_optional', 'From AKA (optional)') }}</label>
             <select name="from_aka" class="form-select">
-                <option value="">— auto-pick by destination zone —</option>
+                <option value="">{{ t('web.user.auto_pick_by_destination_zone_dash_suffix_lowercase', '— auto-pick by destination zone —') }}</option>
                 {% for a in user_akas %}
                     <option value="{{ a.address }}"
                             {% if a.is_primary %}selected{% endif %}>
@@ -61,7 +61,7 @@
                 {% endfor %}
             </select>
             <div class="form-text">
-                <a href="{{ url_for('echomail_admin.akas') }}" target="_blank">Manage AKAs</a>
+                <a href="{{ url_for('echomail_admin.akas') }}" target="_blank">{{ t('web.user.manage_akas', 'Manage AKAs') }}</a>
             </div>
         </div>
         <div class="col-md-6 d-flex align-items-end">
@@ -70,7 +70,7 @@
                     {% if form.is_crash or is_direct_crash_reply %}checked{% endif %}
                     {% if is_direct_crash_reply %}disabled{% endif %}>
                 <label class="form-check-label" for="cb_crash">
-                    Crashmail (direct to recipient)
+                    {{ t('web.user.crashmail_direct_to_recipient', 'Crashmail (direct to recipient)') }}
                 </label>
             </div>
             <div class="form-check">
@@ -92,13 +92,12 @@
         <textarea name="body" rows="14" class="form-control" spellcheck="true"
                   style="font-family:monospace;">{{ form.body or '' }}</textarea>
         <div class="form-text">
-            Markdown is supported when viewing if the recipient renders it.
-            Tagline (set in Profile → Edit) is auto-appended.
+            {{ t('netmail.markdown_help', 'Markdown is supported when viewing if the recipient renders it. Tagline (set in Profile → Edit) is auto-appended.') }}
         </div>
     </div>
 
     <div class="mb-3">
-        <label for="cb_tagline_id" class="form-label">Add a tagline (optional)</label>
+        <label for="cb_tagline_id" class="form-label">{{ t('web.user.add_a_tagline_optional', 'Add a tagline (optional)') }}</label>
         <select name="tagline_id" id="cb_tagline_id" class="form-select" size="6">
             <option value="">-- None --</option>
             {% for t in taglines %}
@@ -111,7 +110,7 @@
         <i class="bi bi-send"></i> {{ t('ui.send', 'Send') }}
     </button>
     <button type="submit" name="save_draft" value="1" class="btn btn-outline-secondary">
-        <i class="bi bi-bookmark"></i> Save as Draft
+        <i class="bi bi-bookmark"></i> {{ t('web.user.save_as_draft', 'Save as Draft') }}
     </button>
     <a href="{{ url_for('netmail.inbox') }}" class="btn btn-link">{{ t('ui.cancel', 'Cancel') }}</a>
 </form>

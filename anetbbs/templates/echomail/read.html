@@ -36,18 +36,18 @@
         </a>
         {% endif %}
         <a href="{{ url_for('echomail.next_unread', area_id=echo_area.id) }}" class="btn btn-success btn-sm ms-1">
-            <i class="bi bi-skip-forward"></i> Next Unread
+            <i class="bi bi-skip-forward"></i> {{ t('web.user.next_unread', 'Next Unread') }}
         </a>
         <form method="post" action="{{ url_for('saved.add') }}" class="d-inline ms-1">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="kind" value="echomail">
             <input type="hidden" name="target_id" value="{{ msg.id }}">
-            <button class="btn btn-outline-warning btn-sm" title="Bookmark this message">
+            <button class="btn btn-outline-warning btn-sm" title="{{ t('web.user.bookmark_this_message', 'Bookmark this message') }}">
                 <i class="bi bi-bookmark-star"></i>
             </button>
         </form>
         <button type="button" class="btn btn-outline-info btn-sm ms-1 copy-permalink-btn"
-                data-kind="echomail" data-id="{{ msg.id }}" title="Copy permalink">
+                data-kind="echomail" data-id="{{ msg.id }}" title="{{ t('web.user.copy_permalink', 'Copy permalink') }}">
             <i class="bi bi-link-45deg"></i>
         </button>
     </div>
@@ -68,7 +68,7 @@
 
         <div class="d-flex justify-content-between align-items-center mb-2">
             <button type="button" id="toggleMd" class="btn btn-link btn-sm p-0">
-                <i class="bi bi-markdown"></i> Toggle Markdown view
+                <i class="bi bi-markdown"></i> {{ t('web.user.toggle_markdown_view', 'Toggle Markdown view') }}
             </button>
             <span>
                 {% set msg_type = 'echomail' %}{% set msg_id = msg.id %}
@@ -117,7 +117,7 @@
             <form method="POST" action="{{ url_for('echomail.delete_message', area_id=echo_area.id, message_id=msg.id) }}"
                  class="d-inline" onsubmit="return confirm('Permanently delete this message? This also removes it from any not-yet-sent outbound queue, but cannot recall a copy already delivered to a peer.');">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-outline-danger btn-sm me-1" title="Delete this message (admin only)">
+                <button type="submit" class="btn btn-outline-danger btn-sm me-1" title="{{ t('web.user.delete_this_message_admin_only', 'Delete this message (admin only)') }}">
                     <i class="bi bi-trash"></i> {{ t('ui.delete', 'Delete') }}
                 </button>
             </form>

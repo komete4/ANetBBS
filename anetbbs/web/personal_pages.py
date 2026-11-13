@@ -28,6 +28,8 @@ from flask import (Blueprint, send_from_directory, abort, current_app,
                    render_template, redirect, url_for, request, flash)
 from flask_login import login_required, current_user
 
+from ..features.i18n import translate
+
 
 pages_bp = Blueprint('personal_pages', __name__, url_prefix='/_pages')
 
@@ -90,23 +92,23 @@ def _user_directory(static_origin):
 def _write_static_file(directory, uploaded):
     filename = uploaded.filename
     if not STATIC_FILENAME.fullmatch(filename):
-        flash('Use a simple filename ending in .html, .htm or .css.', 'danger')
+        flash(translate('personal_pages.notice.invalid_extension', 'Use a simple filename ending in .html, .htm or .css.'), 'danger')
         return
     content = uploaded.stream.read(STATIC_MAX_BYTES + 1)
     if len(content) > STATIC_MAX_BYTES:
-        flash('Personal page files can be at most 512 KB.', 'danger')
+        flash(translate('personal_pages.notice.file_too_large', 'Personal page files can be at most 512 KB.'), 'danger')
         return
     try:
         content.decode('utf-8')
     except UnicodeDecodeError:
-        flash('Save the file as UTF-8 before uploading.', 'danger')
+        flash(translate('personal_pages.notice.utf8_required', 'Save the file as UTF-8 before uploading.'), 'danger')
         return
     target = directory / filename
     with _static_files_lock:
         if target.is_symlink():
             abort(404)
         if not target.exists() and sum(p.is_file() for p in directory.iterdir()) >= STATIC_MAX_FILES:
-            flash('You can publish up to 20 personal page files.', 'danger')
+            flash(translate('personal_pages.notice.file_limit', 'You can publish up to 20 personal page files.'), 'danger')
             return
         temporary = None
         try:
@@ -118,7 +120,7 @@ def _write_static_file(directory, uploaded):
         finally:
             if temporary is not None:
                 temporary.unlink(missing_ok=True)
-    flash(f'Uploaded {filename}.', 'success')
+    flash(translate('personal_pages.notice.uploaded', 'Uploaded {filename}.', filename=filename), 'success')
 
 
 def _root():
@@ -257,17 +259,17 @@ def upload():
         request.max_content_length = STATIC_MAX_BYTES + 32 * 1024
     f = request.files.get('file')
     if not f or not f.filename:
-        flash('No file selected.', 'danger')
+        flash(translate('personal_pages.notice.file_required', 'No file selected.'), 'danger')
         return redirect(url_for('personal_pages.my_pages'))
     if static_origin:
         _write_static_file(base, f)
         return redirect(url_for('personal_pages.my_pages'))
     safe_name = os.path.basename(f.filename)
     if not safe_name or safe_name.startswith('.'):
-        flash('Invalid filename.', 'danger')
+        flash(translate('personal_pages.notice.invalid_filename', 'Invalid filename.'), 'danger')
         return redirect(url_for('personal_pages.my_pages'))
     f.save(str(base / safe_name))
-    flash(f'Uploaded {safe_name}.', 'success')
+    flash(translate('personal_pages.notice.uploaded', 'Uploaded {filename}.', filename=safe_name), 'success')
     return redirect(url_for('personal_pages.my_pages'))
 
 
@@ -283,7 +285,7 @@ def delete(filename):
         abort(404)
     try:
         target.unlink()
-        flash(f'Deleted {filename}.', 'success')
+        flash(translate('personal_pages.notice.deleted', 'Deleted {filename}.', filename=filename), 'success')
     except Exception as exc:
-        flash(f'Delete failed: {exc}', 'danger')
+        flash(translate('personal_pages.notice.delete_failed', 'Delete failed: {exc}', exc=exc), 'danger')
     return redirect(url_for('personal_pages.my_pages'))

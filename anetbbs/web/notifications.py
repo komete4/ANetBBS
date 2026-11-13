@@ -3,6 +3,7 @@
 from flask import Blueprint, render_template, redirect, url_for, request, abort
 from flask_login import login_required, current_user
 
+from ..features.i18n import translate
 from ..models import db, Notification
 
 
@@ -78,7 +79,7 @@ def settings():
         current_user.notify_prefs = _json.dumps(new_prefs)
         db.session.commit()
         from flask import flash
-        flash('Notification preferences saved.', 'success')
+        flash(translate('notifications.notice.preferences_saved', 'Notification preferences saved.'), 'success')
         return redirect(url_for('notifications.settings'))
     return render_template('notifications/settings.html',
                            kinds=_NOTIFY_KINDS,

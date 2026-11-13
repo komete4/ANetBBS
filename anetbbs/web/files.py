@@ -126,11 +126,14 @@ def upload():
                 return render_template('files/upload.html', form=form)
             perm = (chosen_area.upload_permission or 'users').lower()
             if perm == 'none':
-                flash(f'Uploads to "{chosen_area.name}" are disabled.', 'danger')
+                flash(translate('files.area_uploads_disabled',
+                                'Uploads to "{area}" are disabled.',
+                                area=chosen_area.name), 'danger')
                 return render_template('files/upload.html', form=form)
             if perm == 'sysop' and not current_user.is_admin:
-                flash(f'"{chosen_area.name}" accepts uploads from the sysop only.',
-                      'danger')
+                flash(translate('files.area_sysop_uploads',
+                                '"{area}" accepts uploads from the sysop only.',
+                                area=chosen_area.name), 'danger')
                 return render_template('files/upload.html', form=form)
 
         if not allowed_file(f.filename):
@@ -143,7 +146,8 @@ def upload():
         f.seek(0)
         max_size = current_app.config.get('UPLOAD_MAX_SIZE', 5 * 1024 * 1024)
         if size > max_size:
-            flash(f'File too large. Maximum size is {max_size // 1024 // 1024}MB.', 'danger')
+            flash(translate('files.too_large', 'File too large. Maximum size is {size}MB.',
+                            size=max_size // 1024 // 1024), 'danger')
             return render_template('files/upload.html', form=form)
 
         # Save file with unique name
@@ -166,8 +170,8 @@ def upload():
                     os.remove(filepath)
                 except OSError:
                     pass
-                flash(f'Upload rejected: virus detected ({result.signature}).',
-                      'danger')
+                flash(translate('files.virus_detected', 'Upload rejected: virus detected ({signature}).',
+                                signature=result.signature), 'danger')
                 return redirect(url_for('files.upload'))
         except Exception:
             current_app.logger.exception(
@@ -184,8 +188,8 @@ def upload():
                     os.remove(filepath)
                 except OSError:
                     pass
-                flash(f'Upload rejected: corrupt archive ({result.message}).',
-                      'danger')
+                flash(translate('files.corrupt_archive', 'Upload rejected: corrupt archive ({reason}).',
+                                reason=result.message), 'danger')
                 return redirect(url_for('files.upload'))
         except Exception:
             current_app.logger.exception(
@@ -203,8 +207,9 @@ def upload():
                 file_area_id=chosen_area.id if chosen_area else None,
                 content_hash=content_hash).first()
             if existing:
-                flash(f'Note: identical file already uploaded as '
-                      f'"{existing.original_filename}".', 'warning')
+                flash(translate('files.duplicate_notice',
+                                'Note: identical file already uploaded as "{filename}".',
+                                filename=existing.original_filename), 'warning')
         except Exception:
             current_app.logger.exception(
                 'dedup hash failed during user upload; continuing without it')

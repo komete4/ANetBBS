@@ -12,12 +12,12 @@
 
 <div class="mb-2 d-flex flex-wrap gap-1 align-items-center">
     <a href="{{ url_for('postcards.view', slug=card.slug) }}" class="btn btn-outline-success btn-sm" target="_blank">
-        <i class="bi bi-share"></i> Share Page
+        <i class="bi bi-share"></i> {{ t('web.user.share_page', 'Share Page') }}
     </a>
     <a href="{{ url_for('postcards.raw_ansi', slug=card.slug) }}" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-download"></i> .ans
     </a>
-    <a href="{{ url_for('postcards.index') }}" class="btn btn-link btn-sm">← My Postcards</a>
+    <a href="{{ url_for('postcards.index') }}" class="btn btn-link btn-sm">{{ t('web.user.my_postcards_back', '← My Postcards') }}</a>
 </div>
 
 {% set save_url = url_for('postcards.save', slug=card.slug) %}
@@ -26,7 +26,7 @@
 
 <div class="card mt-3">
     <div class="card-body">
-        <p class="small text-muted mb-1">Save your work, then use "Share Page" above to see (and copy) the public link and downloadable image.</p>
+        <p class="small text-muted mb-1">{{ t('postcards.share_help', 'Save your work, then use "Share Page" above to see (and copy) the public link and downloadable image.') }}</p>
     </div>
 </div>
 {% endblock %}

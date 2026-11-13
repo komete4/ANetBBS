@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Inter-BBS IM — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{{ t('web.user.inter_bbs_im_suffix', 'Inter-BBS IM —') }} {{ config.BBS_NAME }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -29,7 +29,7 @@ tr.imsg-unread > *:first-child { border-left: 3px solid var(--theme-primary, #89
         <div>
             <h2 class="mb-1"><i class="bi bi-chat-dots-fill"></i> {{ t('ui.heading.inter_bbs_instant_messages', 'Inter-BBS Instant Messages') }}</h2>
             <p class="text-muted mb-0">
-                Real-time messages received from other BBSes via MSP (RFC 1312).
+                {{ t('imsg.inbox_help', 'Real-time messages received from other BBSes via MSP (RFC 1312).') }}
             </p>
         </div>
         <div>
@@ -44,8 +44,7 @@ tr.imsg-unread > *:first-child { border-left: 3px solid var(--theme-primary, #89
 
     {% if not messages %}
         <div class="alert alert-info">
-            No instant messages yet. Other Synchronet/anetbbs sysops can ping
-            you on TCP port 18 — make sure the port is reachable.
+            {{ t('web.user.no_instant_messages_yet_other_synchronet_anetbbs_sysops_can_ping_you_on_tcp_port_18_make_sure_the_port_is_reachable_sentence', 'No instant messages yet. Other Synchronet/anetbbs sysops can ping you on TCP port 18 — make sure the port is reachable.') }}
         </div>
     {% else %}
         <table class="table table-hover">

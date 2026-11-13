@@ -1,16 +1,16 @@
 {% extends "base.html" %}
-{% block title %}New Group{% endblock %}
+{% block title %}{{ t('web.user.new_group', 'New Group') }}{% endblock %}
 {% block content %}
 <div class="bbs-header"><h1><i class="bi bi-people-fill"></i> {{ t('ui.heading.create_group', 'Create Group') }}</h1></div>
 
 <form method="post" class="card p-3">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="mb-3">
-        <label class="form-label">Group name</label>
+        <label class="form-label">{{ t('web.user.group_name', 'Group name') }}</label>
         <input type="text" name="name" class="form-control" required maxlength="80">
     </div>
     <div class="mb-3">
-        <label class="form-label">Tag (1-8 chars, shown next to your name)</label>
+        <label class="form-label">{{ t('web.user.tag_1_8_chars_shown_next_to_your_name', 'Tag (1-8 chars, shown next to your name)') }}</label>
         <input type="text" name="tag" class="form-control" maxlength="8" placeholder="ART, TW2K">
     </div>
     <div class="mb-3">
@@ -19,7 +19,7 @@
     </div>
     <div class="form-check mb-3">
         <input type="checkbox" name="is_open" id="is_open" class="form-check-input" value="1">
-        <label class="form-check-label" for="is_open">Open membership (anyone can join)</label>
+        <label class="form-check-label" for="is_open">{{ t('web.user.open_membership_anyone_can_join', 'Open membership (anyone can join)') }}</label>
     </div>
     <div>
         <button class="btn btn-primary"><i class="bi bi-check"></i> {{ t('ui.create', 'Create') }}</button>

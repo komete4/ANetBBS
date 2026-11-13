@@ -20,9 +20,9 @@
                 include <code>[AREATAG]</code> for auto-detection.</div>
         </div>
         <div class="mb-3">
-            <label class="form-label">Force area (optional)</label>
+            <label class="form-label">{{ t('web.user.force_area_optional', 'Force area (optional)') }}</label>
             <select name="area_id" class="form-select">
-                <option value="">— auto-detect from filename —</option>
+                <option value="">{{ t('web.user.auto_detect_from_filename_dash_suffix_lowercase', '— auto-detect from filename —') }}</option>
                 {% for a in areas %}
                     <option value="{{ a.id }}">{{ a.tag }} — {{ a.name or '' }}</option>
                 {% endfor %}

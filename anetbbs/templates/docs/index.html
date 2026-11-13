@@ -3,11 +3,11 @@
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-book"></i> {{ t('ui.heading.documentation', 'Documentation') }}</h1>
-    <p class="lead">Everything you need to run, use, and extend your ANetBBS.</p>
+    <p class="lead">{{ t('web.user.everything_you_need_to_run_use_and_extend_your_anetbbs_sentence', 'Everything you need to run, use, and extend your ANetBBS.') }}</p>
 </div>
 
 {% if not docs %}
-<div class="alert alert-warning">No documentation files found in <code>docs/</code>.</div>
+<div class="alert alert-warning">{{ t('web.user.no_documentation_files_found_in', 'No documentation files found in') }} <code>docs/</code>.</div>
 {% else %}
 <div class="row g-3">
     <div class="col-lg-9">
@@ -34,20 +34,20 @@
     </div>
     <div class="col-lg-3">
         <div class="card mb-3 sticky-top" style="top: 1rem;">
-            <div class="card-header"><i class="bi bi-mortarboard"></i> First time here?</div>
+            <div class="card-header"><i class="bi bi-mortarboard"></i> {{ t('web.user.first_time_here', 'First time here?') }}</div>
             <div class="card-body">
                 <p class="small">If you just installed your BBS, take the
                    guided slideshow tour for new sysops.</p>
                 <a href="{{ url_for('main.tutorial') }}" class="btn btn-primary w-100 mb-2">
-                    <i class="bi bi-play-circle"></i> Start tutorial
+                    <i class="bi bi-play-circle"></i> {{ t('web.user.start_tutorial', 'Start tutorial') }}
                 </a>
                 <a href="{{ url_for('main.tour') }}" class="btn btn-outline-primary w-100">
-                    <i class="bi bi-compass"></i> User tour
+                    <i class="bi bi-compass"></i> {{ t('web.user.user_tour', 'User tour') }}
                 </a>
             </div>
         </div>
         <div class="card">
-            <div class="card-header"><i class="bi bi-info-circle"></i> Quick links</div>
+            <div class="card-header"><i class="bi bi-info-circle"></i> {{ t('web.user.quick_links', 'Quick links') }}</div>
             <ul class="list-group list-group-flush small">
                 <li class="list-group-item"><a href="{{ url_for('wiki.index') }}">Wiki</a></li>
                 <li class="list-group-item"><a href="{{ url_for('stats.index') }}">{{ t('ui.statistics', 'Statistics') }}</a></li>

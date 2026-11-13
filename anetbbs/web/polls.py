@@ -15,6 +15,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from sqlalchemy.exc import IntegrityError
 
+from ..features.i18n import translate
 from ..features.rate_limit import rate_limit, _user_or_ip
 from ..models import db, Poll, PollOption, PollVote
 
@@ -55,13 +56,13 @@ def new_poll():
         options = [o.strip() for o in (request.form.get('options') or '').splitlines()
                    if o.strip()]
         if not question:
-            flash('Question is required.', 'danger')
+            flash(translate('polls.notice.question_required', 'Question is required.'), 'danger')
             return render_template('polls/new.html', form=request.form)
         if len(options) < 2:
-            flash('Need at least 2 options.', 'danger')
+            flash(translate('polls.notice.minimum_options', 'Need at least 2 options.'), 'danger')
             return render_template('polls/new.html', form=request.form)
         if len(options) > _MAX_POLL_OPTIONS:
-            flash(f'Too many options — max {_MAX_POLL_OPTIONS}.', 'danger')
+            flash(translate('polls.notice.maximum_options', 'Too many options — max {max_poll_options}.', max_poll_options=_MAX_POLL_OPTIONS), 'danger')
             return render_template('polls/new.html', form=request.form)
         p = Poll(creator_id=current_user.id, question=question,
                  description=description, is_active=True)
@@ -70,7 +71,7 @@ def new_poll():
         for i, text in enumerate(options):
             db.session.add(PollOption(poll_id=p.id, text=text, sort_order=i))
         db.session.commit()
-        flash('Poll created.', 'success')
+        flash(translate('polls.notice.created', 'Poll created.'), 'success')
         return redirect(url_for('polls.view_poll', poll_id=p.id))
     return render_template('polls/new.html', form={})
 
@@ -93,13 +94,13 @@ def view_poll(poll_id):
 def vote(poll_id):
     p = Poll.query.get_or_404(poll_id)
     if not p.is_active:
-        flash('This poll is closed.', 'warning')
+        flash(translate('polls.notice.already_closed', 'This poll is closed.'), 'warning')
         return redirect(url_for('polls.view_poll', poll_id=p.id))
 
     option_id = request.form.get('option_id', type=int)
     opt = PollOption.query.filter_by(id=option_id, poll_id=p.id).first()
     if opt is None:
-        flash('Invalid option.', 'danger')
+        flash(translate('polls.notice.invalid_option', 'Invalid option.'), 'danger')
         return redirect(url_for('polls.view_poll', poll_id=p.id))
 
     existing = PollVote.query.filter_by(
@@ -131,7 +132,7 @@ def vote(poll_id):
             if existing is not None:
                 existing.option_id = opt.id
                 db.session.commit()
-    flash('Vote recorded.', 'success')
+    flash(translate('polls.notice.vote_recorded', 'Vote recorded.'), 'success')
     return redirect(url_for('polls.view_poll', poll_id=p.id))
 
 
@@ -144,7 +145,7 @@ def close(poll_id):
     p.is_active = False
     p.closes_at = datetime.datetime.utcnow()
     db.session.commit()
-    flash('Poll closed.', 'success')
+    flash(translate('polls.notice.closed', 'Poll closed.'), 'success')
     return redirect(url_for('polls.view_poll', poll_id=p.id))
 
 
@@ -163,5 +164,5 @@ def delete(poll_id):
     question = p.question
     db.session.delete(p)
     db.session.commit()
-    flash(f'Poll "{question}" deleted.', 'success')
+    flash(translate('polls.notice.deleted', 'Poll "{question}" deleted.', question=question), 'success')
     return redirect(url_for('polls.index'))

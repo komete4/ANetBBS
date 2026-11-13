@@ -17,10 +17,10 @@
 
         <div class="card mb-3">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-file-earmark-text"></i> Rules &amp; Info</span>
+                <span><i class="bi bi-file-earmark-text"></i> {{ t('web.user.rules_info', 'Rules & Info') }}</span>
                 {% if cfg.infopack_filename %}
                 <a href="{{ url_for('network_join.download_infopack', slug=(identity.slug if identity and not identity.is_default else None)) }}" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-download"></i> Download Full Infopack
+                    <i class="bi bi-download"></i> {{ t('web.user.download_full_infopack', 'Download Full Infopack') }}
                 </a>
                 {% endif %}
             </div>
@@ -28,7 +28,7 @@
                 {% if cfg.rules_text %}
                 <pre style="white-space:pre-wrap; font-family:inherit; max-height:400px; overflow-y:auto;">{{ cfg.rules_text }}</pre>
                 {% else %}
-                <p class="text-muted">No rules text available yet.</p>
+                <p class="text-muted">{{ t('web.user.no_rules_text_available_yet_sentence', 'No rules text available yet.') }}</p>
                 {% endif %}
             </div>
         </div>
@@ -71,7 +71,7 @@
                     </div>
 
                     <div class="card mb-3 border-secondary">
-                        <div class="card-header">QWK / Offline-Mail</div>
+                        <div class="card-header">{{ t('web.user.qwk_offline_mail', 'QWK / Offline-Mail') }}</div>
                         <div class="card-body mb-0">
                             {{ form.qwk_packet_id.label(class="form-label") }}
                             {{ form.qwk_packet_id(class="form-control") }}

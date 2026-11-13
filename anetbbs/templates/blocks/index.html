@@ -1,16 +1,16 @@
 {% extends "base.html" %}
-{% block title %}Block List — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{{ t('web.user.block_list_suffix', 'Block List —') }} {{ config.BBS_NAME }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-slash-circle"></i> {{ t('ui.heading.block_list', 'Block List') }}</h1>
-    <p class="small text-muted">Blocked users can't PM you or @-mention you.</p>
+    <p class="small text-muted">{{ t('web.user.blocked_users_can_t_pm_you_or_mention_you_sentence', "Blocked users can't PM you or @-mention you.") }}</p>
 </div>
 
 <form method="post" action="{{ url_for('blocks.add') }}" class="card p-3 mb-3">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="row g-2">
         <div class="col-md-4">
-            <input type="text" name="username" class="form-control" placeholder="Username to block" required>
+            <input type="text" name="username" class="form-control" placeholder="{{ t('web.user.username_to_block', 'Username to block') }}" required>
         </div>
         <div class="col-md-6">
             <input type="text" name="reason" class="form-control" placeholder="Reason (optional, private)">
@@ -41,6 +41,6 @@
     </tbody>
 </table>
 {% else %}
-<p class="text-muted">You haven't blocked anyone.</p>
+<p class="text-muted">{{ t('web.user.you_haven_t_blocked_anyone_sentence', "You haven't blocked anyone.") }}</p>
 {% endif %}
 {% endblock %}

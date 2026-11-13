@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}My Pages — {{ config.BBS_NAME }}{% endblock %}
+{% block title %}{{ t('web.user.my_pages_suffix', 'My Pages —') }} {{ config.BBS_NAME }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-globe2"></i> {{ t('ui.heading.my_personal_pages', 'My Personal Pages') }}</h1>
@@ -7,12 +7,12 @@
 
 {% if static_url %}
 <p class="small text-muted">
-    Your page is published at <a href="{{ static_url }}" target="_blank" rel="noopener noreferrer">{{ static_url }}</a>.
+    {{ t('web.user.your_page_is_published_at', 'Your page is published at') }} <a href="{{ static_url }}" target="_blank" rel="noopener noreferrer">{{ static_url }}</a>.
     Start with <code>index.html</code> and link to your CSS with relative URLs.
 </p>
 {% elif not enabled %}
 <div class="alert alert-warning">
-    <strong>Personal pages aren't enabled on this BBS.</strong>
+    <strong>{{ t('web.user.personal_pages_aren_t_enabled_on_this_bbs_sentence', "Personal pages aren't enabled on this BBS.") }}</strong>
     The sysop can turn them on by setting
     <code>PERSONAL_PAGES_ENABLED=true</code> in the .env and restarting
     <code>anetbbs-web</code>. Until then, files you upload here are
@@ -54,7 +54,7 @@
         </td>
     </tr>
     {% else %}
-    <tr><td colspan="3" class="text-muted">No files yet — upload an index.html to get started.</td></tr>
+    <tr><td colspan="3" class="text-muted">{{ t('web.user.no_files_yet_upload_an_index_html_to_get_started_sentence', 'No files yet — upload an index.html to get started.') }}</td></tr>
     {% endfor %}
     </tbody>
 </table>
@@ -64,13 +64,13 @@
     <div class="card-body small">
         <ul class="mb-0">
             {% if static_url %}
-            <li>Publish up to 20 UTF-8 HTML and CSS files, up to 512 KB each.</li>
-            <li>Scripts and forms are disabled.</li>
+            <li>{{ t('web.user.publish_up_to_20_utf_8_html_and_css_files_up_to_512_kb_each_sentence', 'Publish up to 20 UTF-8 HTML and CSS files, up to 512 KB each.') }}</li>
+            <li>{{ t('web.user.scripts_and_forms_are_disabled_sentence', 'Scripts and forms are disabled.') }}</li>
             {% else %}
             <li>Index file lookup tries: {{ index_files|join(', ') }}</li>
             <li>Sysop can also drop folders directly in <code>data/personal_pages/&lt;dir&gt;/</code>
                 — they'll be served at <code>/&lt;dir&gt;/</code> top-level.</li>
-            <li>Upload your own HTML, CSS, JS, images — full static-site freedom.</li>
+            <li>{{ t('personal_pages.upload_types', 'Upload your own HTML, CSS, JS, images — full static-site freedom.') }}</li>
             {% endif %}
         </ul>
     </div>

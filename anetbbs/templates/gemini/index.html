@@ -3,7 +3,7 @@
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-stars"></i> {{ t('ui.heading.gemini_capsules', 'Gemini Capsules') }}</h1>
-    <p>User-published gemtext pages. <a href="{{ url_for('gemini.edit') }}">Edit your own.</a></p>
+    <p>{{ t('web.user.user_published_gemtext_pages_sentence', 'User-published gemtext pages.') }} <a href="{{ url_for('gemini.edit') }}">{{ t('web.user.edit_your_own_sentence', 'Edit your own.') }}</a></p>
 </div>
 <div class="card">
     <div class="card-body p-0">
@@ -19,7 +19,7 @@
             {% endfor %}
         </ul>
     {% else %}
-        <div class="p-3 text-muted">No published capsules yet.</div>
+        <div class="p-3 text-muted">{{ t('web.user.no_published_capsules_yet_sentence', 'No published capsules yet.') }}</div>
     {% endif %}
     </div>
 </div>

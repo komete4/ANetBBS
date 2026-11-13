@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Diff r{{ a.rev_num }}…r{{ b.rev_num }} — {{ page.title }}{% endblock %}
+{% block title %}{{ t('wiki.diff.title', 'Diff r') }}{{ a.rev_num }}…r{{ b.rev_num }} — {{ page.title }}{% endblock %}
 {% block content %}
 {% include "wiki/_layout.html" %}
 
 <div class="bbs-header">
-    <h1><i class="bi bi-arrow-left-right"></i> Diff:
+    <h1><i class="bi bi-arrow-left-right"></i> {{ t('wiki.diff.heading', 'Diff:') }}
         <a href="{{ url_for('wiki.view', slug=page.slug) }}">{{ page.title }}</a>
         <small class="text-muted">r{{ a.rev_num }} → r{{ b.rev_num }}</small>
     </h1>
@@ -19,7 +19,7 @@
                     {% if a.author %}· {{ a.author.username }}{% endif %}</small>
             </div>
             <div class="card-body small">
-                <em>{{ a.edit_summary or '(no edit summary)' }}</em>
+                <em>{{ a.edit_summary or t('wiki.diff.no_summary', '(no edit summary)') }}</em>
             </div>
         </div>
     </div>
@@ -31,7 +31,7 @@
                     {% if b.author %}· {{ b.author.username }}{% endif %}</small>
             </div>
             <div class="card-body small">
-                <em>{{ b.edit_summary or '(no edit summary)' }}</em>
+                <em>{{ b.edit_summary or t('wiki.diff.no_summary', '(no edit summary)') }}</em>
             </div>
         </div>
     </div>
@@ -43,10 +43,10 @@
 {% elif ln.startswith('-') %}<span class="del">{{ ln }}</span>
 {% else %}{{ ln }}
 {% endif %}{% endfor -%}
-{% if not diff %}<em>No differences.</em>{% endif %}</div>
+{% if not diff %}<em>{{ t('web.user.no_differences_sentence', 'No differences.') }}</em>{% endif %}</div>
 
 <div class="mt-3">
     <a href="{{ url_for('wiki.history', slug=page.slug) }}" class="btn btn-sm btn-outline-secondary">
-        <i class="bi bi-arrow-left"></i> Back to history</a>
+        <i class="bi bi-arrow-left"></i> {{ t('web.user.back_to_history', 'Back to history') }}</a>
 </div>
 {% endblock %}

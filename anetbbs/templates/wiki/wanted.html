@@ -1,18 +1,18 @@
 {% extends "base.html" %}
-{% block title %}Wanted pages — Wiki{% endblock %}
+{% block title %}{{ t('web.user.wanted_pages_wiki', 'Wanted pages — Wiki') }}{% endblock %}
 {% block content %}
 {% include "wiki/_layout.html" %}
 
 <div class="bbs-header">
     <h1><i class="bi bi-question-circle"></i> {{ t('ui.heading.wanted_pages', 'Wanted pages') }}</h1>
-    <p class="text-muted">Pages that other pages link to but which haven't been created yet.</p>
+    <p class="text-muted">{{ t('web.user.pages_that_other_pages_link_to_but_which_haven_t_been_created_yet_sentence', "Pages that other pages link to but which haven't been created yet.") }}</p>
 </div>
 
 {% if items %}
 <div class="card">
     <table class="table table-sm mb-0">
         <thead>
-            <tr><th>{{ t('ui.slug', 'Slug') }}</th><th class="text-end">Incoming links</th><th></th></tr>
+            <tr><th>{{ t('ui.slug', 'Slug') }}</th><th class="text-end">{{ t('web.user.incoming_links', 'Incoming links') }}</th><th></th></tr>
         </thead>
         <tbody>
         {% for slug, count in items %}
@@ -35,7 +35,7 @@
 </div>
 {% else %}
 <div class="alert alert-success">
-    <i class="bi bi-check-circle"></i> Every linked page exists. Nice.
+    <i class="bi bi-check-circle"></i> {{ t('web.user.every_linked_page_exists_nice_sentence', 'Every linked page exists. Nice.') }}
 </div>
 {% endif %}
 {% endblock %}

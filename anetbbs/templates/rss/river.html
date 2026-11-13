@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}RSS River — All Feeds{% endblock %}
+{% block title %}{{ t('web.user.rss_river_all_feeds', 'RSS River — All Feeds') }}{% endblock %}
 {% block content %}
 <style>
 .rss-item-card { transition: box-shadow .12s; }
@@ -14,7 +14,7 @@
 
 <div class="bbs-header">
   <h1><i class="bi bi-water"></i> {{ t('ui.heading.rss_river', 'RSS River') }}</h1>
-  <p class="mb-0">Newest items across all active feeds, newest first.</p>
+  <p class="mb-0">{{ t('web.user.newest_items_across_all_active_feeds_newest_first_sentence', 'Newest items across all active feeds, newest first.') }}</p>
 </div>
 
 <div class="d-flex flex-wrap gap-2 mb-4">
@@ -112,7 +112,7 @@
 
 {% else %}
 <div class="alert alert-info">
-  <i class="bi bi-info-circle"></i> No items yet across any feed.
+  <i class="bi bi-info-circle"></i> {{ t('web.user.no_items_yet_across_any_feed_sentence', 'No items yet across any feed.') }}
 </div>
 {% endif %}
 {% endblock %}
