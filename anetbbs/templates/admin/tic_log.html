@@ -42,20 +42,20 @@
                 <th>{{ t('ui.size', 'Size') }}</th><th>{{ t('ui.from', 'From') }}</th><th>{{ t('ui.error', 'Error') }}</th>
             </tr></thead>
             <tbody>
-            {% for t in pagination.items %}
+            {% for tic in pagination.items %}
                 <tr>
-                    <td><code>{{ t.received_at|eastern('%Y-%m-%d %H:%M') }}</code></td>
+                    <td><code>{{ tic.received_at|eastern('%Y-%m-%d %H:%M') }}</code></td>
                     <td>
-                        {% if t.status == 'filed' %}<span class="badge bg-success">{{ t('transfer.ui.filed', 'filed') }}</span>
-                        {% elif t.status == 'error' %}<span class="badge bg-danger">{{ t('transfer.ui.error', 'error') }}</span>
-                        {% elif t.status == 'pending' %}<span class="badge bg-secondary">{{ t('transfer.ui.pending', 'pending') }}</span>
-                        {% else %}<span class="badge bg-warning text-dark">{{ t.status }}</span>{% endif %}
+                        {% if tic.status == 'filed' %}<span class="badge bg-success">{{ t('transfer.ui.filed', 'filed') }}</span>
+                        {% elif tic.status == 'error' %}<span class="badge bg-danger">{{ t('transfer.ui.error', 'error') }}</span>
+                        {% elif tic.status == 'pending' %}<span class="badge bg-secondary">{{ t('transfer.ui.pending', 'pending') }}</span>
+                        {% else %}<span class="badge bg-warning text-dark">{{ tic.status }}</span>{% endif %}
                     </td>
-                    <td><code>{{ t.area_tag or '?' }}</code></td>
-                    <td><a href="{{ url_for('admin.tic_detail', tic_id=t.id) }}">{{ t.filename or '?' }}</a></td>
-                    <td>{{ t.size_bytes or 0 }}</td>
-                    <td><code>{{ t.from_address or '' }}</code></td>
-                    <td><small class="text-danger">{{ t.error_message or '' }}</small></td>
+                    <td><code>{{ tic.area_tag or '?' }}</code></td>
+                    <td><a href="{{ url_for('admin.tic_detail', tic_id=tic.id) }}">{{ tic.filename or '?' }}</a></td>
+                    <td>{{ tic.size_bytes or 0 }}</td>
+                    <td><code>{{ tic.from_address or '' }}</code></td>
+                    <td><small class="text-danger">{{ tic.error_message or '' }}</small></td>
                 </tr>
             {% else %}
                 <tr><td colspan="7" class="text-muted text-center p-3">{{ t('transfer.ui.no_tic', 'No TICs received yet.') }}</td></tr>
