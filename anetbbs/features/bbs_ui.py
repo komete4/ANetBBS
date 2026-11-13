@@ -940,7 +940,7 @@ class BBSMenuUI:
             await self.session.write('\x1b[2J\x1b[H')
             await self.session.write(banner(terminal_label(self.session, 'terminal.screen.inter_bbs_instant_messages', 'Inter-BBS Instant Messages'), ui_width(self.session)))
             await self.session.write(
-                f"  {FG['gry']}No InterBBS instant messages.{RESET}\r\n")
+                f"  {FG['gry']}{terminal_label(self.session, 'terminal.daily.empty_interbbs', 'No InterBBS instant messages.')}{RESET}\r\n")
             await self.session.read_line(('\r\n' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
             return
 
@@ -1257,6 +1257,9 @@ class BBSMenuUI:
         from anetbbs.models import BbsDirectoryEntry
         from .ansi_ui import banner, FG, RESET, BOLD, ui_width
 
+        def text(key, default, **values):
+            return terminal_label(self.session, 'terminal.directory.' + key, default, **values)
+
         with _app().app_context():
             entries = BbsDirectoryEntry.query.order_by(BbsDirectoryEntry.name).all()
             all_rows = [{
@@ -1269,14 +1272,14 @@ class BBSMenuUI:
                 # Eastern display, not raw UTC -- same shared conversion
                 # every other timestamp in this file already goes
                 # through (see fmt_eastern's own import at the top).
-                'last_seen': fmt_eastern(e.last_seen_at, '%Y-%m-%d %H:%M', 'never'),
+                'last_seen': fmt_eastern(e.last_seen_at, '%Y-%m-%d %H:%M', text('never', 'never')),
             } for e in entries]
 
         if not all_rows:
             await self.session.write('\x1b[2J\x1b[H')
             await self.session.write(banner(terminal_label(self.session, 'terminal.screen.bbs_directory', 'BBS Directory'), ui_width(self.session)))
             await self.session.write(
-                f"  {FG['gry']}No BBSes in the directory yet.{RESET}\r\n")
+                f"  {FG['gry']}{text('empty', 'No BBSes in the directory yet.')}{RESET}\r\n")
             await self.session.read_line(f"  {FG['cyan']}{terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')}{RESET}")
             return
 
@@ -1298,11 +1301,13 @@ class BBSMenuUI:
             if not rows:
                 await self.session.write('\x1b[2J\x1b[H')
                 await self.session.write(banner(terminal_label(self.session, 'terminal.screen.bbs_directory', 'BBS Directory'), ui_width(self.session)))
-                await self.session.write(
-                    f"  {FG['gry']}No matches for \"{search_term}\".{RESET}\r\n\r\n")
+                message = text('no_matches', 'No matches for "{term}".',
+                               term=_strip_untrusted(search_term))
+                await self.session.write(f"  {FG['gry']}{message}{RESET}\r\n\r\n")
                 ans = (await self.session.read_line(
-                    f"  {FG['cyan']}S{RESET}=New search  {FG['cyan']}C{RESET}=Clear  "
-                    f"{FG['cyan']}Q{RESET}=Back: ") or '').strip().upper()
+                    f"  {FG['cyan']}S{RESET}={text('new_search', 'New search')}  "
+                    f"{FG['cyan']}C{RESET}={text('clear', 'Clear')}  "
+                    f"{FG['cyan']}Q{RESET}={text('back', 'Back')}: ") or '').strip().upper()
                 if ans == 'S':
                     search_term = (await self.session.read_line(
                         '  ' + terminal_label(self.session, 'terminal.screen.search_name_hostname_sysop_location_prompt', 'Search name/hostname/sysop/location:') + ' '
@@ -1313,17 +1318,21 @@ class BBSMenuUI:
                     continue
                 return
 
+            width = ui_width(self.session)
+            # Reserve 29 cells for the prefix, row number, gaps and timestamp.
+            secondary_width = min(16, (width - 44) // 2)
+            name_width = min(22, width - 29 - 2 * secondary_width)
+
             async def render_header():
-                _w = ui_width(self.session)
-                await self.session.write(banner(terminal_label(self.session, 'terminal.screen.bbs_directory', 'BBS Directory'), _w))
+                await self.session.write(banner(terminal_label(self.session, 'terminal.screen.bbs_directory', 'BBS Directory'), width))
                 if search_term:
-                    await self.session.write(
-                        f"  {FG['gry']}Search: \"{search_term}\" "
-                        f"({len(rows)} of {len(all_rows)}, C=clear){RESET}\r\n")
+                    summary = text('search_summary', 'Search: "{term}" ({count} of {total}, C=clear)',
+                                   term=_strip_untrusted(search_term), count=len(rows), total=len(all_rows))
+                    await self.session.write(f"  {FG['gry']}{summary}{RESET}\r\n")
                 await self.session.write(
-                    f"  {FG['cyan']}{BOLD}{'#':>3}  {'Name':<22}  {'Sysop':<16}  "
-                    f"{'Software':<16}  {'Last Seen':<16}{RESET}\r\n"
-                    f"  {FG['gry']}{'─' * max(72, _w - 4)}{RESET}\r\n")
+                    f"  {FG['cyan']}{BOLD}{'#':>3}  {text('name', 'Name'):<{name_width}.{name_width}}  {'Sysop':<{secondary_width}}  "
+                    f"{'Software':<{secondary_width}}  {text('last_seen', 'Last Seen'):<16.16}{RESET}\r\n"
+                    f"  {FG['gry']}{'─' * (width - 2)}{RESET}\r\n")
 
             def render_row(idx, row, selected):
                 sw = row['software']
@@ -1335,18 +1344,20 @@ class BBSMenuUI:
                     # live (see _maybe_prompt_tagline's render_row for
                     # the full history) -- cancel it and draw a plain
                     # bright marker instead.
-                    text = (f"{idx+1:>3}  {row['name'][:22]:<22}  "
-                            f"{row['sysop'][:16]:<16}  "
-                            f"{sw[:16]:<16}  {row['last_seen'][:16]:<16}")
+                    text = (f"{idx+1:>3}  {row['name']:<{name_width}.{name_width}}  "
+                            f"{row['sysop']:<{secondary_width}.{secondary_width}}  "
+                            f"{sw:<{secondary_width}.{secondary_width}}  {row['last_seen'][:16]:<16}")
                     return f"\x1b[0m{FG['yel']}> {text}{RESET}"
-                return (f"  {FG['grn']}{idx+1:>3}{RESET}  {row['name'][:22]:<22}  "
-                        f"{FG['dim']}{row['sysop'][:16]:<16}{RESET}  "
-                        f"{sw[:16]:<16}  {row['last_seen'][:16]:<16}")
+                return (f"  {FG['grn']}{idx+1:>3}{RESET}  {row['name']:<{name_width}.{name_width}}  "
+                        f"{FG['dim']}{row['sysop']:<{secondary_width}.{secondary_width}}{RESET}  "
+                        f"{sw:<{secondary_width}.{secondary_width}}  {row['last_seen'][:16]:<16}")
 
             def render_hint(s, total):
                 return (f"  {FG['cyan']}{s+1}/{total}{RESET} "
-                        f"{FG['cyan']}Up/Dn{RESET}=move  {FG['cyan']}Enter{RESET}=details  "
-                        f"{FG['cyan']}S{RESET}=Search  {FG['cyan']}Q{RESET}=back")
+                        f"{FG['cyan']}{text('arrows', 'Up/Dn')}{RESET}={text('move', 'move')}  "
+                        f"{FG['cyan']}{text('enter', 'Enter')}{RESET}={text('details', 'details')}  "
+                        f"{FG['cyan']}S{RESET}={text('search', 'Search')}  "
+                        f"{FG['cyan']}Q{RESET}={text('back_lower', 'back')}")
 
             result = await self._rss_lightbar(rows, render_header, render_row,
                                               render_hint,
@@ -1369,24 +1380,27 @@ class BBSMenuUI:
         _w = ui_width(self.session)
         await self.session.write('\x1b[2J\x1b[H')
         await self.session.write(banner(row['name'], _w))
+        def text(key, default):
+            return terminal_label(self.session, 'terminal.directory.' + key, default)
+
+        unknown = text('unknown', '(unknown)')
         fields = [
-            ('Hostname', row['hostname']),
-            ('Sysop', row['sysop'] or '(unknown)'),
-            ('Location', row['location'] or '(unknown)'),
-            ('Software', (f"{row['software']} {row['software_version']}".strip()
-                         or '(unknown)')),
-            ('MSP Port', str(row['msp_port'])),
-            ('SYSTAT Port', str(row['systat_port'])),
-            ('Last Seen', row['last_seen']),
-            ('Source', row['source'] or '(unknown)'),
+            (text('hostname', 'Hostname'), row['hostname']),
+            ('Sysop', row['sysop'] or unknown),
+            (text('location', 'Location'), row['location'] or unknown),
+            ('Software', f"{row['software']} {row['software_version']}".strip() or unknown),
+            (text('msp_port', 'MSP Port'), str(row['msp_port'])),
+            (text('systat_port', 'SYSTAT Port'), str(row['systat_port'])),
+            (text('last_seen', 'Last Seen'), row['last_seen']),
+            (text('source', 'Source'), row['source'] or unknown),
         ]
         for label, value in fields:
             await self.session.write(
                 f"  {FG['cyan']}{BOLD}{label:<14}{RESET} {value}\r\n")
         if row['notes']:
             await self.session.write(
-                f"\r\n  {FG['cyan']}{BOLD}Notes{RESET}\r\n  {row['notes']}\r\n")
-        await self.session.write(f"\r\n  {FG['dim']}Press Enter to go back...{RESET}")
+                f"\r\n  {FG['cyan']}{BOLD}{text('notes', 'Notes')}{RESET}\r\n  {row['notes']}\r\n")
+        await self.session.write(f"\r\n  {FG['dim']}{text('enter_back', 'Press Enter to go back...')}{RESET}")
         await self.session.read_line("")
 
     async def send_imsg(self):
@@ -2123,7 +2137,7 @@ class BBSMenuUI:
                         compose_to = (await self.session.read_line(
                             f"  {FG['cyan']}To:{RESET} ") or 'All').strip()
                         compose_subj = (await self.session.read_line(
-                            f"  {FG['cyan']}Subject:{RESET} ") or '').strip()
+                            f"  {FG['cyan']}{terminal_label(self.session, 'terminal.daily.subject', 'Subject')}:{RESET} ") or '').strip()
                         if not compose_subj:
                             continue
                     username = self.session.user.get('username', 'guest')
@@ -2584,7 +2598,7 @@ class BBSMenuUI:
                     ans = (await self.session.read_line(
                         f"  {FG['cyan']}F{RESET}=New search  "
                         f"{FG['cyan']}C{RESET}=Clear search  "
-                        f"{FG['cyan']}Q{RESET}=Back: ") or '').strip().upper()
+                        f"{FG['cyan']}Q{RESET}={terminal_label(self.session, 'terminal.daily.back', 'Back')}: ") or '').strip().upper()
                     if ans == 'F':
                         search_term = (await self.session.read_line(
                             '  ' + terminal_label(self.session, 'terminal.screen.search_filename_description_prompt', 'Search filename/description:') + ' ') or '').strip() or None
@@ -2598,7 +2612,7 @@ class BBSMenuUI:
                 if can_upload and protos:
                     ans = (await self.session.read_line(
                         f"  {FG['cyan']}U{RESET}=Upload  "
-                        f"{FG['cyan']}Q{RESET}=Back: ") or '').strip().upper()
+                        f"{FG['cyan']}Q{RESET}={terminal_label(self.session, 'terminal.daily.back', 'Back')}: ") or '').strip().upper()
                     if ans == 'U':
                         await self._upload_terminal_file(
                             area_id, uploads_dir, protos, storage_path)
@@ -4791,15 +4805,19 @@ async def _post_compose(self, board_id, board_name, parent_id=None):
                         if board.min_write_level is not None
                         else board.min_access_level)
             if int(user.get('access_level', 0) or 0) < write_lvl:
+                notice = terminal_label(self.session, 'terminal.screen.you_don_t_have_permission_to_post_here',
+                                        "You don't have permission to post here.")
                 await self.session.write(
-                    f"\r\n  {FG['red']}You don't have permission to post here.{RESET}\r\n")
+                    f"\r\n  {FG['red']}{notice}{RESET}\r\n")
                 await self.session.read_line(('  ' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
                 return
         if parent_id and not is_admin:
             root = Post.query.get(parent_id)
             if root is not None and root.is_locked:
+                notice = terminal_label(self.session, 'terminal.screen.this_thread_is_locked',
+                                        'This thread is locked.')
                 await self.session.write(
-                    f"\r\n  {FG['red']}This thread is locked.{RESET}\r\n")
+                    f"\r\n  {FG['red']}{notice}{RESET}\r\n")
                 await self.session.read_line(('  ' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
                 return
 
@@ -4818,18 +4836,18 @@ async def _post_compose(self, board_id, board_name, parent_id=None):
     _w = ui_width(self.session)
     await self.session.write('\x1b[2J\x1b[H')
     if parent_id:
-        await self.session.write(banner(f'Reply — {board_name}', _w))
+        await self.session.write(banner(terminal_label(self.session, 'terminal.daily.reply_board', 'Reply — {board}', board=board_name), _w))
     else:
-        await self.session.write(banner(f'New Thread — {board_name}', _w))
+        await self.session.write(banner(terminal_label(self.session, 'terminal.daily.new_thread_board', 'New Thread — {board}', board=board_name), _w))
 
-    prompt_subj = (f"  {FG['cyan']}Subject{RESET}"
+    prompt_subj = (f"  {FG['cyan']}{terminal_label(self.session, 'terminal.daily.subject', 'Subject')}{RESET}"
                    + (f" [{subject_default[:40]}]" if subject_default else "")
                    + f"{FG['cyan']}:{RESET} ")
     subject = (await self.session.read_line(prompt_subj) or '').strip()
     if not subject and subject_default:
         subject = subject_default
     if not subject:
-        await self.session.write(f"  {FG['gry']}Cancelled (empty subject).{RESET}\r\n")
+        await self.session.write(f"  {FG['gry']}{terminal_label(self.session, 'terminal.daily.empty_subject', 'Cancelled (empty subject).')}{RESET}\r\n")
         await self.session.read_line(('  ' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
         return
 
@@ -4838,7 +4856,7 @@ async def _post_compose(self, board_id, board_name, parent_id=None):
                                subject=subject, username=username,
                                tagline_picker=lambda: _maybe_prompt_tagline(self))
     if body is None:
-        await self.session.write(f"\r\n  {FG['gry']}Aborted.{RESET}\r\n")
+        await self.session.write(f"\r\n  {FG['gry']}{terminal_label(self.session, 'terminal.daily.aborted', 'Aborted.')}{RESET}\r\n")
         await self.session.read_line(('  ' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
         return
 
@@ -4868,7 +4886,7 @@ async def _post_compose(self, board_id, board_name, parent_id=None):
         except Exception:
             pass
     await self.session.write(
-        f"\r\n  {FG['grn']}{BOLD}[OK]{RESET} Posted (#{p.id}).\r\n")
+        f"\r\n  {FG['grn']}{BOLD}[OK]{RESET} {terminal_label(self.session, 'terminal.daily.post_saved', 'Posted (#{id}).', id=p.id)}\r\n")
     await self.session.read_line(('\r\n  ' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
 BBSMenuUI._post_compose = _post_compose
 
@@ -4880,18 +4898,18 @@ async def _send_pm(self):
     await self.session.write('\x1b[2J\x1b[H')
     await self.session.write(banner(terminal_label(self.session, 'terminal.screen.send_private_message', 'Send Private Message'), _w))
     to_username = (await self.session.read_line(
-        f"  {FG['cyan']}To (username):{RESET} ") or '').strip()
+        f"  {FG['cyan']}{terminal_label(self.session, 'terminal.daily.recipient', 'To (username):')}{RESET} ") or '').strip()
     if not to_username:
         return
     with _app().app_context():
         recipient = User.query.filter(
             db.func.lower(User.username) == to_username.lower()).first()
         if not recipient:
-            await self.session.write(f"\r\nNo such user '{to_username}'.\r\n")
+            await self.session.write('\r\n' + terminal_label(self.session, 'terminal.daily.user_missing', "No such user '{username}'.", username=to_username) + '\r\n')
             await self.session.read_line(terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...'))
             return
         recipient_id = recipient.id
-    subject = (await self.session.read_line(f"  {FG['cyan']}Subject:{RESET} ") or '').strip()
+    subject = (await self.session.read_line(f"  {FG['cyan']}{terminal_label(self.session, 'terminal.daily.subject', 'Subject')}:{RESET} ") or '').strip()
     if not subject:
         return
     from .anedit import launch_anedit
@@ -4899,7 +4917,7 @@ async def _send_pm(self):
     body = await launch_anedit(self.session, subject=subject, username=username,
                                tagline_picker=lambda: _maybe_prompt_tagline(self))
     if body is None:
-        await self.session.write(f"\r\n  {FG['gry']}Aborted.{RESET}\r\n")
+        await self.session.write(f"\r\n  {FG['gry']}{terminal_label(self.session, 'terminal.daily.aborted', 'Aborted.')}{RESET}\r\n")
         await self.session.read_line(('  ' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
         return
     with _app().app_context():
@@ -4911,7 +4929,7 @@ async def _send_pm(self):
     # UserActivity row -- never logs the message body, same privacy
     # stance as every other activity_type's `details` in this codebase.
     self.session._log_activity('pm_sent', f'To {to_username}: {subject[:100]}')
-    await self.session.write(f"\r\n  {FG['grn']}{BOLD}[OK]{RESET} Sent to {to_username}.\r\n")
+    await self.session.write(f"\r\n  {FG['grn']}{BOLD}[OK]{RESET} {terminal_label(self.session, 'terminal.daily.pm_sent', 'Sent to {username}.', username=to_username)}\r\n")
     await self.session.read_line(('  ' + terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')))
 BBSMenuUI.send_pm = _send_pm
 
@@ -5087,7 +5105,7 @@ async def _compose_echomail(self):
     to_name = (await self.session.read_line(
         f"  {FG['cyan']}To{RESET} (e.g. All): ") or 'All').strip()
     subject = (await self.session.read_line(
-        f"  {FG['cyan']}Subject{RESET}: ") or '').strip()
+        f"  {FG['cyan']}{terminal_label(self.session, 'terminal.daily.subject', 'Subject')}{RESET}: ") or '').strip()
     if not subject:
         await self.session.write(
             f"  {FG['gry']}No subject — cancelled.{RESET}\r\n")
@@ -5098,7 +5116,7 @@ async def _compose_echomail(self):
     body = await launch_anedit(self.session, subject=subject, username=username,
                                tagline_picker=lambda: _maybe_prompt_tagline(self))
     if body is None:
-        await self.session.write(f"\r\n  {FG['gry']}Aborted.{RESET}\r\n")
+        await self.session.write(f"\r\n  {FG['gry']}{terminal_label(self.session, 'terminal.daily.aborted', 'Aborted.')}{RESET}\r\n")
         await self.session.read_line(f"\r\n{FG['cyan']}{terminal_label(self.session, 'terminal.ui.press_enter_ellipsis', 'Press Enter...')}{RESET}")
         return
 
@@ -5462,10 +5480,10 @@ async def _list_threads_v2(self, board_id, board_name):
             await self.session.write('\x1b[2J\x1b[H')
             await self.session.write(banner(board_name, _w))
             await self.session.write(
-                f"  {FG['gry']}(no threads yet){RESET}\r\n\r\n")
+                f"  {FG['gry']}{terminal_label(self.session, 'terminal.daily.empty_threads', '(no threads yet)')}{RESET}\r\n\r\n")
             ans = (await self.session.read_line(
-                f"  {FG['cyan']}N{RESET}=New Thread  "
-                f"{FG['cyan']}Q{RESET}=Back: ") or '').strip().upper()
+                f"  {FG['cyan']}N{RESET}={terminal_label(self.session, 'terminal.daily.new_thread', 'New Thread')}  "
+                f"{FG['cyan']}Q{RESET}={terminal_label(self.session, 'terminal.daily.back', 'Back')}: ") or '').strip().upper()
             if ans == 'N':
                 await self._post_compose(board_id, board_name)
                 continue
@@ -5473,9 +5491,13 @@ async def _list_threads_v2(self, board_id, board_name):
 
         async def render_header():
             await self.session.write(banner(board_name, _w))
+            replies = terminal_label(self.session, 'terminal.daily.replies_short', 'Rep')
+            subject = terminal_label(self.session, 'terminal.daily.subject', 'Subject')
+            author = terminal_label(self.session, 'terminal.daily.author', 'Author')
+            when = terminal_label(self.session, 'terminal.daily.when', 'When')
             await self.session.write(
-                f"  {FG['cyan']}{BOLD}{'Rep':<5}{'Subject':<{_subj_w}}  "
-                f"{'Author':<14}{'When':<12}{RESET}\r\n"
+                f"  {FG['cyan']}{BOLD}{replies[:5]:<5}{subject[:_subj_w]:<{_subj_w}}  "
+                f"{author[:14]:<14}{when[:12]:<12}{RESET}\r\n"
                 f"  {FG['gry']}{'─' * max(72, _w - 4)}{RESET}\r\n")
 
         def render_row(idx, t, selected):

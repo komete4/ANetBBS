@@ -342,9 +342,10 @@ async def _act_chat_mrc(ui, args):
     silently failing)."""
     from .chat import _mrc_enabled
     if not _mrc_enabled():
-        await ui.session.write(
-            '\r\n\x1b[1;31mMRC chat is currently disabled.\x1b[0m\r\n')
-        await ui.session.read_key('\r\n\x1b[33m[Press any key]\x1b[0m')
+        notice = terminal_label(ui.session, 'terminal.daily.mrc_disabled', 'MRC chat is currently disabled.')
+        prompt = terminal_label(ui.session, 'terminal.daily.any_key', 'Press any key')
+        await ui.session.write(f'\r\n\x1b[1;31m{notice}\x1b[0m\r\n')
+        await ui.session.read_key(f'\r\n\x1b[33m[{prompt}]\x1b[0m')
         return None
     f = _get_flags(ui.session)
     if f and f.no_mrc:

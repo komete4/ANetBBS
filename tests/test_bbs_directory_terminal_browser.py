@@ -198,6 +198,27 @@ class BbsDirectoryTerminalBrowserTests(unittest.TestCase):
         self.assertIn('Alpha BBS', last_frame)
         self.assertNotIn('Beta BBS', last_frame)
 
+    def test_spanish_directory_search_and_details_keep_the_same_keys(self):
+        import re
+
+        from anetbbs.features.bbs_ui import BBSMenuUI
+
+        session = FakeSession(
+            arrow_keys=['S', 'ENTER', 'Q'], lines=['missing', 'S', 'Beta', ''])
+        session.user['language'] = 'es'
+        with self._patched_app():
+            asyncio.run(BBSMenuUI(session).browse_bbs_directory())
+        transcript = re.sub(r'\x1b\[[0-9;]*[A-Za-z]', '', ''.join(session.written))
+        self.assertIn('DIRECTORIO DE BBS', transcript)
+        self.assertIn('Sin resultados para «missing».', transcript)
+        self.assertIn('S=Nueva búsqueda  C=Limpiar  Q=Volver', transcript)
+        self.assertIn('Búsqueda: «Beta» (1 de 2, C=limpiar)', transcript)
+        self.assertIn('Servidor       beta.example.com', transcript)
+        self.assertIn('Intro=detalles', transcript)
+        self.assertIn('Great sysop, terrible pizza.', transcript)
+        header = next(line for line in transcript.splitlines() if 'Última conexión' in line)
+        self.assertLessEqual(len(header), session.window_size[0] - 1)
+
     def test_search_matches_sysop_and_location_too(self):
         session = FakeSession(arrow_keys=['S', 'Q'], lines=['Sampleburg'])
         from anetbbs.features.bbs_ui import BBSMenuUI

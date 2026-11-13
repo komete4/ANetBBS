@@ -142,6 +142,16 @@ class ApplyPrefsDefaultRoomTests(unittest.TestCase):
 
 
 class WelcomeAndChangesCommandTests(unittest.TestCase):
+    def test_spanish_help_keeps_the_local_mrc_commands(self):
+        chat = _make_chat()
+        chat.session.user['language'] = 'es'
+        self.assertTrue(_run(chat._handle_slash('/h')))
+        transcript = ''.join(chat.session.written)
+        self.assertIn('Mensajes', transcript)
+        self.assertIn('/join room          cambiar de sala', transcript)
+        self.assertIn('/quit               salir de MRC (alias /q)', transcript)
+        self.assertEqual(chat.sent, [])
+
     def test_welcome_command_handled(self):
         chat = _make_chat()
         handled = _run(chat._handle_slash('/welcome'))

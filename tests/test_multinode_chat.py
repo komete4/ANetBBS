@@ -56,6 +56,17 @@ class MultinodeBroadcastTests(unittest.IsolatedAsyncioTestCase):
     def tearDown(self):
         multinode._NODES.clear()
 
+    async def test_spanish_chat_preserves_commands(self):
+        session = FakeSession('alice', ['/list', '/w 7 hola', '/q'], read_delay=0)
+        session.user['language'] = 'es'
+        session._node_entry = multinode.acquire_slot(session.user, 'telnet', '127.0.0.1', 8)
+        await multinode.run_chat_session(session)
+        transcript = ''.join(session.written)
+        self.assertIn('Chat local', transcript)
+        self.assertIn('/list  /w <nodo> <mensaje>  /q para salir', transcript)
+        self.assertIn('El nodo 7 está desconectado.', transcript)
+        self.assertFalse(session._node_entry.listening)
+
     async def test_broadcast_reaches_the_other_nodes_queue(self):
         entry_a = multinode.acquire_slot({'username': 'alice'}, 'telnet', '1.2.3.4', 8)
         entry_b = multinode.acquire_slot({'username': 'bob'}, 'telnet', '5.6.7.8', 8)

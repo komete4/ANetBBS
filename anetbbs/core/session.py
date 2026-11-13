@@ -1294,8 +1294,9 @@ class BBSSession:
                     await asyncio.sleep(warn_at)
                     try:
                         await self.write(
-                            "\r\n\x1b[1;33m[5 minutes remaining of your "
-                            "session time]\x1b[0m\r\n")
+                            "\r\n\x1b[1;33m[" + self._terminal_text(
+                                'terminal.daily.budget_warning',
+                                '5 minutes remaining of your session time') + "]\x1b[0m\r\n")
                     except Exception:
                         pass
                     await asyncio.sleep(kill_at - warn_at)
@@ -1303,7 +1304,8 @@ class BBSSession:
                     await asyncio.sleep(kill_at)
                 try:
                     await self.write(
-                        "\r\n\x1b[1;31mTime's up — disconnecting.\x1b[0m\r\n")
+                        "\r\n\x1b[1;31m" + self._terminal_text(
+                            'terminal.daily.budget_expired', "Time's up — disconnecting.") + "\x1b[0m\r\n")
                 except Exception:
                     pass
                 # Closing the writer will unwind the session.
@@ -3143,8 +3145,8 @@ class BBSSession:
                 raise CarrierLost(str(stored)) from stored
             try:
                 await self.write(
-                    "\r\n\x1b[1;31m[Idle timeout — "
-                    "disconnecting]\x1b[0m\r\n")
+                    "\r\n\x1b[1;31m[" + self._terminal_text(
+                        'terminal.daily.idle', 'Idle timeout — disconnecting') + "]\x1b[0m\r\n")
             except Exception:
                 pass
             try:
@@ -3573,6 +3575,8 @@ class BBSSession:
         follow-up (see _maybe_scan_new_messages()) use the return value
         to know what's actually worth offering.
         """
+        from ..features.i18n import terminal_label
+
         try:
             uid = self.user.get('id') if isinstance(self.user, dict) else None
             if not uid:
@@ -3593,20 +3597,23 @@ class BBSSession:
             if not (pm_n or im_n or unread_notifs):
                 return None
 
+            heading = terminal_label(self, 'terminal.daily.notifications', 'YOU HAVE NEW NOTIFICATIONS')
             await self.write(
                 '\r\n\x1b[1;33m'
                 '+============================================+\r\n'
-                '|         YOU HAVE NEW NOTIFICATIONS          |\r\n'
+                f'| {heading[:42]:^42} |\r\n'
                 '+============================================+'
                 '\x1b[0m\r\n')
             if pm_n:
-                await self.write(
-                    f'  \x1b[1;36m{pm_n}\x1b[0m new Private Message'
-                    + ('s' if pm_n != 1 else '') + '\r\n')
+                label = (terminal_label(self, 'terminal.daily.private_one', 'new Private Message')
+                         if pm_n == 1 else
+                         terminal_label(self, 'terminal.daily.private_many', 'new Private Messages'))
+                await self.write(f'  \x1b[1;36m{pm_n}\x1b[0m {label}\r\n')
             if im_n:
-                await self.write(
-                    f'  \x1b[1;36m{im_n}\x1b[0m new InterBBS IM'
-                    + ('s' if im_n != 1 else '') + '\r\n')
+                label = (terminal_label(self, 'terminal.daily.interbbs_one', 'new InterBBS IM')
+                         if im_n == 1 else
+                         terminal_label(self, 'terminal.daily.interbbs_many', 'new InterBBS IMs'))
+                await self.write(f'  \x1b[1;36m{im_n}\x1b[0m {label}\r\n')
             # Each Notification's own title/body already carries the
             # "who, and in what area/context" detail (see notify() call
             # sites -- e.g. anetbbs/echomail/notify_reply.py's "Jane
@@ -3628,7 +3635,9 @@ class BBSSession:
                 if n.body:
                     line += f' \x1b[36m({strip_untrusted_escapes(n.body)})\x1b[0m'
                 await self.write(line + '\r\n')
-            await self.write('\r\n\x1b[1mPress ENTER to continue...\x1b[0m')
+            continue_label = terminal_label(
+                self, 'terminal.ui.press_enter_to_continue_ellipsis', 'Press ENTER to continue...')
+            await self.write(f'\r\n\x1b[1m{continue_label}\x1b[0m')
             try:
                 await self.read_line('')
             except Exception:
@@ -3654,6 +3663,8 @@ class BBSSession:
         (features/petscii_ui.py) that these ANSI-native reader methods
         aren't built for, so PETSCII sessions just get the summary itself.
         """
+        from ..features.i18n import terminal_label
+
         try:
             pref = None
             if isinstance(self.user, dict):
@@ -3662,8 +3673,9 @@ class BBSSession:
             if pref == 'off':
                 return
             if pref == 'ask':
-                resp = (await self.read_line(
-                    '\r\n\x1b[1;33mScan for new messages? [Y/n]:\x1b[0m ') or '')
+                scan_prompt = terminal_label(
+                    self, 'terminal.daily.scan_prompt', 'Scan for new messages? [Y/n]:')
+                resp = (await self.read_line(f'\r\n\x1b[1;33m{scan_prompt}\x1b[0m ') or '')
                 if resp.strip().lower() == 'n':
                     return
 
@@ -3681,12 +3693,15 @@ class BBSSession:
                 # these ANSI-native reader follow-ups, same reasoning
                 # as the has_board/has_echo shortcut below), but even
                 # PETSCII gets the one-line "no new messages" text.
+                no_messages = terminal_label(self, 'terminal.screen.no_new_messages', 'No new messages.')
                 if self.term_mode != 'petscii':
+                    continue_label = terminal_label(
+                        self, 'terminal.ui.press_enter_to_continue_ellipsis', 'Press ENTER to continue...')
                     await self.read_line(
-                        '\r\n\x1b[1;32mNo new messages.\x1b[0m\r\n'
-                        '\x1b[1mPress ENTER to continue...\x1b[0m')
+                        f'\r\n\x1b[1;32m{no_messages}\x1b[0m\r\n'
+                        f'\x1b[1m{continue_label}\x1b[0m')
                 else:
-                    await self.write('\r\n' + self._terminal_text('terminal.screen.no_new_messages', 'No new messages.') + '\r\n')
+                    await self.write(f'\r\n{no_messages}\r\n')
                 return
             if self.term_mode == 'petscii':
                 return
@@ -3696,17 +3711,20 @@ class BBSSession:
 
             opts = []
             if pm_n:
-                opts.append(('P', 'rivate Messages'))
+                opts.append(('P', terminal_label(self, 'terminal.daily.scan_private', 'rivate Messages')))
             if has_board:
-                opts.append(('B', 'oards'))
+                opts.append(('B', terminal_label(self, 'terminal.daily.scan_boards', 'oards')))
             if has_echo:
-                opts.append(('E', 'chomail'))
+                opts.append(('E', terminal_label(self, 'terminal.daily.scan_echo', 'chomail')))
             if not opts:
                 return
             label = '  '.join(f'\x1b[1;36m[{k}]\x1b[0m{rest}' for k, rest in opts)
-            resp = (await self.read_line(
-                f'\r\n\x1b[1mRead now? {label}  or \x1b[1;36m[Enter]\x1b[0m to continue: '
-            ) or '').strip().upper()
+            prompt = terminal_label(
+                self, 'terminal.daily.scan_read',
+                'Read now? {options}  or {enter} to continue: ',
+                options=label, enter='\x1b[1;36m[' + terminal_label(
+                    self, 'terminal.daily.enter', 'Enter') + ']\x1b[0m')
+            resp = (await self.read_line(f'\r\n\x1b[1m{prompt}') or '').strip().upper()
             if not resp:
                 return
             from ..features.bbs_ui import BBSMenuUI

@@ -518,8 +518,8 @@ async def _thread_read(session, post_id, board_id, board_name):
         if root is None or root.board_id != board_id:
             return
         root_author = User.query.get(root.author_id)
-        lines = [f'Subject: {_safe_field(root.subject)}',
-                f'From: {root_author.username if root_author else "?"}', '']
+        lines = [terminal_label(session, 'terminal.daily.subject', 'Subject') + f': {_safe_field(root.subject)}',
+                terminal_label(session, 'terminal.daily.from', 'From') + f': {root_author.username if root_author else "?"}', '']
         lines.extend(_wrap_body(root.content, _width(session)))
         subject = root.subject
         replies = root.replies.order_by(Post.created_at).all()
@@ -529,7 +529,8 @@ async def _thread_read(session, post_id, board_id, board_name):
             lines.append(f'--- Reply from {r_author.username if r_author else "?"} ---')
             lines.extend(_wrap_body(r.content, _width(session)))
 
-    if not await _paginate(session, lines, f'Board: {board_name}'):
+    board_title = terminal_label(session, 'terminal.daily.board_title', 'Board: {board}', board=board_name)
+    if not await _paginate(session, lines, board_title):
         return
     choice = (await session.read_line('\r\n' + terminal_label(session, 'terminal.screen.r_reply_q_back_prompt', 'R=reply, Q=back:') + ' ') or '').strip().upper()
     if choice == 'R':
@@ -561,9 +562,11 @@ async def _board_post(session, board_id, parent_id=None, default_subject=''):
                 await session.read_line(terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
                 return
 
-    await _header(session, 'New Post' if parent_id is None else 'Reply')
+    title = (terminal_label(session, 'terminal.daily.new_post', 'New Post')
+             if parent_id is None else terminal_label(session, 'terminal.daily.reply', 'Reply'))
+    await _header(session, title)
     default_subj = f'Re: {default_subject}' if default_subject else ''
-    prompt = f'Subject{f" [{default_subj}]" if default_subj else ""}: '
+    prompt = terminal_label(session, 'terminal.daily.subject', 'Subject') + f'{f" [{default_subj}]" if default_subj else ""}: '
     subject = (await session.read_line(prompt) or '').strip() or default_subj
     if not subject:
         await session.write(terminal_label(session, 'terminal.screen.no_subject_cancelled', 'No subject -- cancelled.') + '\r\n')
@@ -704,8 +707,12 @@ async def _echo_message_read(session, msg_id, area_id, area_name):
             return
         # from_name/to_name/subject: same untrusted-remote-data reasoning
         # as _echo_messages()'s listing render above.
-        lines = [f'From: {_safe_field(msg.from_name)}', f'To: {_safe_field(msg.to_name)}',
-                f'Subject: {_safe_field(msg.subject)}', '']
+        lines = [
+            terminal_label(session, 'terminal.daily.from', 'From') + f': {_safe_field(msg.from_name)}',
+            terminal_label(session, 'terminal.daily.to', 'To') + f': {_safe_field(msg.to_name)}',
+            terminal_label(session, 'terminal.daily.subject', 'Subject') + f': {_safe_field(msg.subject)}',
+            '',
+        ]
         lines.extend(_wrap_body(msg.body, _width(session)))
         from_name, subject = msg.from_name, msg.subject
 
@@ -732,9 +739,10 @@ async def _echo_compose(session, area_id, area_name, reply_to_name=None, reply_s
 
     await _header(session, f'New message: {area_name}'[:_width(session)])
     default_to = reply_to_name or 'All'
-    to_name = (await session.read_line(f'To [{default_to}]: ') or '').strip() or default_to
+    to_label = terminal_label(session, 'terminal.daily.to', 'To')
+    to_name = (await session.read_line(f'{to_label} [{default_to}]: ') or '').strip() or default_to
     default_subj = f'Re: {reply_subject}' if reply_subject else ''
-    prompt = f'Subject{f" [{default_subj}]" if default_subj else ""}: '
+    prompt = terminal_label(session, 'terminal.daily.subject', 'Subject') + f'{f" [{default_subj}]" if default_subj else ""}: '
     subject = (await session.read_line(prompt) or '').strip() or default_subj
     if not subject:
         await session.write(terminal_label(session, 'terminal.screen.no_subject_cancelled', 'No subject -- cancelled.') + '\r\n')
@@ -843,7 +851,7 @@ async def _pm_read(session, msg_id):
             return
         sender = User.query.get(msg.sender_id)
         sender_name = sender.username if sender else '?'
-        lines = [f'From: {sender_name}', f'Subject: {_safe_field(msg.subject)}', '']
+        lines = [terminal_label(session, 'terminal.daily.from', 'From') + f': {sender_name}', terminal_label(session, 'terminal.daily.subject', 'Subject') + f': {_safe_field(msg.subject)}', '']
         lines.extend(_wrap_body(msg.body, _width(session)))
         subject = msg.subject
         if msg.read_at is None:
@@ -859,14 +867,14 @@ async def _pm_read(session, msg_id):
 
 async def _pm_compose(session, reply_to_username=None, reply_subject=None):
     await _header(session, terminal_label(session, 'terminal.petscii.new_private_message', 'New Private Message'))
-    prompt = f'To{f" [{reply_to_username}]" if reply_to_username else ""}: '
+    prompt = terminal_label(session, 'terminal.daily.to', 'To') + f'{f" [{reply_to_username}]" if reply_to_username else ""}: '
     to_username = (await session.read_line(prompt) or '').strip() or (reply_to_username or '')
     if not to_username:
         await session.write(terminal_label(session, 'terminal.screen.no_recipient_cancelled', 'No recipient -- cancelled.') + '\r\n')
         await session.read_line(terminal_label(session, 'terminal.screen.press_enter_ellipsis', 'Press ENTER...'))
         return
     default_subj = f'Re: {reply_subject}' if reply_subject else ''
-    subj_prompt = f'Subject{f" [{default_subj}]" if default_subj else ""}: '
+    subj_prompt = terminal_label(session, 'terminal.daily.subject', 'Subject') + f'{f" [{default_subj}]" if default_subj else ""}: '
     subject = (await session.read_line(subj_prompt) or '').strip() or default_subj
     if not subject:
         await session.write(terminal_label(session, 'terminal.screen.no_subject_cancelled', 'No subject -- cancelled.') + '\r\n')
@@ -1161,16 +1169,19 @@ async def _profile(session):
             if u is None:
                 return
             lines = [
-                f'Username: {u.username}',
-                f'Display name: {u.display_name or "-"}',
-                f'Location: {u.location or "-"}',
-                f"Member since: {fmt_eastern(u.created_at, '%Y-%m-%d', '-')}",
-                f"Last login: {fmt_eastern(u.last_login, '%Y-%m-%d %H:%M', '-')}",
-                f'Logins: {u.login_count or 0}',
+                terminal_label(session, 'terminal.daily.username', 'Username') + f': {u.username}',
+                terminal_label(session, 'terminal.daily.display_name', 'Display name') + f': {u.display_name or "-"}',
+                terminal_label(session, 'terminal.daily.location', 'Location') + f': {u.location or "-"}',
+                terminal_label(session, 'terminal.daily.member_since', 'Member since') + ': '
+                + fmt_eastern(u.created_at, '%Y-%m-%d', '-'),
+                terminal_label(session, 'terminal.ui.last_login', 'Last login') + ': '
+                + fmt_eastern(u.last_login, '%Y-%m-%d %H:%M', '-'),
+                terminal_label(session, 'terminal.daily.logins', 'Logins') + f': {u.login_count or 0}',
                 '',
-                'Bio:',
+                terminal_label(session, 'terminal.daily.bio', 'Bio') + ':',
             ]
-            lines.extend(_wrap_body(u.bio or '(none)', _width(session)))
+            empty_bio = terminal_label(session, 'terminal.daily.empty_bio', '(none)')
+            lines.extend(_wrap_body(u.bio or empty_bio, _width(session)))
 
         if not await _paginate(session, lines, terminal_label(session, 'terminal.petscii.your_profile', 'Your Profile')):
             return

@@ -43,6 +43,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from .base_chat import BaseChatSystem
+from .i18n import terminal_label
 from ..core.protocols import SessionProtocol
 
 # mrc/ is a sibling top-level package to anetbbs/ (both under the repo
@@ -632,14 +633,14 @@ class MRCChat(BaseChatSystem):
             import aiohttp
         except ImportError:
             await self.session.write(
-                '\r\n\x1b[31maiohttp not installed - cannot reach MRC bridge.\x1b[0m\r\n')
+                '\r\n\x1b[31m' + terminal_label(self.session, 'terminal.daily.mrc_dependency', 'aiohttp not installed - cannot reach MRC bridge.') + '\x1b[0m\r\n')
             return
 
         self._handle = handle
         self._room   = (room or self.DEFAULT_ROOM).strip().lstrip('#').lower()
 
         await self.session.write(
-            f'\r\n\x1b[36mConnecting to MRC bridge at {bridge_url} ...\x1b[0m\r\n')
+            '\r\n\x1b[36m' + terminal_label(self.session, 'terminal.daily.mrc_connecting', 'Connecting to MRC bridge at {url} ...', url=bridge_url) + '\x1b[0m\r\n')
 
         self._aiohttp_session = aiohttp.ClientSession()
         # Set before the try below so the finally: block can always check
@@ -669,8 +670,8 @@ class MRCChat(BaseChatSystem):
                 logger.warning('MRC terminal: bridge connect to %s failed: %s',
                                bridge_url, exc)
                 await self.session.write(
-                    f'\x1b[31mBridge connect failed: {exc}\x1b[0m\r\n'
-                    'Is the anetbbs-mrc-bridge service running?\r\n')
+                    '\x1b[31m' + terminal_label(self.session, 'terminal.daily.mrc_connection_failed', 'Bridge connect failed: {error}', error=exc) + '\x1b[0m\r\n'
+                    + terminal_label(self.session, 'terminal.daily.mrc_check_service', 'Is the anetbbs-mrc-bridge service running?') + '\r\n')
                 return
 
             self._connected = True
@@ -2899,7 +2900,7 @@ class MRCChat(BaseChatSystem):
         rest = parts[1].strip() if len(parts) > 1 else ''
 
         if cmd in ('quit', 'q', 'exit', 'leave'):
-            await self._emit('\x1b[36mLeaving MRC...\x1b[0m')
+            await self._emit('\x1b[36m' + terminal_label(self.session, 'terminal.daily.mrc_leaving', 'Leaving MRC...') + '\x1b[0m')
             return False
 
         # '/help' asks the MRC hub for its own server-side help (was
@@ -2914,62 +2915,62 @@ class MRCChat(BaseChatSystem):
         if cmd in ('helpserver', 'h', '?'):
             for ln in (
                 '',
-                '\x1b[1mMessaging\x1b[0m',
-                '  /msg user text      private message  (aliases: /t /pm /dm /tell /w)',
-                '  /r text             reply to your last received DM',
-                '  /me action          emote (*action*)',
-                '  /broadcast text     broadcast to all rooms (sysop, alias /b)',
-                '  /ctcp user CMD      CTCP query (VERSION/TIME/PING/CLIENTINFO)',
+                terminal_label(self.session, 'terminal.daily.mrc_help_messaging', '\x1b[1mMessaging\x1b[0m'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_private_message_aliases_t_pm_dm_tell_w', '  /msg user text      private message  (aliases: /t /pm /dm /tell /w)'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_reply_to_your_last_received_dm', '  /r text             reply to your last received DM'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_emote_action', '  /me action          emote (*action*)'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_broadcast_to_all_rooms_sysop_alias_b', '  /broadcast text     broadcast to all rooms (sysop, alias /b)'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_ctcp_query_version_time_ping_clientinfo', '  /ctcp user CMD      CTCP query (VERSION/TIME/PING/CLIENTINFO)'),
                 '',
-                '\x1b[1mRooms\x1b[0m',
-                '  /join room          switch room',
-                '  /list  /rooms       list all rooms',
-                '  /topic [text]       view or set topic',
-                '  /topics             all room topics',
-                '  /channel            show current room',
-                '  /roompass <pw>      room password',
-                '  /roomconfig [p v]   sysop room flags',
+                terminal_label(self.session, 'terminal.daily.mrc_help_rooms', '\x1b[1mRooms\x1b[0m'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_switch_room', '  /join room          switch room'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_list_all_rooms', '  /list  /rooms       list all rooms'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_view_or_set_topic', '  /topic [text]       view or set topic'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_all_room_topics', '  /topics             all room topics'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_show_current_room', '  /channel            show current room'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_room_password', '  /roompass <pw>      room password'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_sysop_room_flags', '  /roomconfig [p v]   sysop room flags'),
                 '',
-                '\x1b[1mPeople\x1b[0m',
-                '  /who  /whoon        who is in this room',
-                '  /chatters           who is online across all rooms',
-                '  /users /userlist    user listing',
-                '  /bbses /connected   connected BBSes',
-                '  /lastseen [user]    last-seen lookup',
-                '  /afk [msg]          mark away   /back  return',
+                terminal_label(self.session, 'terminal.daily.mrc_help_people', '\x1b[1mPeople\x1b[0m'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_who_is_in_this_room', '  /who  /whoon        who is in this room'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_who_is_online_across_all_rooms', '  /chatters           who is online across all rooms'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_user_listing', '  /users /userlist    user listing'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_connected_bbses', '  /bbses /connected   connected BBSes'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_last_seen_lookup', '  /lastseen [user]    last-seen lookup'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_mark_away_back_return', '  /afk [msg]          mark away   /back  return'),
                 '',
-                '\x1b[1mAuth (MRC Trust)\x1b[0m',
-                '  /identify [pw]      log in (masked prompt if no arg)',
-                '  /register pw [em]   register your handle',
-                '  /update param val   change account field',
-                '  /trust [INFO|...]    trust-list management',
+                terminal_label(self.session, 'terminal.daily.mrc_help_auth_mrc_trust', '\x1b[1mAuth (MRC Trust)\x1b[0m'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_log_in_masked_prompt_if_no_arg', '  /identify [pw]      log in (masked prompt if no arg)'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_register_your_handle', '  /register pw [em]   register your handle'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_change_account_field', '  /update param val   change account field'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_trust_list_management', '  /trust [INFO|...]    trust-list management'),
                 '',
-                '\x1b[1mInfo\x1b[0m',
+                terminal_label(self.session, 'terminal.daily.mrc_help_info', '\x1b[1mInfo\x1b[0m'),
                 '  /motd  /banners  /info [n]  /time  /version  /stats',
                 '  /changelog  /routing  /quickstats  /help',
-                '  /last [n]           recent chat history',
+                terminal_label(self.session, 'terminal.daily.mrc_help_recent_chat_history', '  /last [n]           recent chat history'),
                 '',
-                '\x1b[1mClient\x1b[0m',
-                '  [<]/[>] arrows       cycle outgoing text color',
-                '  [up]/[dn] arrows     scroll chat 1 line',
-                '  Ctrl+[up]/[dn]       recall previous/next sent line',
-                '  Tab                 nick autocomplete',
-                '  /mentions           show & clear mention log',
-                '  /welcome            re-show the connect tips/status',
-                '  /changes            recent client changes',
-                '  /scroll [n]         scroll up n lines (default 5)',
-                '  /scroll down [n]    scroll down n lines',
-                '  /scroll 0           scroll to bottom (live view)',
-                '  /clear              clear chat area (alias /cls)',
-                '  /twit add|del|list|clear [user]   ignore-list management',
-                '  /shield [on|off]    broadcast shield (blocks /broadcast)',
-                '  /sound [on|off]     terminal bell on mention/DM (saved)',
-                '  /set [field value]  nick style, enter/leave/quit msgs, ticker, clockformat, tz',
-                '  /set list           show current /set values',
-                '  /dlchatlog          download this session\'s scrollback as text',
-                '  /termsize w,h       report terminal size to server',
-                '  /raw text           raw server command',
-                '  /quit               leave MRC (alias /q)',
+                terminal_label(self.session, 'terminal.daily.mrc_help_client', '\x1b[1mClient\x1b[0m'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_cycle_outgoing_text_color', '  [<]/[>] arrows       cycle outgoing text color'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_scroll_chat_1_line', '  [up]/[dn] arrows     scroll chat 1 line'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_recall_previous_next_sent_line', '  Ctrl+[up]/[dn]       recall previous/next sent line'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_nick_autocomplete', '  Tab                 nick autocomplete'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_show_clear_mention_log', '  /mentions           show & clear mention log'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_re_show_the_connect_tips_status', '  /welcome            re-show the connect tips/status'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_recent_client_changes', '  /changes            recent client changes'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_scroll_up_n_lines_default_5', '  /scroll [n]         scroll up n lines (default 5)'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_scroll_down_n_lines', '  /scroll down [n]    scroll down n lines'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_scroll_to_bottom_live_view', '  /scroll 0           scroll to bottom (live view)'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_clear_chat_area_alias_cls', '  /clear              clear chat area (alias /cls)'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_ignore_list_management', '  /twit add|del|list|clear [user]   ignore-list management'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_broadcast_shield_blocks_broadcast', '  /shield [on|off]    broadcast shield (blocks /broadcast)'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_terminal_bell_on_mention_dm_saved', '  /sound [on|off]     terminal bell on mention/DM (saved)'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_nick_style_enter_leave_quit_msgs_ticker_clockformat_tz', '  /set [field value]  nick style, enter/leave/quit msgs, ticker, clockformat, tz'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_show_current_set_values', '  /set list           show current /set values'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_download_this_session_s_scrollback_as_text', "  /dlchatlog          download this session's scrollback as text"),
+                terminal_label(self.session, 'terminal.daily.mrc_help_report_terminal_size_to_server', '  /termsize w,h       report terminal size to server'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_raw_server_command', '  /raw text           raw server command'),
+                terminal_label(self.session, 'terminal.daily.mrc_help_leave_mrc_alias_q', '  /quit               leave MRC (alias /q)'),
                 '',
             ):
                 await self._emit(ln)
@@ -2989,7 +2990,7 @@ class MRCChat(BaseChatSystem):
                 await self._emit('Usage: /r <text>  (reply to last DM)')
                 return True
             if not self._last_dm_from:
-                await self._emit('\x1b[33mNo DM to reply to yet.\x1b[0m')
+                await self._emit('\x1b[33m' + terminal_label(self.session, 'terminal.daily.mrc_empty_dm', 'No DM to reply to yet.') + '\x1b[0m')
                 return True
             await self._send_dm(self._last_dm_from, rest)
             return True
@@ -3291,7 +3292,7 @@ class MRCChat(BaseChatSystem):
 
         if cmd == 'join':
             if not rest:
-                await self._emit('Usage: /join <room>')
+                await self._emit(terminal_label(self.session, 'terminal.daily.mrc_join_usage', 'Usage: /join <room>'))
                 return True
             new_room = rest.strip().lstrip('#').lower()
             await self._send_json({
@@ -3299,7 +3300,7 @@ class MRCChat(BaseChatSystem):
                 'command': f'JOIN {new_room}',
             })
             self._room = new_room
-            await self._emit(f'\x1b[1;36mJoining #{new_room}...\x1b[0m')
+            await self._emit('\x1b[1;36m' + terminal_label(self.session, 'terminal.daily.mrc_joining', 'Joining #{room}...', room=new_room) + '\x1b[0m')
             return True
 
         if cmd in ('list', 'rooms'):
@@ -3422,16 +3423,16 @@ class MRCChat(BaseChatSystem):
                 read_pw = getattr(self.session, 'read_password', None)
                 if callable(read_pw):
                     try:
-                        password = await read_pw('MRC password: ')
+                        password = await read_pw(terminal_label(self.session, 'terminal.daily.mrc_password', 'MRC password: '))
                     except Exception:
-                        password = await self.session.read_line('MRC password: ')
+                        password = await self.session.read_line(terminal_label(self.session, 'terminal.daily.mrc_password', 'MRC password: '))
                 else:
                     await self._emit(
                         '\x1b[33m(password will echo - type it and press Enter)\x1b[0m')
-                    password = await self.session.read_line('MRC password: ')
+                    password = await self.session.read_line(terminal_label(self.session, 'terminal.daily.mrc_password', 'MRC password: '))
                 password = (password or '').strip()
             if not password:
-                await self._emit('No password provided.')
+                await self._emit(terminal_label(self.session, 'terminal.daily.mrc_empty_password', 'No password provided.'))
                 return True
             await self._send_json({
                 'type': 'server_cmd', 'command': f'IDENTIFY {password}'})

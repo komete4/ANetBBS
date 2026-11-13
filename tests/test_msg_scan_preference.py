@@ -235,6 +235,19 @@ class MsgScanPreferenceTests(unittest.TestCase):
         self.assertIn('PM INBOX', joined,
                       'answering P must actually launch the PM reader')
 
+    def test_spanish_scan_keeps_the_private_message_hotkey(self):
+        self._add_unread_pm()
+        session = _FakeSession(self.user_id, ['', '', 'P', 'Q'])
+        session.user['language'] = 'es'
+        with self.app.app_context():
+            self._run(session)
+        transcript = session.transcript()
+        self.assertIn('¿Buscar mensajes nuevos? [Y/n]', transcript)
+        self.assertIn('TIENES NOTIFICACIONES NUEVAS', transcript)
+        self.assertIn('[P]', transcript)
+        self.assertIn(' Mensajes privados', transcript)
+        self.assertIn('BANDEJA DE MENSAJES PRIVADOS', transcript)
+
     def test_petscii_session_gets_no_jump_in_offer(self):
         self._add_unread_pm()
         session = _FakeSession(self.user_id, [''], msg_scan_pref='auto',

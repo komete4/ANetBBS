@@ -198,8 +198,8 @@ async def run_chat_session(session):
 
     pump_task = asyncio.create_task(pump())
     await session.write(
-        "\r\n\x1b[1;36m=== Local Chat ===\x1b[0m\r\n"
-        "Commands: /list  /w <slot> <msg>  /q to quit\r\n\r\n")
+        "\r\n\x1b[1;36m=== " + terminal_label(session, 'terminal.daily.local_chat', 'Local Chat') + " ===\x1b[0m\r\n"
+        + terminal_label(session, 'terminal.daily.local_commands', 'Commands: /list  /w <slot> <msg>  /q to quit') + "\r\n\r\n")
     try:
         while True:
             line = await session.read_line('chat> ')
@@ -213,7 +213,7 @@ async def run_chat_session(session):
             if line == '/list':
                 nodes = list_nodes()
                 if not nodes:
-                    await session.write("\r\n(no other nodes online)\r\n")
+                    await session.write("\r\n" + terminal_label(session, 'terminal.daily.local_empty', '(no other nodes online)') + "\r\n")
                 else:
                     await session.write("\r\n")
                     for n in nodes:
@@ -232,7 +232,7 @@ async def run_chat_session(session):
                             f"\x1b[2m(whispered to node {target})\x1b[0m\r\n")
                     else:
                         await session.write(
-                            f"\r\nNode {target} not online.\r\n")
+                            "\r\n" + terminal_label(session, 'terminal.daily.local_offline', 'Node {slot} not online.', slot=target) + "\r\n")
                 else:
                     await session.write(terminal_label(session, 'terminal.screen.usage_w_slot_message', 'Usage: /w <slot> <message>') + '\r\n')
                 continue
