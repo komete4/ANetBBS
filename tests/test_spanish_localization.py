@@ -859,3 +859,22 @@ def test_spanish_admin_queue_and_security_render_locally(client, make_user, monk
     assert 'Actualizaciones de seguridad' in security.h1.get_text(strip=True)
     assert 'Todavía no se ha ejecutado ningún análisis.' in security.get_text(' ', strip=True)
     assert 'Ejecutar análisis' in security.get_text(' ', strip=True)
+
+
+@pytest.mark.parametrize('language, import_button, missing_list, missing_destination', [
+    ('es', 'Importar áreas', 'Pega una lista de áreas de eco',
+     'Introduce un nombre y un servidor.'),
+    ('en', 'Import Areas', 'Paste an echolist', 'Name + hostname required.'),
+])
+def test_admin_import_and_dialout_validation_use_account_language(
+        client, make_user, language, import_button, missing_list, missing_destination):
+    user_id, _, _ = make_user(language, is_admin=True)
+    _authenticate(client, user_id)
+    import_path = '/admin/file-areas/bulk_import'
+    page = _soup(_post(client, import_path, {}, token_path=import_path, follow_redirects=True))
+    assert import_button in page.select_one('form[enctype="multipart/form-data"] button[type="submit"]').get_text(' ', strip=True)
+    assert missing_list in page.get_text(' ', strip=True)
+    dialout_path = '/admin/dialout'
+    page = _soup(_post(client, dialout_path, {'action': 'add'}, token_path=dialout_path,
+                      follow_redirects=True))
+    assert missing_destination in page.get_text(' ', strip=True)

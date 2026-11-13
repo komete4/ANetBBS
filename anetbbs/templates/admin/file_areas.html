@@ -82,7 +82,7 @@
             <div class="col-md-2">
                 <label class="form-label">{{ t('ui.network', 'Network') }}</label>
                 <select name="network_id" class="form-select">
-                    <option value="">— local —</option>
+                    <option value="">{{ t('admin.advanced.local_dash_suffix_lowercase', '— local —') }}</option>
                     {% for n in networks %}<option value="{{ n.id }}">{{ n.name }}</option>{% endfor %}
                 </select>
             </div>
@@ -105,7 +105,7 @@
                 <div class="form-check">
                     <input type="checkbox" name="create_storage_dir" id="createStorageDirNew" class="form-check-input">
                     <label class="form-check-label small" for="createStorageDirNew">
-                        Create directory if missing (Storage Path above must already exist otherwise)
+                        {{ t('admin.advanced.create_directory_if_missing_storage_path_above_must_already_exist_otherwise', 'Create directory if missing (Storage Path above must already exist otherwise)') }}
                     </label>
                 </div>
             </div>

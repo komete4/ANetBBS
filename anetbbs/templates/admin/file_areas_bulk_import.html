@@ -11,10 +11,10 @@
 </a>
 
 <div class="card">
-    <div class="card-header"><i class="bi bi-list-ul"></i> Import from Backbone File or Echolist</div>
+    <div class="card-header"><i class="bi bi-list-ul"></i> {{ t('admin.advanced.import_from_backbone_file_or_echolist', 'Import from Backbone File or Echolist') }}</div>
     <div class="card-body">
         <p style="font-size:0.9rem; color:#00cc00;">
-            One area per line. Both forms are accepted:
+            {{ t('admin.advanced.one_area_per_line_both_forms_are_accepted_label', 'One area per line. Both forms are accepted:') }}
         </p>
         <pre style="background:#001100; border:1px solid #006600; padding:0.5rem; font-size:0.8rem; color:#0c0;">FILES_GAMES     Game files
 TQW_FILES       - TQW File Echo         (FidoNet backbone style)</pre>
@@ -30,9 +30,9 @@ TQW_FILES       - TQW File Echo         (FidoNet backbone style)</pre>
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             <div class="mb-3">
-                <label class="form-label">Network (optional — leave blank for local-only)</label>
+                <label class="form-label">{{ t('admin.advanced.network_optional_leave_blank_for_local_only_section', 'Network (optional — leave blank for local-only)') }}</label>
                 <select name="network_id" class="form-control">
-                    <option value="">— local —</option>
+                    <option value="">{{ t('admin.advanced.local_dash_suffix_lowercase', '— local —') }}</option>
                     {% for n in networks %}
                     <option value="{{ n.id }}">{{ n.name }} ({{ n.network_type }})</option>
                     {% endfor %}
@@ -40,13 +40,13 @@ TQW_FILES       - TQW File Echo         (FidoNet backbone style)</pre>
             </div>
 
             <div class="mb-3">
-                <label class="form-label">Upload a backbone file (FILEBONE.NA, .lst, .txt)</label>
+                <label class="form-label">{{ t('admin.advanced.upload_a_backbone_file_filebone_na_lst_txt', 'Upload a backbone file (FILEBONE.NA, .lst, .txt)') }}</label>
                 <input type="file" name="backbone_file" class="form-control"
                        accept=".na,.txt,.lst,.echo">
             </div>
 
             <div class="mb-3">
-                <label class="form-label">Or paste the list (TAG  [- ] Display Name)</label>
+                <label class="form-label">{{ t('admin.advanced.or_paste_the_list_tag_display_name', 'Or paste the list (TAG [- ] Display Name)') }}</label>
                 <textarea name="echolist" rows="18" class="form-control"
                           style="font-family:'Courier New',monospace; font-size:0.85rem;"
                           placeholder="TQW_FILES       - TQW File Echo&#10;FILES_GAMES     Game files"></textarea>
@@ -56,13 +56,12 @@ TQW_FILES       - TQW File Echo         (FidoNet backbone style)</pre>
                 <input type="checkbox" name="is_subscribed" value="1"
                        class="form-check-input" id="is_subscribed">
                 <label class="form-check-label small" for="is_subscribed">
-                    Mark imported areas as subscribed (uncheck for backbone
-                    catalog imports — you can subscribe individually later)
+                    {{ t('admin.advanced.mark_imported_areas_as_subscribed_uncheck_for_backbone_catalog_imports_you_can_subscribe_individually_later_section', 'Mark imported areas as subscribed (uncheck for backbone catalog imports — you can subscribe individually later)') }}
                 </label>
             </div>
 
             <div class="mb-3">
-                <label class="form-label">Storage path base directory (optional)</label>
+                <label class="form-label">{{ t('admin.advanced.storage_path_base_directory_optional', 'Storage path base directory (optional)') }}</label>
                 <input type="text" name="storage_base" class="form-control"
                        placeholder="/home/stingray/anetbbs/data/file_areas">
                 <div class="form-text">
@@ -76,9 +75,7 @@ TQW_FILES       - TQW File Echo         (FidoNet backbone style)</pre>
                 <input type="checkbox" name="create_storage_dirs" value="1"
                        class="form-check-input" id="create_storage_dirs">
                 <label class="form-check-label small" for="create_storage_dirs">
-                    Create each area's storage directory if missing (applies
-                    to every area in this batch — only relevant if a base
-                    directory is set above)
+                    {{ t('admin.advanced.create_each_area_s_storage_directory_if_missing_applies_to_every_area_in_this_batch_only_relevant_if_a_base_directory_is_set_above_section', "Create each area's storage directory if missing (applies to every area in this batch — only relevant if a base directory is set above)") }}
                 </label>
             </div>
 
@@ -87,7 +84,7 @@ TQW_FILES       - TQW File Echo         (FidoNet backbone style)</pre>
                     <i class="bi bi-x-circle"></i> {{ t('ui.cancel', 'Cancel') }}
                 </a>
                 <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-upload"></i> Import Areas
+                    <i class="bi bi-upload"></i> {{ t('admin.advanced.import_areas', 'Import Areas') }}
                 </button>
             </div>
         </form>

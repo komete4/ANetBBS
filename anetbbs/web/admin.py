@@ -545,9 +545,7 @@ def edit_user(user_id):
         # refused when the target is the account making the request.
         if user.id == current_user.id:
             if form.is_admin.data != user.is_admin or form.is_active.data != user.is_active:
-                flash('Your own admin/active status cannot be changed from '
-                     'this form — ask another admin, or use a different '
-                     'account.', 'warning')
+                flash(translate('admin.notice.own_status', 'Your own admin/active status cannot be changed from this form — ask another admin, or use a different account.'), 'warning')
         else:
             user.is_admin = form.is_admin.data
             user.is_active = form.is_active.data
@@ -605,11 +603,7 @@ def delete_user(user_id):
             flash(translate('admin.notice.user_deleted', 'User {username} deleted.', username=username), 'success')
         except IntegrityError:
             db.session.rollback()
-            flash(f'Could not delete {username} — they have related '
-                 f'records (games played, messages, posts, etc.) that '
-                 f'block deletion. Use Ban/Deactivate instead, which '
-                 f'disables the account without needing to remove its '
-                 f'history.', 'danger')
+            flash(translate('admin.notice.delete_dependencies', 'Could not delete {username} — they have related records (games played, messages, posts, etc.) that block deletion. Use Ban/Deactivate instead, which disables the account without needing to remove its history.', username=username), 'danger')
         return redirect(url_for('admin.users'))
 
     return render_template('admin/confirm_delete.html',
@@ -1010,8 +1004,7 @@ def registry_probe_settings():
     fail_threshold = _positive_int('probe_failure_threshold')
 
     if stale_hours is None or interval_sec is None or fail_threshold is None:
-        flash('Registry probe settings not saved — all three fields must '
-              'be positive whole numbers (interval at least 60 seconds).',
+        flash(translate('admin.notice.probe_invalid', 'Registry probe settings not saved — all three fields must be positive whole numbers (interval at least 60 seconds).'),
               'danger')
         return redirect(url_for('admin.registry_index'))
 
@@ -1025,10 +1018,9 @@ def registry_probe_settings():
         current_app.config['REGISTRY_HEARTBEAT_STALE_HOURS'] = stale_hours
         current_app.config['REGISTRY_PROBE_INTERVAL_SEC'] = interval_sec
         current_app.config['REGISTRY_PROBE_FAILURE_THRESHOLD'] = fail_threshold
-        flash('Registry probe settings saved — takes effect on the next '
-              'probe cycle, no restart needed.', 'success')
+        flash(translate('admin.notice.probe_saved', 'Registry probe settings saved — takes effect on the next probe cycle, no restart needed.'), 'success')
     except Exception as exc:
-        flash(f'Registry probe settings update failed: {exc}', 'warning')
+        flash(translate('admin.notice.probe_failed', 'Registry probe settings update failed: {exc}', exc=exc), 'warning')
     return redirect(url_for('admin.registry_index'))
 
 
@@ -1039,13 +1031,12 @@ def registry_approve(entry_id):
     from ..models import db, RegistryEntry
     e = RegistryEntry.query.get_or_404(entry_id)
     if not e.is_verified:
-        flash(f'{e.host}: cannot approve — registrant has not '
-              f'verified their contact email yet.', 'warning')
+        flash(translate('admin.notice.registry_email', '{host}: cannot approve — registrant has not verified their contact email yet.', host=e.host), 'warning')
         return redirect(url_for('admin.registry_index'))
     e.is_approved = True
     e.is_listed = True
     db.session.commit()
-    flash(f'Approved + listed {e.host}.', 'success')
+    flash(translate('admin.notice.registry_listed', 'Approved + listed {host}.', host=e.host), 'success')
     return redirect(url_for('admin.registry_index'))
 
 
@@ -1058,8 +1049,7 @@ def registry_reject(entry_id):
     e.is_approved = False
     e.is_listed = False
     db.session.commit()
-    flash(f'Rejected (delisted) {e.host}. Row kept — delete '
-          f'separately if you want it gone for good.', 'info')
+    flash(translate('admin.notice.registry_rejected', 'Rejected (delisted) {host}. Row kept — delete separately if you want it gone for good.', host=e.host), 'info')
     return redirect(url_for('admin.registry_index'))
 
 
@@ -1072,7 +1062,7 @@ def registry_delete(entry_id):
     host = e.host
     db.session.delete(e)
     db.session.commit()
-    flash(f'Deleted {host}. They can re-register with a fresh token.',
+    flash(translate('admin.notice.registry_deleted', 'Deleted {host}. They can re-register with a fresh token.', host=host),
           'success')
     return redirect(url_for('admin.registry_index'))
 
@@ -1105,13 +1095,12 @@ def registry_self_register_now():
     try:
         result = _tick(current_app._get_current_object())
         if result.get('ok'):
-            flash('Self-registration tick triggered. Check the status below '
-                  'for the hub response.', 'success')
+            flash(translate('admin.notice.registry_tick', 'Self-registration tick triggered. Check the status below for the hub response.'), 'success')
         else:
             flash(f'Self-registration did not go through: '
                   f'{result.get("reason", "unknown error")}', 'warning')
     except Exception as exc:
-        flash(f'Self-registration failed: {exc}', 'danger')
+        flash(translate('admin.notice.registry_failed', 'Self-registration failed: {exc}', exc=exc), 'danger')
     return redirect(url_for('admin.registry_self'))
 
 
@@ -1138,7 +1127,7 @@ def registry_edit(entry_id):
         flash(translate('admin.notice.ports_must_be_integers', 'Ports must be integers.'), 'danger')
         return redirect(url_for('admin.registry_index'))
     db.session.commit()
-    flash(f'Updated {e.host}.', 'success')
+    flash(translate('admin.notice.registry_updated', 'Updated {host}.', host=e.host), 'success')
     return redirect(url_for('admin.registry_index'))
 
 
@@ -1465,8 +1454,7 @@ def settings():
                     # Telling every sysop to restart 4 services (one of
                     # which doesn't exist) was just wrong for the
                     # documented/default setup.
-                    flash('Settings saved. Some changes require a service '
-                          'restart: sudo systemctl restart anetbbs.service', 'warning')
+                    flash(translate('admin.notice.settings_restart', 'Settings saved. Some changes require a service restart: sudo systemctl restart anetbbs.service'), 'warning')
                 else:
                     flash(translate('admin.notice.settings_saved', 'Settings saved.'), 'success')
             except Exception as exc:
@@ -1701,10 +1689,9 @@ def tic_rescan():
         flash(translate('admin.notice.rescan_failed', 'Rescan failed: {exc}', exc=exc), 'danger')
         return redirect(url_for('admin.tic_log'))
     if n:
-        flash(f'Rescanned {inbound_dir} — processed {n} TIC file(s). '
-              f'See below for status.', 'success')
+        flash(translate('admin.notice.tic_rescan', 'Rescanned {inbound_dir} — processed {n} TIC file(s). See below for status.', inbound_dir=inbound_dir, n=n), 'success')
     else:
-        flash(f'Rescanned {inbound_dir} — no unprocessed .tic files found.',
+        flash(translate('admin.notice.tic_empty', 'Rescanned {inbound_dir} — no unprocessed .tic files found.', inbound_dir=inbound_dir),
               'info')
     return redirect(url_for('admin.tic_log'))
 
@@ -1758,10 +1745,9 @@ def tic_clear_processed():
 
     if deleted:
         freed_mb = freed_bytes / (1024 * 1024)
-        flash(f'Deleted {deleted} file(s) older than {days} day(s), '
-              f'freeing {freed_mb:.1f} MB.', 'success')
+        flash(translate('admin.notice.tic_deleted', 'Deleted {deleted} file(s) older than {days} day(s), freeing {freed_mb:.1f} MB.', deleted=deleted, days=days, freed_mb=freed_mb), 'success')
     else:
-        flash(f'No files older than {days} day(s) found in {processed_dir}.',
+        flash(translate('admin.notice.tic_no_old_files', 'No files older than {days} day(s) found in {processed_dir}.', days=days, processed_dir=processed_dir),
               'info')
     return redirect(url_for('admin.tic_log'))
 
@@ -1822,20 +1808,17 @@ def _resolve_storage_dir(storage_path, create_dir, tag):
     if _os.path.isdir(storage_path):
         return True
     if _os.path.exists(storage_path):
-        flash(f'"{storage_path}" exists but is not a directory — pick a '
-              f'different path for {tag}.', 'danger')
+        flash(translate('admin.notice.file_path_not_directory', '"{storage_path}" exists but is not a directory — pick a different path for {tag}.', storage_path=storage_path, tag=tag), 'danger')
         return False
     if not create_dir:
-        flash(f'Directory "{storage_path}" does not exist for {tag}. '
-              f'Check "Create directory if missing" and save again to '
-              f'create it, or fix the path.', 'warning')
+        flash(translate('admin.notice.file_path_missing', 'Directory "{storage_path}" does not exist for {tag}. Check "Create directory if missing" and save again to create it, or fix the path.', storage_path=storage_path, tag=tag), 'warning')
         return False
     try:
         _os.makedirs(storage_path, exist_ok=True)
-        flash(f'Created directory "{storage_path}" for {tag}.', 'info')
+        flash(translate('admin.notice.file_path_created', 'Created directory "{storage_path}" for {tag}.', storage_path=storage_path, tag=tag), 'info')
         return True
     except OSError as exc:
-        flash(f'Could not create "{storage_path}" for {tag}: {exc}', 'danger')
+        flash(translate('admin.notice.file_path_failed', 'Could not create "{storage_path}" for {tag}: {exc}', storage_path=storage_path, tag=tag, exc=exc), 'danger')
         return False
 
 
@@ -1872,9 +1855,9 @@ def file_areas_admin():
             category = (request.form.get('category') or 'other').strip() or 'other'
             create_dir = bool(request.form.get('create_storage_dir'))
             if not tag:
-                flash('Tag required.', 'danger')
+                flash(translate('admin.notice.area_tag_required', 'Tag required.'), 'danger')
             elif FileArea.query.filter_by(tag=tag).first():
-                flash(f'Area {tag} already exists.', 'warning')
+                flash(translate('admin.notice.area_exists', 'Area {tag} already exists.', tag=tag), 'warning')
             elif not _resolve_storage_dir(storage_path, create_dir, tag):
                 pass  # _resolve_storage_dir already flashed why
             else:
@@ -1886,7 +1869,7 @@ def file_areas_admin():
                     is_active=True, is_subscribed=True)
                 db.session.add(fa)
                 db.session.commit()
-                flash(f'Created area {tag}.', 'success')
+                flash(translate('admin.notice.area_created', 'Created area {tag}.', tag=tag), 'success')
         elif action == 'update':
             fa = FileArea.query.get_or_404(request.form.get('area_id', type=int))
             fa.category = (request.form.get('category') or 'other').strip() or 'other'
@@ -1918,13 +1901,13 @@ def file_areas_admin():
             fa.freq_enabled = bool(request.form.get('freq_enabled'))
             fa.freq_password = (request.form.get('freq_password') or '').strip() or None
             db.session.commit()
-            flash(f'Updated {fa.tag}.', 'success')
+            flash(translate('admin.notice.area_updated', 'Updated {tag}.', tag=fa.tag), 'success')
         elif action == 'delete':
             fa = FileArea.query.get_or_404(request.form.get('area_id', type=int))
             tag = fa.tag
             db.session.delete(fa)
             db.session.commit()
-            flash(f'Deleted {tag}.', 'success')
+            flash(translate('admin.notice.area_deleted', 'Deleted {tag}.', tag=tag), 'success')
         return redirect(url_for('admin.file_areas_admin'))
 
     areas = FileArea.query.order_by(FileArea.sort_order, FileArea.tag).all()
@@ -1984,7 +1967,7 @@ def add_file_area_category():
         )
         db.session.add(cat)
         db.session.commit()
-        flash(f'Category "{cat.name}" added.', 'success')
+        flash(translate('admin.notice.category_added', 'Category "{name}" added.', name=cat.name), 'success')
         return redirect(url_for('admin.file_area_categories_admin'))
     return render_template('admin/file_area_category_form.html', form=form, category=None)
 
@@ -2002,7 +1985,7 @@ def edit_file_area_category(cat_id):
         cat.sort_order = form.sort_order.data or 0
         cat.as_submenu = form.as_submenu.data
         db.session.commit()
-        flash(f'Category "{cat.name}" updated.', 'success')
+        flash(translate('admin.notice.category_updated', 'Category "{name}" updated.', name=cat.name), 'success')
         return redirect(url_for('admin.file_area_categories_admin'))
     return render_template('admin/file_area_category_form.html', form=form, category=cat)
 
@@ -2016,7 +1999,7 @@ def delete_file_area_category(cat_id):
     name = cat.name
     db.session.delete(cat)
     db.session.commit()
-    flash(f'Category "{name}" deleted.', 'success')
+    flash(translate('admin.notice.category_deleted', 'Category "{name}" deleted.', name=name), 'success')
     return redirect(url_for('admin.file_area_categories_admin'))
 
 
@@ -2186,7 +2169,7 @@ def file_areas_bulk():
     area_ids = request.form.getlist('area_ids', type=int)
 
     if not area_ids:
-        flash('No file areas selected.', 'warning')
+        flash(translate('admin.notice.area_selection_required', 'No file areas selected.'), 'warning')
         return redirect(url_for('admin.file_areas_admin'))
 
     areas = FileArea.query.filter(FileArea.id.in_(area_ids)).all()
@@ -2196,7 +2179,7 @@ def file_areas_bulk():
         for fa in areas:
             db.session.delete(fa)
         db.session.commit()
-        flash(f'Deleted {count} file area(s). Files on disk were NOT removed.', 'success')
+        flash(translate('admin.notice.areas_deleted', 'Deleted {count} file area(s). Files on disk were NOT removed.', count=count), 'success')
     elif bulk_action == 'enable':
         for fa in areas:
             fa.is_active = True
@@ -2218,7 +2201,7 @@ def file_areas_bulk():
         db.session.commit()
         flash(f'Unsubscribed from {len(areas)} file area(s).', 'success')
     else:
-        flash('Unknown bulk action.', 'danger')
+        flash(translate('admin.notice.bulk_action_unknown', 'Unknown bulk action.'), 'danger')
 
     return redirect(url_for('admin.file_areas_admin'))
 
@@ -2236,7 +2219,7 @@ def file_areas_subscribe_all(network_id):
     from ..models import FileArea, EchomailNetwork
     network = EchomailNetwork.query.get_or_404(network_id)
     if network.network_type != 'binkp':
-        flash('Subscribe-all only applies to BinkP networks.', 'warning')
+        flash(translate('admin.notice.subscribe_binkp_only', 'Subscribe-all only applies to BinkP networks.'), 'warning')
         return redirect(url_for('admin.file_areas_admin'))
     tags = [a.tag for a in
             FileArea.query.filter_by(network_id=network.id).all()]
@@ -2245,8 +2228,7 @@ def file_areas_subscribe_all(network_id):
                        synchronize_session=False))
     db.session.commit()
     if not tags:
-        flash('No local file areas configured for this network. Use '
-              '"Bulk Import" first to load a FILEBONE file.', 'warning')
+        flash(translate('admin.notice.subscribe_local_required', 'No local file areas configured for this network. Use "Bulk Import" first to load a FILEBONE file.'), 'warning')
         return redirect(url_for('admin.file_areas_admin'))
     from ..echomail.areafix import send_areafix_request
     nm_id = send_areafix_request(network, plus_tags=tags,
@@ -2273,7 +2255,7 @@ def file_areas_unsubscribe_all(network_id):
     from ..models import FileArea, EchomailNetwork
     network = EchomailNetwork.query.get_or_404(network_id)
     if network.network_type != 'binkp':
-        flash('Unsubscribe-all only applies to BinkP networks.', 'warning')
+        flash(translate('admin.notice.unsubscribe_binkp_only', 'Unsubscribe-all only applies to BinkP networks.'), 'warning')
         return redirect(url_for('admin.file_areas_admin'))
     tags = [a.tag for a in
             FileArea.query.filter_by(network_id=network.id).all()]
@@ -2282,7 +2264,7 @@ def file_areas_unsubscribe_all(network_id):
                        synchronize_session=False))
     db.session.commit()
     if not tags:
-        flash('No local file areas to unsubscribe from.', 'info')
+        flash(translate('admin.notice.unsubscribe_empty', 'No local file areas to unsubscribe from.'), 'info')
         return redirect(url_for('admin.file_areas_admin'))
     from ..echomail.areafix import send_areafix_request
     nm_id = send_areafix_request(network, minus_tags=tags,
@@ -2328,7 +2310,7 @@ def file_areas_bulk_import():
             except UnicodeDecodeError:
                 text = (text + '\n' + raw.decode('cp437', errors='replace')).strip()
         if not text.strip():
-            flash('Paste an echolist or upload a backbone file.', 'warning')
+            flash(translate('admin.notice.echolist_required', 'Paste an echolist or upload a backbone file.'), 'warning')
             return redirect(url_for('admin.file_areas_bulk_import'))
 
         entries = _parse_backbone(text)
@@ -2396,7 +2378,7 @@ def checklist():
             db.session.rollback()
         except Exception:
             pass
-        flash(f'Checklist error: {exc}', 'danger')
+        flash(translate('admin.notice.checklist_error', 'Checklist error: {exc}', exc=exc), 'danger')
         return render_template('admin/setup_wizard_error.html',
                                error=str(exc),
                                traceback=_tb.format_exc())
@@ -2523,41 +2505,41 @@ def ip_bans():
             reason = (request.form.get('reason') or '').strip() or None
             ttl_days = request.form.get('ttl_days', type=int) or 0
             if not cidr:
-                flash('CIDR required.', 'danger')
+                flash(translate('admin.notice.cidr_required', 'CIDR required.'), 'danger')
             elif IpBan.query.filter_by(cidr=cidr).first():
-                flash('Already banned.', 'info')
+                flash(translate('admin.notice.cidr_banned', 'Already banned.'), 'info')
             else:
                 expires = (datetime.utcnow() + timedelta(days=ttl_days)) if ttl_days else None
                 db.session.add(IpBan(cidr=cidr, reason=reason,
                                      banned_by_id=current_user.id,
                                      expires_at=expires))
                 db.session.commit()
-                flash(f'Banned {cidr}.', 'success')
+                flash(translate('admin.notice.cidr_ban_added', 'Banned {cidr}.', cidr=cidr), 'success')
         elif action == 'remove':
             bid = request.form.get('ban_id', type=int)
             row = IpBan.query.get(bid)
             if row:
                 db.session.delete(row); db.session.commit()
-                flash('Ban removed.', 'success')
+                flash(translate('admin.notice.ban_removed', 'Ban removed.'), 'success')
         elif action == 'auto_ban_settings':
             auto_ban_cfg.enabled = bool(request.form.get('enabled'))
             attempt_limit = request.form.get('attempt_limit', type=int)
             window_minutes = request.form.get('window_minutes', type=int)
             ban_duration_hours = request.form.get('ban_duration_hours', type=int)
             if attempt_limit is None or attempt_limit < 1:
-                flash('Attempt limit must be at least 1.', 'danger')
+                flash(translate('admin.notice.ban_min_attempts', 'Attempt limit must be at least 1.'), 'danger')
                 return redirect(url_for('admin.ip_bans'))
             if window_minutes is None or window_minutes < 1:
-                flash('Time window must be at least 1 minute.', 'danger')
+                flash(translate('admin.notice.ban_min_window', 'Time window must be at least 1 minute.'), 'danger')
                 return redirect(url_for('admin.ip_bans'))
             if ban_duration_hours is None or ban_duration_hours < 0:
-                flash('Ban duration must be 0 (permanent) or more.', 'danger')
+                flash(translate('admin.notice.ban_min_duration', 'Ban duration must be 0 (permanent) or more.'), 'danger')
                 return redirect(url_for('admin.ip_bans'))
             auto_ban_cfg.attempt_limit = attempt_limit
             auto_ban_cfg.window_seconds = window_minutes * 60
             auto_ban_cfg.ban_duration_hours = ban_duration_hours
             db.session.commit()
-            flash('Auto-ban settings saved.', 'success')
+            flash(translate('admin.notice.autoban_saved', 'Auto-ban settings saved.'), 'success')
         return redirect(url_for('admin.ip_bans'))
     rows = IpBan.query.order_by(IpBan.created_at.desc()).all()
     return render_template('admin/ip_bans.html', rows=rows, auto_ban_cfg=auto_ban_cfg)
@@ -2574,21 +2556,21 @@ def ip_whitelist():
             cidr = (request.form.get('cidr') or '').strip()
             note = (request.form.get('note') or '').strip() or None
             if not cidr:
-                flash('IP / CIDR required.', 'danger')
+                flash(translate('admin.notice.allow_ip_required', 'IP / CIDR required.'), 'danger')
             elif IpWhitelist.query.filter_by(cidr=cidr).first():
-                flash('Already whitelisted.', 'info')
+                flash(translate('admin.notice.allow_ip_duplicate', 'Already whitelisted.'), 'info')
             else:
                 db.session.add(IpWhitelist(cidr=cidr, note=note,
                                            added_by_id=current_user.id))
                 db.session.commit()
-                flash(f'Whitelisted {cidr}.', 'success')
+                flash(translate('admin.notice.allow_ip_added', 'Whitelisted {cidr}.', cidr=cidr), 'success')
         elif action == 'remove':
             wid = request.form.get('whitelist_id', type=int)
             row = IpWhitelist.query.get(wid)
             if row:
                 db.session.delete(row)
                 db.session.commit()
-                flash('Entry removed.', 'success')
+                flash(translate('admin.notice.allow_ip_removed', 'Entry removed.'), 'success')
         return redirect(url_for('admin.ip_whitelist'))
     rows = IpWhitelist.query.order_by(IpWhitelist.created_at.desc()).all()
     return render_template('admin/ip_whitelist.html', rows=rows)
@@ -2633,9 +2615,7 @@ def manage_user(user_id):
                 if (_new_is_admin != user.is_admin
                         or _new_is_active != user.is_active
                         or _new_is_locked != user.is_locked):
-                    flash('Your own admin/active/lock status cannot be '
-                         'changed from this form — ask another admin, or '
-                         'use a different account.', 'warning')
+                    flash(translate('admin.notice.own_lock_status', 'Your own admin/active/lock status cannot be changed from this form — ask another admin, or use a different account.'), 'warning')
             else:
                 user.is_admin = _new_is_admin
                 user.is_active = _new_is_active
@@ -2655,7 +2635,7 @@ def manage_user(user_id):
             except ValueError:
                 pass
             db.session.commit()
-            flash(f'Saved {user.username}.', 'success')
+            flash(translate('admin.notice.user_saved', 'Saved {username}.', username=user.username), 'success')
         elif action == 'note':
             txt = (request.form.get('note') or '').strip()
             if txt:
@@ -2664,7 +2644,7 @@ def manage_user(user_id):
                     author_id=current_user.id,
                     note=txt[:2000]))
                 db.session.commit()
-                flash('Note added.', 'success')
+                flash(translate('admin.notice.note_added', 'Note added.'), 'success')
         elif action == 'note_delete':
             nid = request.form.get('note_id', type=int)
             n = UserNote.query.get(nid)
@@ -2676,9 +2656,9 @@ def manage_user(user_id):
             if len(new) >= 6:
                 user.set_password(new)
                 db.session.commit()
-                flash(f'Password reset for {user.username}.', 'success')
+                flash(translate('admin.notice.user_password_reset', 'Password reset for {username}.', username=user.username), 'success')
             else:
-                flash('Password too short.', 'danger')
+                flash(translate('admin.notice.password_short', 'Password too short.'), 'danger')
         elif action == 'custom_fields':
             fields = UserField.query.all()
             for f in fields:
@@ -2694,7 +2674,7 @@ def manage_user(user_id):
                 elif ufv:
                     db.session.delete(ufv)
             db.session.commit()
-            flash('Custom fields saved.', 'success')
+            flash(translate('admin.notice.fields_saved', 'Custom fields saved.'), 'success')
         elif action == 'access_flags':
             if access_flags is None:
                 access_flags = UserAccessFlags(user_id=user.id)
@@ -2707,7 +2687,7 @@ def manage_user(user_id):
             access_flags.no_files    = bool(request.form.get('no_files'))
             access_flags.updated_by  = current_user.username
             db.session.commit()
-            flash(f'Access flags updated for {user.username}.', 'success')
+            flash(translate('admin.notice.access_flags_saved', 'Access flags updated for {username}.', username=user.username), 'success')
         return redirect(url_for('admin.manage_user', user_id=user.id))
 
     custom_fields_list = UserField.query.order_by(UserField.sort_order, UserField.id).all()
@@ -2758,15 +2738,15 @@ def pending_user_action(user_id, action):
             db.session.commit()
         except Exception:
             db.session.rollback()
-        flash(f'Approved {user.username}.', 'success')
+        flash(translate('admin.notice.user_approved', 'Approved {username}.', username=user.username), 'success')
     elif action == 'reject':
         # Soft-reject: deactivate but keep the row for audit.
         user.is_active = False
         db.session.commit()
-        flash(f'Rejected {user.username}.', 'warning')
+        flash(translate('admin.notice.user_rejected', 'Rejected {username}.', username=user.username), 'warning')
     elif action == 'delete':
         db.session.delete(user); db.session.commit()
-        flash(f'Deleted {user.username}.', 'info')
+        flash(translate('admin.notice.pending_user_deleted', 'Deleted {username}.', username=user.username), 'info')
     return redirect(url_for('admin.pending_users'))
 
 
@@ -2796,7 +2776,7 @@ def inactive_users():
             body = (request.form.get('body') or '').strip()
             subject = (request.form.get('subject') or 'We miss you!').strip()
             if not body:
-                flash('Body required.', 'danger')
+                flash(translate('admin.notice.body_required', 'Body required.'), 'danger')
                 return redirect(url_for('admin.inactive_users', days=days))
             for uid in ids:
                 db.session.add(PrivateMessage(
@@ -2806,21 +2786,21 @@ def inactive_users():
                     body=body))
                 n += 1
             db.session.commit()
-            flash(f'Sent {n} PM(s).', 'success')
+            flash(translate('admin.notice.pms_sent', 'Sent {n} PM(s).', n=n), 'success')
         elif action == 'deactivate':
             for uid in ids:
                 u = User.query.get(uid)
                 if u and not u.is_admin:
                     u.is_active = False; n += 1
             db.session.commit()
-            flash(f'Deactivated {n} user(s).', 'warning')
+            flash(translate('admin.notice.users_deactivated', 'Deactivated {n} user(s).', n=n), 'warning')
         elif action == 'delete':
             for uid in ids:
                 u = User.query.get(uid)
                 if u and not u.is_admin:
                     db.session.delete(u); n += 1
             db.session.commit()
-            flash(f'Deleted {n} user(s).', 'info')
+            flash(translate('admin.notice.users_deleted', 'Deleted {n} user(s).', n=n), 'info')
         return redirect(url_for('admin.inactive_users', days=days))
 
     return render_template('admin/inactive_users.html', rows=rows, days=days)
@@ -2836,7 +2816,7 @@ def newsletter():
         subject = (request.form.get('subject') or '').strip()
         body = (request.form.get('body') or '').strip()
         if not subject or not body:
-            flash('Subject and body required.', 'danger')
+            flash(translate('admin.notice.subject_and_body_required', 'Subject and body required.'), 'danger')
             return redirect(url_for('admin.newsletter'))
         nl = Newsletter(subject=subject[:200], body=body,
                         sent_by_id=current_user.id)
@@ -2857,7 +2837,7 @@ def newsletter():
         nl.sent_at = _dt.utcnow()
         nl.recipients_count = n
         db.session.commit()
-        flash(f'Newsletter sent to {n} user(s).', 'success')
+        flash(translate('admin.notice.newsletter_sent', 'Newsletter sent to {n} user(s).', n=n), 'success')
         return redirect(url_for('admin.newsletter'))
     history = (Newsletter.query.order_by(Newsletter.created_at.desc())
                .limit(50).all())
@@ -2876,7 +2856,7 @@ def lock_user(user_id):
     # remaining way an admin could lock themselves out of the panel with
     # a single misclick and no other admin necessarily around to undo it.
     if user.id == current_user.id:
-        flash('You cannot lock your own account.', 'danger')
+        flash(translate('admin.notice.own_account_lock', 'You cannot lock your own account.'), 'danger')
         return redirect(url_for('admin.users'))
     user.is_locked = not bool(user.is_locked)
     db.session.commit()
@@ -2954,7 +2934,7 @@ def broadcast():
         text = (request.form.get('text') or '').strip()
         ttl = request.form.get('ttl_minutes', type=int) or 0
         if not text:
-            flash('Empty broadcast.', 'warning')
+            flash(translate('admin.notice.broadcast_required', 'Empty broadcast.'), 'warning')
             return redirect(url_for('admin.broadcast'))
         expires = (datetime.utcnow() + _td(minutes=ttl)) if ttl else None
         bcast = SysopBroadcast(sender_id=current_user.id, text=text,
@@ -2972,7 +2952,7 @@ def broadcast():
             }, namespace='/')
         except Exception:
             pass
-        flash('Broadcast sent.', 'success')
+        flash(translate('admin.notice.broadcast_sent', 'Broadcast sent.'), 'success')
         return redirect(url_for('admin.broadcast'))
 
     recent = (SysopBroadcast.query
@@ -3002,7 +2982,7 @@ def answer_page(page_id):
     p.answered = True
     p.answered_at = datetime.utcnow()
     db.session.commit()
-    flash(f'Marked page #{page_id} as answered.', 'success')
+    flash(translate('admin.notice.page_answered', 'Marked page #{page_id} as answered.', page_id=page_id), 'success')
     return redirect(url_for('admin.pages'))
 
 
@@ -3017,7 +2997,7 @@ def reply_page(page_id):
     p = SysopPage.query.get_or_404(page_id)
     text = (request.form.get('reply') or '').strip()
     if not text:
-        flash('Empty reply.', 'warning')
+        flash(translate('admin.notice.reply_required', 'Empty reply.'), 'warning')
         return redirect(url_for('admin.pages'))
     push_message(p.user_id, current_user.username, text)
     p.answered = True
@@ -3041,31 +3021,31 @@ def file_echo_subs():
             file_area_id = request.form.get('file_area_id', type=int)
             peer = (request.form.get('peer_address') or '').strip()
             if not file_area_id or not parse_address(peer):
-                flash('Provide a file area and a valid FTN peer address.', 'danger')
+                flash(translate('admin.notice.ftn_required', 'Provide a file area and a valid FTN peer address.'), 'danger')
                 return redirect(url_for('admin.file_echo_subs'))
             existing = FileEchoSubscription.query.filter_by(
                 file_area_id=file_area_id, peer_address=peer).first()
             if existing:
-                flash('Subscription already exists.', 'warning')
+                flash(translate('admin.notice.subscription_exists', 'Subscription already exists.'), 'warning')
             else:
                 db.session.add(FileEchoSubscription(
                     file_area_id=file_area_id, peer_address=peer,
                     is_active=True))
                 db.session.commit()
-                flash(f'Subscription added: {peer} → file area #{file_area_id}.',
+                flash(translate('admin.notice.subscription_added', 'Subscription added: {peer} → file area #{file_area_id}.', peer=peer, file_area_id=file_area_id),
                       'success')
         elif action == 'toggle':
             sub_id = request.form.get('sub_id', type=int)
             sub = FileEchoSubscription.query.get_or_404(sub_id)
             sub.is_active = not bool(sub.is_active)
             db.session.commit()
-            flash('Subscription toggled.', 'success')
+            flash(translate('admin.notice.subscription_toggled', 'Subscription toggled.'), 'success')
         elif action == 'delete':
             sub_id = request.form.get('sub_id', type=int)
             sub = FileEchoSubscription.query.get_or_404(sub_id)
             db.session.delete(sub)
             db.session.commit()
-            flash('Subscription deleted.', 'success')
+            flash(translate('admin.notice.subscription_removed', 'Subscription deleted.'), 'success')
         return redirect(url_for('admin.file_echo_subs'))
 
     peer_filter = (request.args.get('peer_address') or '').strip()
@@ -3094,7 +3074,7 @@ def user_notes(user_id):
                 db.session.add(UserNote(
                     user_id=target.id, author_id=current_user.id, note=note))
                 db.session.commit()
-                flash('Note added.', 'success')
+                flash(translate('admin.notice.note_added', 'Note added.'), 'success')
         elif action == 'delete':
             note_id = request.form.get('note_id', type=int)
             n = UserNote.query.get_or_404(note_id)
@@ -3152,7 +3132,7 @@ def irc_presets():
             p = IrcPreset.query.get_or_404(request.form.get('preset_id', type=int))
             p.is_active = not p.is_active
             db.session.commit()
-            flash('Toggled.', 'success')
+            flash(translate('admin.notice.toggled', 'Toggled.'), 'success')
         elif action == 'delete':
             p = IrcPreset.query.get_or_404(request.form.get('preset_id', type=int))
             db.session.delete(p)
@@ -3295,7 +3275,7 @@ def virus_scan_admin():
             except OSError:
                 pass
         if quarantined:
-            flash(f'Quarantined {quarantined} infected file(s).', 'warning')
+            flash(translate('admin.notice.scan_quarantined', 'Quarantined {quarantined} infected file(s).', quarantined=quarantined), 'warning')
         else:
             flash(f'Scanned {len(results)} files — no infections.', 'success')
 
@@ -3322,10 +3302,10 @@ def dialout_admin():
                 is_active=bool(request.form.get('is_active')),
             )
             if not d.name or not d.hostname:
-                flash('Name + hostname required.', 'danger')
+                flash(translate('admin.notice.dialout_required', 'Name + hostname required.'), 'danger')
             else:
                 db.session.add(d); db.session.commit()
-                flash(f'Added {d.name}.', 'success')
+                flash(translate('admin.notice.dialout_added', 'Added {name}.', name=d.name), 'success')
         elif action == 'toggle':
             d = DialoutDestination.query.get_or_404(
                 request.form.get('dest_id', type=int))
@@ -3502,7 +3482,7 @@ def setup_wizard():
             db.session.rollback()
         except Exception:
             pass
-        flash(f'Setup wizard error: {exc}', 'danger')
+        flash(translate('admin.notice.setup_error', 'Setup wizard error: {exc}', exc=exc), 'danger')
         return render_template('admin/setup_wizard_error.html',
                                error=str(exc),
                                traceback=_tb.format_exc())
@@ -3535,7 +3515,7 @@ def _setup_wizard_impl():
                 _write_env_keys(_env_path(), {'BBS_NAME': bbs_name})
                 current_app.config['BBS_NAME'] = bbs_name
             except Exception as exc:
-                flash(f'BBS name update failed: {exc}', 'warning')
+                flash(translate('admin.notice.bbs_rename_failed', 'BBS name update failed: {exc}', exc=exc), 'warning')
 
         # Federation self-registration. The plumbing already exists for
         # daily heartbeats; this just persists the sysop's metadata to
@@ -3555,13 +3535,12 @@ def _setup_wizard_impl():
                 for k, v in env_updates.items():
                     current_app.config[k] = (v == 'true') if k == 'REGISTRY_SELF_REGISTER' else v
             except Exception as exc:
-                flash(f'Federation .env update failed: {exc}', 'warning')
+                flash(translate('admin.notice.federation_env_failed', 'Federation .env update failed: {exc}', exc=exc), 'warning')
             try:
                 from ..msp.registry_client import _tick as _registry_tick
                 result = _registry_tick(current_app._get_current_object())
                 if result.get('ok'):
-                    flash(f'Federation registration sent — check {sysop_email} '
-                          f'for the verification email from the hub.', 'success')
+                    flash(translate('admin.notice.federation_email_sent', 'Federation registration sent — check {sysop_email} for the verification email from the hub.', sysop_email=sysop_email), 'success')
                 else:
                     # Previously this showed the same "success" message
                     # regardless of what _tick() actually did -- including
@@ -3572,8 +3551,7 @@ def _setup_wizard_impl():
                           f'The daily heartbeat will retry once REGISTRY_URL is set.',
                           'warning')
             except Exception as exc:
-                flash(f'Saved sysop details, but the immediate registration '
-                      f'tick failed: {exc}. The daily heartbeat will retry.',
+                flash(translate('admin.notice.federation_tick_failed', 'Saved sysop details, but the immediate registration tick failed: {exc}. The daily heartbeat will retry.', exc=exc),
                       'info')
 
         # Each section is independent — one failure shouldn't abort the others.
@@ -3586,7 +3564,7 @@ def _setup_wizard_impl():
                 db.session.commit()
             except Exception as exc:
                 db.session.rollback()
-                flash(f'MOTD seeding skipped: {exc}', 'warning')
+                flash(translate('admin.notice.setup_motd_skipped', 'MOTD seeding skipped: {exc}', exc=exc), 'warning')
 
         if seed_dial:
             try:
@@ -3599,7 +3577,7 @@ def _setup_wizard_impl():
                 db.session.commit()
             except Exception as exc:
                 db.session.rollback()
-                flash(f'Dial-out seeding skipped: {exc}', 'warning')
+                flash(translate('admin.notice.setup_dialout_skipped', 'Dial-out seeding skipped: {exc}', exc=exc), 'warning')
 
         if request.form.get('seed_ansi') == 'on':
             try:
@@ -3618,9 +3596,9 @@ def _setup_wizard_impl():
                 db.session.commit()
             except Exception as exc:
                 db.session.rollback()
-                flash(f'ANSI sample seeding skipped: {exc}', 'warning')
+                flash(translate('admin.notice.setup_ansi_skipped', 'ANSI sample seeding skipped: {exc}', exc=exc), 'warning')
 
-        flash('Setup wizard complete — keep configuring from the admin menu.',
+        flash(translate('admin.notice.setup_done', 'Setup wizard complete — keep configuring from the admin menu.'),
               'success')
         return redirect(url_for('admin.dashboard'))
 

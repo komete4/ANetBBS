@@ -414,8 +414,7 @@
                 <label class="form-label" for="rlogin_bbs_tag">{{ t('admin.ui.bbs_tag_optional', 'BBS Tag (optional)') }}</label>
                 {{ form.rlogin_bbs_tag(class="form-control", placeholder="ANET", id="rlogin_bbs_tag") }}
                 <small style="color:#007700;">
-                    A short tag the remote server uses to namespace users by source
-                    BBS. Leave blank if the remote server doesn't use tags.
+                    {{ t('admin.advanced.a_short_tag_the_remote_server_uses_to_namespace_users_by_source_bbs_leave_blank_if_the_remote_server_doesn_t_use_tags', "A short tag the remote server uses to namespace users by source BBS. Leave blank if the remote server doesn't use tags.") }}
                 </small>
             </div>
         </div>

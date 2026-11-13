@@ -29,7 +29,7 @@
             {% for r in requests_list %}
                 <tr>
                     <td><code>{{ r.target_address }}</code></td>
-                    <td><code>{{ r.filename_pattern }}</code>{% if r.password %} <span class="text-muted small">(password set)</span>{% endif %}</td>
+                    <td><code>{{ r.filename_pattern }}</code>{% if r.password %} <span class="text-muted small">{{ t('admin.advanced.password_set_lowercase', '(password set)') }}</span>{% endif %}</td>
                     <td>
                         {% if r.status == 'sent' %}
                             <span class="badge bg-success">sent</span>

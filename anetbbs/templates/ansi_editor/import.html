@@ -30,7 +30,7 @@
         </div>
         <div class="mb-3">
             <label class="form-label">Name (optional)</label>
-            <input type="text" name="name" class="form-control" placeholder="(filename used if blank)">
+            <input type="text" name="name" class="form-control" placeholder="{{ t('admin.advanced.filename_used_if_blank_lowercase', '(filename used if blank)') }}">
         </div>
         <button class="btn btn-primary"><i class="bi bi-upload"></i> {{ t('admin.ui.import_edit', 'Import & Edit') }}</button>
         <a href="{{ url_for('ansi_editor.index') }}" class="btn btn-link">{{ t('ui.cancel', 'Cancel') }}</a>

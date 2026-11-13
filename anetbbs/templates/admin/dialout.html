@@ -5,7 +5,7 @@
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-telephone-outbound"></i> {{ t('ui.heading.dial_out_directory', 'Dial-Out Directory') }}</h1>
-    <p>BBSes that show up in the user's "Dial Out" menu (telnet/SSH/rlogin out).</p>
+    <p>{{ t('admin.advanced.bbses_that_show_up_in_the_user_s_dial_out_menu_telnet_ssh_rlogin_out', 'BBSes that show up in the user\'s "Dial Out" menu (telnet/SSH/rlogin out).') }}</p>
 </div>
 
 <div class="card mb-3">
@@ -16,7 +16,7 @@
             <input type="hidden" name="action" value="add">
             <div class="col-md-3"><label class="form-label">{{ t('ui.name', 'Name') }}</label>
                 <input type="text" name="name" class="form-control" required></div>
-            <div class="col-md-3"><label class="form-label">Hostname</label>
+            <div class="col-md-3"><label class="form-label">{{ t('admin.advanced.hostname', 'Hostname') }}</label>
                 <input type="text" name="hostname" class="form-control" required></div>
             <div class="col-md-1"><label class="form-label">{{ t('ui.port', 'Port') }}</label>
                 <input type="number" name="port" class="form-control" value="23"></div>
@@ -75,7 +75,7 @@
             </tbody>
         </table>
     {% else %}
-        <div class="p-3 text-muted">No destinations yet — defaults will be shown to users.</div>
+        <div class="p-3 text-muted">{{ t('admin.advanced.no_destinations_yet_defaults_will_be_shown_to_users_section', 'No destinations yet — defaults will be shown to users.') }}</div>
     {% endif %}
     </div>
 </div>

@@ -260,7 +260,7 @@
              data-role="listener-status">
             {% if not _down %}
                 <i class="bi bi-check-circle-fill"></i>
-                <span data-role="listener-summary-text">All listeners up ({{ _up|length }}/{{ s.ports|length }})</span>
+                <span data-role="listener-summary-text">{{ t('admin.advanced.all_listeners_up', 'All listeners up (') }}{{ _up|length }}/{{ s.ports|length }})</span>
             {% else %}
                 <i class="bi bi-exclamation-triangle-fill"></i>
                 <span data-role="listener-summary-text">

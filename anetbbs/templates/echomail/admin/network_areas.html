@@ -105,7 +105,7 @@
     <div class="card-body">
       <form method="POST" action="{{ url_for('echomail_admin.qwk_quick_add', network_id=network.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <label class="form-label">Paste lines as <code>confnum Name</code> (one per line)</label>
+        <label class="form-label">Paste lines as <code>confnum Name</code> {{ t('admin.advanced.one_per_line_lowercase', '(one per line)') }}</label>
         <textarea name="entries" rows="5" class="form-control form-control-sm font-monospace"
           placeholder="2001 General Discussion&#10;2002 Technology&#10;2003 BBS Scene"></textarea>
         <button class="btn btn-sm btn-primary mt-2">

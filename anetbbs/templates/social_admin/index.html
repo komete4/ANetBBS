@@ -58,7 +58,7 @@
             {% if p.image_path %}
             <img class="sp-thumb" src="{{ url_for('social_admin.image', post_id=p.id) }}" alt="">
             {% else %}
-            <div class="text-muted small fst-italic">(text only — no image)</div>
+            <div class="text-muted small fst-italic">{{ t('admin.advanced.text_only_no_image_lowercase_section', '(text only — no image)') }}</div>
             {% endif %}
           </div>
           <div class="col-md-8">
