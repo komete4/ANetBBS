@@ -26,6 +26,7 @@ from wtforms import (StringField, TextAreaField, SubmitField, IntegerField,
 from wtforms.validators import DataRequired, Length, Optional, NumberRange, Regexp
 from flask_wtf import FlaskForm
 
+from ..features.i18n import translate
 from ..models import (db, BinkPNode, EchoAreaNode, BinkPHoldQueue,
                        QWKNode, QWKNodeLastSent, EchoArea, EchomailNetwork,
                        QWKNodeRequest, NetworkJoinConfig, NetworkJoinRequest,
@@ -462,7 +463,7 @@ def new_binkp_node():
     _populate_network_choices(form)
     if form.validate_on_submit():
         if not form.password.data:
-            flash('Session password is required when creating a new node.', 'danger')
+            flash(translate('network_ui.hub_admin.password_required', 'Session password is required when creating a new node.'), 'danger')
             return render_template('echomail/admin/hub/binkp_node_form.html',
                                    form=form, node=None)
         # Point-notation-aware duplicate check -- a plain exact-string
@@ -485,7 +486,7 @@ def new_binkp_node():
         else:
             existing = BinkPNode.query.filter_by(ftn_address=new_address).first()
         if existing:
-            flash('A node with that FTN address already exists.', 'danger')
+            flash(translate('network_ui.hub_admin.address_exists', 'A node with that FTN address already exists.'), 'danger')
             return render_template('echomail/admin/hub/binkp_node_form.html',
                                    form=form, node=None)
         node = BinkPNode(
@@ -512,7 +513,7 @@ def new_binkp_node():
         db.session.commit()
         web_log_activity(current_user.id, 'hub_binkp_node_added',
                          details=f'{node.name} ({node.ftn_address})')
-        flash(f'Node {node.ftn_address} created.', 'success')
+        flash(translate('network_ui.hub_admin.binkp_created', 'Node {addr} created.', addr=node.ftn_address), 'success')
         return redirect(url_for('hub_admin.binkp_node_detail', node_id=node.id))
     return render_template('echomail/admin/hub/binkp_node_form.html',
                            form=form, node=None)
@@ -599,7 +600,7 @@ def edit_binkp_node(node_id):
         db.session.commit()
         web_log_activity(current_user.id, 'hub_binkp_node_edited',
                          details=f'{node.name} ({node.ftn_address})')
-        flash('Node updated.', 'success')
+        flash(translate('network_ui.hub_admin.binkp_updated', 'Node updated.'), 'success')
         return redirect(url_for('hub_admin.binkp_node_detail', node_id=node.id))
     return render_template('echomail/admin/hub/binkp_node_form.html',
                            form=form, node=node)
@@ -615,7 +616,7 @@ def delete_binkp_node(node_id):
     db.session.commit()
     web_log_activity(current_user.id, 'hub_binkp_node_deleted',
                      details=f'{name} ({ftn_address})')
-    flash(f'Node {ftn_address} deleted.', 'success')
+    flash(translate('network_ui.hub_admin.binkp_deleted', 'Node {addr} deleted.', addr=ftn_address), 'success')
     return redirect(url_for('hub_admin.binkp_nodes'))
 
 
@@ -710,7 +711,7 @@ def binkp_subscribe_all(node_id):
     node = BinkPNode.query.get_or_404(node_id)
     network_ids = request.form.getlist('network_ids', type=int)
     if not network_ids:
-        flash('Pick at least one network before subscribing to all its areas.', 'danger')
+        flash(translate('network_ui.hub_admin.pick_network', 'Pick at least one network before subscribing to all its areas.'), 'danger')
         return redirect(url_for('hub_admin.binkp_node_detail', node_id=node_id))
 
     already = {s.echo_area_id for s in node.subscriptions.all()}
@@ -858,12 +859,12 @@ def new_qwk_node():
     _populate_identity_choices(form)
     if form.validate_on_submit():
         if not form.password.data:
-            flash('Download password is required when creating a new node.', 'danger')
+            flash(translate('network_ui.hub_admin.download_password_required', 'Download password is required when creating a new node.'), 'danger')
             return render_template('echomail/admin/hub/qwk_node_form.html',
                                    form=form, node=None)
         pid = form.packet_id.data.strip().upper()
         if QWKNode.query.filter_by(packet_id=pid).first():
-            flash('A node with that Packet ID already exists.', 'danger')
+            flash(translate('network_ui.hub_admin.packet_id_exists', 'A node with that Packet ID already exists.'), 'danger')
             return render_template('echomail/admin/hub/qwk_node_form.html',
                                    form=form, node=None)
         node = QWKNode(
@@ -880,7 +881,7 @@ def new_qwk_node():
         db.session.commit()
         web_log_activity(current_user.id, 'hub_qwk_node_added',
                          details=f'{pid} ({node.name})')
-        flash(f'QWK node {pid} created.', 'success')
+        flash(translate('network_ui.hub_admin.qwk_created', 'QWK node {pid} created.', pid=pid), 'success')
         return redirect(url_for('hub_admin.qwk_node_detail', node_id=node.id))
     return render_template('echomail/admin/hub/qwk_node_form.html',
                            form=form, node=None)
@@ -930,7 +931,7 @@ def edit_qwk_node(node_id):
         conflict = QWKNode.query.filter(
             QWKNode.packet_id == pid, QWKNode.id != node_id).first()
         if conflict:
-            flash('Another node already uses that Packet ID.', 'danger')
+            flash(translate('network_ui.hub_admin.packet_id_in_use', 'Another node already uses that Packet ID.'), 'danger')
             return render_template('echomail/admin/hub/qwk_node_form.html',
                                    form=form, node=node)
         node.packet_id = pid
@@ -945,7 +946,7 @@ def edit_qwk_node(node_id):
         db.session.commit()
         web_log_activity(current_user.id, 'hub_qwk_node_edited',
                          details=f'{node.packet_id} ({node.name})')
-        flash('QWK node updated.', 'success')
+        flash(translate('network_ui.hub_admin.qwk_updated', 'QWK node updated.'), 'success')
         return redirect(url_for('hub_admin.qwk_node_detail', node_id=node.id))
     return render_template('echomail/admin/hub/qwk_node_form.html',
                            form=form, node=node)
@@ -961,7 +962,7 @@ def delete_qwk_node(node_id):
     db.session.commit()
     web_log_activity(current_user.id, 'hub_qwk_node_deleted',
                      details=f'{packet_id} ({name})')
-    flash(f'QWK node {packet_id} deleted.', 'success')
+    flash(translate('network_ui.hub_admin.qwk_deleted', 'QWK node {pid} deleted.', pid=packet_id), 'success')
     return redirect(url_for('hub_admin.qwk_nodes'))
 
 
@@ -1061,7 +1062,7 @@ def qwk_subscribe_all(node_id):
     node = QWKNode.query.get_or_404(node_id)
     network_ids = request.form.getlist('network_ids', type=int)
     if not network_ids:
-        flash('Pick at least one network before subscribing to all its areas.', 'danger')
+        flash(translate('network_ui.hub_admin.pick_network', 'Pick at least one network before subscribing to all its areas.'), 'danger')
         return redirect(url_for('hub_admin.qwk_node_detail', node_id=node_id))
 
     already = {s.echo_area_id for s in
@@ -1110,7 +1111,7 @@ def qwk_reset_hwm(node_id):
         if row:
             row.last_message_id = None
             db.session.commit()
-            flash('High-water mark reset — node will receive all messages on next poll.', 'success')
+            flash(translate('network_ui.hub_admin.watermark_reset', 'High-water mark reset — node will receive all messages on next poll.'), 'success')
     return redirect(url_for('hub_admin.qwk_node_detail', node_id=node_id))
 
 

@@ -16,7 +16,7 @@
         <div class="mb-3">
           <label class="form-label fw-semibold">{{ t('ui.bbs_name', 'BBS Name') }} <span class="text-danger">*</span></label>
           <input type="text" name="name" class="form-control" required maxlength="120"
-                 placeholder="e.g. The Rusty Mailbox">
+                 placeholder="{{ t('network_ui.bbs_name_example', 'e.g. The Rusty Mailbox') }}">
         </div>
 
         <div class="row g-2 mb-3">
@@ -48,13 +48,13 @@
         <div class="mb-3">
           <label class="form-label fw-semibold">{{ t('web.user.bbs_software', 'BBS Software') }}</label>
           <input type="text" name="software" class="form-control" maxlength="80"
-                 placeholder="e.g. ANetBBS, Synchronet, Mystic, …">
+                 placeholder="{{ t('network_ui.bbs_software_example', 'e.g. ANetBBS, Synchronet, Mystic, …') }}">
         </div>
 
         <div class="mb-3">
           <label class="form-label fw-semibold">{{ t('ui.description', 'Description') }}</label>
           <textarea name="description" class="form-control" rows="3" maxlength="500"
-                    placeholder="A short description of your BBS — themes, focus areas, special features."></textarea>
+                    placeholder="{{ t('network_ui.bbs_description', 'A short description of your BBS — themes, focus areas, special features.') }}"></textarea>
         </div>
 
         <div class="d-flex gap-2">

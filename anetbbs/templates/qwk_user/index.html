@@ -39,12 +39,11 @@
     <div class="card-header"><i class="bi bi-info-circle"></i> {{ t('web.user.how_to_use_a_qwk_reader', 'How to use a QWK reader') }}</div>
     <div class="card-body">
         <ol class="small">
-            <li>Click <strong>{{ t('ui.download', 'Download') }}</strong> above to grab the latest packet.</li>
-            <li>Open the .QWK file in MultiMail, BlueWave, OLX, etc.</li>
+            <li>{{ t('network_ui.qwk_step_download', 'Click {button} above to grab the latest packet.', button=t('ui.download', 'Download')) }}</li>
+            <li>{{ t('network_ui.open_qwk', 'Open the .QWK file in MultiMail, BlueWave, OLX, etc.') }}</li>
             <li>{{ t('web.user.read_messages_hit_reply_write_your_response_sentence', 'Read messages, hit reply, write your response.') }}</li>
-            <li>Save the resulting .REP file.</li>
-            <li>Upload it here. Replies are filed as outbound echomail and
-                propagated to the network on the next poll.</li>
+            <li>{{ t('network_ui.save_rep', 'Save the resulting .REP file.') }}</li>
+            <li>{{ t('network_ui.send_rep', 'Upload it here. Replies are filed as outbound echomail and propagated to the network on the next poll.') }}</li>
         </ol>
     </div>
 </div>

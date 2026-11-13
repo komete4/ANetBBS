@@ -9,7 +9,7 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-diagram-3"></i> {% if network %}Edit Network: {{ network.name }}{% else %}{{ t('admin.ui.add_network', 'Add Network') }}{% endif %}</h1>
+    <h1><i class="bi bi-diagram-3"></i> {% if network %}{{ t('network_ui.edit_network', 'Edit Network: {name}', name=network.name) }}{% else %}{{ t('admin.ui.add_network', 'Add Network') }}{% endif %}</h1>
 </div>
 
 <a href="{{ url_for('echomail_admin.networks') }}" class="btn btn-primary btn-sm mb-3">
@@ -17,7 +17,7 @@
 </a>
 
 <div class="card">
-    <div class="card-header"><i class="bi bi-gear"></i> Network Configuration</div>
+    <div class="card-header"><i class="bi bi-gear"></i> {{ t('network_ui.config', 'Network Configuration') }}</div>
     <div class="card-body">
         <form method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -25,22 +25,22 @@
 
             <div class="row g-3 mb-3">
                 <div class="col-md-6">
-                    {{ form.name.label(class="form-label") }}
+                    {{ form.name.label(text=t('network_ui.form.name', form.name.label.text), class="form-label") }}
                     {{ form.name(class="form-control") }}
                     {% for e in form.name.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
                 </div>
                 <div class="col-md-3">
-                    {{ form.network_type.label(class="form-label") }}
+                    {{ form.network_type.label(text=t('network_ui.form.network_type', form.network_type.label.text), class="form-label") }}
                     {{ form.network_type(class="form-control", id="network_type") }}
                 </div>
                 <div class="col-md-3">
-                    {{ form.poll_interval_minutes.label(class="form-label") }}
+                    {{ form.poll_interval_minutes.label(text=t('network_ui.form.poll_interval_minutes', form.poll_interval_minutes.label.text), class="form-label") }}
                     {{ form.poll_interval_minutes(class="form-control") }}
                 </div>
             </div>
 
             <div class="mb-3">
-                {{ form.description.label(class="form-label") }}
+                {{ form.description.label(text=t('network_ui.form.description', form.description.label.text), class="form-label") }}
                 {{ form.description(class="form-control", rows=2) }}
             </div>
 
@@ -52,9 +52,9 @@
             <div class="mb-3 form-check">
                 {{ form.require_real_name_netmail(class="form-check-input") }}
                 <label class="form-check-label" for="require_real_name_netmail" style="color:#ffcc00;">
-                    Require real name for netmail
+                    {{ t('network_ui.real_name', 'Require real name for netmail') }}
                 </label>
-                <div class="form-text" style="font-size:.7rem;">{{ form.require_real_name_netmail.description }}</div>
+                <div class="form-text" style="font-size:.7rem;">{{ t('network_ui.form.require_real_name_netmail_help', form.require_real_name_netmail.description) }}</div>
             </div>
 
             <!-- BinkP fields -->
@@ -65,108 +65,98 @@
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-8">
-                            {{ form.binkp_host.label(class="form-label") }}
+                            {{ form.binkp_host.label(text=t('network_ui.form.binkp_host', form.binkp_host.label.text), class="form-label") }}
                             {{ form.binkp_host(class="form-control", placeholder="binkp.example.com") }}
                         </div>
                         <div class="col-md-4">
-                            {{ form.binkp_port.label(class="form-label") }}
+                            {{ form.binkp_port.label(text=t('network_ui.form.binkp_port', form.binkp_port.label.text), class="form-label") }}
                             {{ form.binkp_port(class="form-control") }}
                         </div>
                     </div>
                     <div class="row g-3 mt-1">
                         <div class="col-md-4">
-                            {{ form.our_address.label(class="form-label") }}
+                            {{ form.our_address.label(text=t('network_ui.form.our_address', form.our_address.label.text), class="form-label") }}
                             {{ form.our_address(class="form-control", placeholder="1:234/567") }}
                         </div>
                         <div class="col-md-4">
-                            {{ form.hub_address.label(class="form-label") }}
+                            {{ form.hub_address.label(text=t('network_ui.form.hub_address', form.hub_address.label.text), class="form-label") }}
                             {{ form.hub_address(class="form-control", placeholder="1:234/0") }}
                         </div>
                         <div class="col-md-4">
-                            {{ form.binkp_password.label(class="form-label") }}
+                            {{ form.binkp_password.label(text=t('network_ui.form.binkp_password', form.binkp_password.label.text), class="form-label") }}
                             {{ form.binkp_password(class="form-control",
-                                placeholder="(leave blank to keep current)") }}
+                                placeholder=t('network_ui.keep_current', '(leave blank to keep current)')) }}
                         </div>
                     </div>
                     <div class="row g-3 mt-1">
                         <div class="col-md-4">
-                            {{ form.ftn_domain.label(class="form-label") }}
-                            {{ form.ftn_domain(class="form-control", placeholder="e.g. anet") }}
+                            {{ form.ftn_domain.label(text=t('network_ui.form.ftn_domain', form.ftn_domain.label.text), class="form-label") }}
+                            {{ form.ftn_domain(class="form-control", placeholder=t('network_ui.ftn_example', 'e.g. anet')) }}
                             {% for e in form.ftn_domain.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
                             <div class="form-text">
-                                Optional. Without this, the qualified BinkP
-                                address (addr@domain) derives its domain from
-                                the network name above, truncated to 8 chars
-                                — can look awkward for a long name.
+                                {{ t('network_ui.ftn_help', 'Optional. Without this, the qualified BinkP address (addr@domain) derives its domain from the network name above, truncated to 8 chars — can look awkward for a long name.') }}
                             </div>
                         </div>
                     </div>
                     <div class="row g-3 mt-1">
                         <div class="col-md-6">
-                            {{ form.areafix_password.label(class="form-label") }}
+                            {{ form.areafix_password.label(text=t('network_ui.form.areafix_password', form.areafix_password.label.text), class="form-label") }}
                             {{ form.areafix_password(class="form-control",
-                                placeholder="(leave blank to reuse BinkP password)") }}
+                                placeholder=t('network_ui.reuse_binkp', '(leave blank to reuse BinkP password)')) }}
                             <div class="form-text">
-                                Many hubs use a separate password for AreaFix
-                                requests. Set this if the hub's AreaFix bot
-                                rejects you with "Invalid password" while
-                                BinkP itself authenticates fine.
+                                {{ t('network_ui.areafix_help', 'Many hubs use a separate password for AreaFix requests. Set this if the hub\'s AreaFix bot rejects you with "Invalid password" while BinkP itself authenticates fine.') }}
                             </div>
                         </div>
                     </div>
                     <div class="row g-3 mt-1">
                         <div class="col-md-6">
-                            {{ form.packet_password.label(class="form-label") }}
+                            {{ form.packet_password.label(text=t('network_ui.form.packet_password', form.packet_password.label.text), class="form-label") }}
                             {{ form.packet_password(class="form-control",
-                                placeholder="(leave blank to keep current / no packet password)") }}
+                                placeholder=t('network_ui.keep_packet', '(leave blank to keep current / no packet password)')) }}
                             <div class="form-text">
-                                FTS-0001 packet-header password, separate from
-                                the BinkP session password above. Only needed
-                                if this hub's tosser checks it independently.
+                                {{ t('network_ui.packet_help', "FTS-0001 packet-header password, separate from the BinkP session password above. Only needed if this hub's tosser checks it independently.") }}
                             </div>
                         </div>
                     </div>
                     <div class="row g-3 mt-1">
-                        <div class="col-12"><label class="form-label mb-0">Outbound Netmail Flavor Defaults</label>
+                        <div class="col-12"><label class="form-label mb-0">{{ t('network_ui.flavor_title', 'Outbound Netmail Flavor Defaults') }}</label>
                             <div class="form-text mt-0 mb-1">
-                                Applied to every outbound netmail routed through
-                                this network. Independently selectable — pick
-                                any combination.
+                                {{ t('network_ui.flavor_help', 'Applied to every outbound netmail routed through this network. Independently selectable — pick any combination.') }}
                             </div>
                         </div>
                         <div class="col-md-4 form-check">
                             {{ form.default_crash(class="form-check-input") }}
-                            {{ form.default_crash.label(class="form-check-label ms-1") }}
+                            {{ form.default_crash.label(text=t('network_ui.form.default_crash', form.default_crash.label.text), class="form-check-label ms-1") }}
                         </div>
                         <div class="col-md-4 form-check">
                             {{ form.default_hold(class="form-check-input") }}
-                            {{ form.default_hold.label(class="form-check-label ms-1") }}
+                            {{ form.default_hold.label(text=t('network_ui.form.default_hold', form.default_hold.label.text), class="form-check-label ms-1") }}
                         </div>
                         <div class="col-md-4 form-check">
                             {{ form.default_direct(class="form-check-input") }}
-                            {{ form.default_direct.label(class="form-check-label ms-1") }}
+                            {{ form.default_direct.label(text=t('network_ui.form.default_direct', form.default_direct.label.text), class="form-check-label ms-1") }}
                         </div>
                         <div class="col-md-6 form-check mt-1">
                             {{ form.compress_outbound(class="form-check-input") }}
-                            {{ form.compress_outbound.label(class="form-check-label ms-1") }}
+                            {{ form.compress_outbound.label(text=t('network_ui.form.compress_outbound', form.compress_outbound.label.text), class="form-check-label ms-1") }}
                         </div>
                     </div>
                     <div class="row g-3 mt-1">
                         <div class="col-md-6">
-                            {{ form.default_recipient.label(class="form-label") }}
+                            {{ form.default_recipient.label(text=t('network_ui.form.default_recipient', form.default_recipient.label.text), class="form-label") }}
                             {{ form.default_recipient(class="form-control",
-                                placeholder="e.g. SYSOP — for unaddressed netmail") }}
+                                placeholder=t('network_ui.recipient_example', 'e.g. SYSOP — for unaddressed netmail')) }}
                         </div>
                         <div class="col-md-3 form-check d-flex align-items-end">
                             <div>
                                 {{ form.cram_md5(class="form-check-input") }}
-                                {{ form.cram_md5.label(class="form-check-label ms-1") }}
+                                {{ form.cram_md5.label(text=t('network_ui.form.cram_md5', form.cram_md5.label.text), class="form-check-label ms-1") }}
                             </div>
                         </div>
                         <div class="col-md-3 form-check d-flex align-items-end">
                             <div>
                                 {{ form.binkp_tls(class="form-check-input") }}
-                                {{ form.binkp_tls.label(class="form-check-label ms-1") }}
+                                {{ form.binkp_tls.label(text=t('network_ui.form.binkp_tls', form.binkp_tls.label.text), class="form-check-label ms-1") }}
                             </div>
                         </div>
                     </div>
@@ -176,57 +166,57 @@
             <!-- QWK fields -->
             <div id="qwk-fields" class="card mb-3" style="border-color:#006600;">
                 <div class="card-header" style="background:#001100; border-color:#006600;">
-                    <i class="bi bi-envelope-paper"></i> QWK (Dove-Net) Settings
+                    <i class="bi bi-envelope-paper"></i> {{ t('network_ui.qwk_settings', 'QWK (Dove-Net) Settings') }}
                 </div>
                 <div class="card-body">
                     <div class="alert alert-info py-2 small mb-3">
-                        <strong>Two IDs, two different purposes:</strong>
+                        <strong>{{ t('network_ui.two_ids', 'Two IDs, two different purposes:') }}</strong>
                         <ul class="mb-0 mt-1">
-                            <li><strong>{{ t('admin.ui.hub_system_id', 'Hub System ID') }}</strong> = the hub's own ID (e.g. <code>VERT</code> for vert.synchro.net). Controls the download filename (<code>VERT.qwk</code>), upload filename (<code>VERT.rep</code>), and inner MSG file (<code>VERT.MSG</code>). The hub rejects the REP silently if this is wrong.</li>
-                            <li><strong>{{ t('ui.packet_id', 'Packet ID') }}</strong> = YOUR BBS's registered node ID on the hub (e.g. <code>ANETBBS</code>). Used for FTP login identity and message IDs. Does NOT go in the filenames.</li>
+                            <li><strong>{{ t('admin.ui.hub_system_id', 'Hub System ID') }}</strong> {{ t('network_ui.hub_id_help', "= the hub's own ID (e.g. VERT for vert.synchro.net). Controls the download filename (VERT.qwk), upload filename (VERT.rep), and inner MSG file (VERT.MSG). The hub rejects the REP silently if this is wrong.") }}</li>
+                            <li><strong>{{ t('ui.packet_id', 'Packet ID') }}</strong> {{ t('network_ui.node_id_help', "= YOUR BBS's registered node ID on the hub (e.g. ANETBBS). Used for FTP login identity and message IDs. Does NOT go in the filenames.") }}</li>
                         </ul>
                     </div>
                     <div class="row g-3">
                         <div class="col-md-5">
-                            {{ form.qwk_host.label(class="form-label") }}
+                            {{ form.qwk_host.label(text=t('network_ui.form.qwk_host', form.qwk_host.label.text), class="form-label") }}
                             {{ form.qwk_host(class="form-control", placeholder="dove.synchro.net") }}
                         </div>
                         <div class="col-md-2">
-                            {{ form.qwk_port.label(class="form-label") }}
+                            {{ form.qwk_port.label(text=t('network_ui.form.qwk_port', form.qwk_port.label.text), class="form-label") }}
                             {{ form.qwk_port(class="form-control") }}
                         </div>
                         <div class="col-md-2">
-                            {{ form.qwk_hub_id.label(class="form-label") }}
+                            {{ form.qwk_hub_id.label(text=t('network_ui.form.qwk_hub_id', form.qwk_hub_id.label.text), class="form-label") }}
                             {{ form.qwk_hub_id(class="form-control", placeholder="VERT") }}
-                            <div class="form-text">Hub's ID — e.g. <code>VERT</code></div>
+                            <div class="form-text">{{ t('network_ui.hub_id_example', "Hub's ID — e.g. VERT") }}</div>
                         </div>
                         <div class="col-md-3">
-                            {{ form.qwk_packet_id.label(class="form-label") }}
+                            {{ form.qwk_packet_id.label(text=t('network_ui.form.qwk_packet_id', form.qwk_packet_id.label.text), class="form-label") }}
                             {{ form.qwk_packet_id(class="form-control", placeholder="MYBBS") }}
-                            <div class="form-text">Your node ID — e.g. <code>ANETBBS</code></div>
+                            <div class="form-text">{{ t('network_ui.node_id_example', 'Your node ID — e.g. ANETBBS') }}</div>
                         </div>
                     </div>
                     <div class="row g-3 mt-1">
                         <div class="col-md-6">
-                            {{ form.qwk_username.label(class="form-label") }}
+                            {{ form.qwk_username.label(text=t('network_ui.form.qwk_username', form.qwk_username.label.text), class="form-label") }}
                             {{ form.qwk_username(class="form-control") }}
                             <div class="form-text">{{ t('admin.ui.ftp_login_username_assigned_by_the_hub', 'FTP login username assigned by the hub') }}</div>
                         </div>
                         <div class="col-md-6">
-                            {{ form.qwk_password.label(class="form-label") }}
+                            {{ form.qwk_password.label(text=t('network_ui.form.qwk_password', form.qwk_password.label.text), class="form-label") }}
                             {{ form.qwk_password(class="form-control", autocomplete="new-password") }}
                         </div>
                     </div>
                     <div class="row g-3 mt-1">
                         <div class="col-md-6">
-                            {{ form.qwk_download_url.label(class="form-label") }}
-                            {{ form.qwk_download_url(class="form-control", placeholder="Leave blank for Dove-Net auto-default") }}
-                            <div class="form-text">Leave blank — auto: <code>ftp://dove.synchro.net/{hub_id}.qwk</code></div>
+                            {{ form.qwk_download_url.label(text=t('network_ui.form.qwk_download_url', form.qwk_download_url.label.text), class="form-label") }}
+                            {{ form.qwk_download_url(class="form-control", placeholder=t('network_ui.auto_qwk', 'Leave blank for Dove-Net auto-default')) }}
+                            <div class="form-text">{{ t('network_ui.url_auto_help', 'Leave blank — auto:') }} <code>ftp://dove.synchro.net/{hub_id}.qwk</code></div>
                         </div>
                         <div class="col-md-6">
-                            {{ form.qwk_upload_url.label(class="form-label") }}
-                            {{ form.qwk_upload_url(class="form-control", placeholder="Leave blank for Dove-Net auto-default") }}
-                            <div class="form-text">Leave blank — auto: <code>ftp://dove.synchro.net/{hub_id}.rep</code></div>
+                            {{ form.qwk_upload_url.label(text=t('network_ui.form.qwk_upload_url', form.qwk_upload_url.label.text), class="form-label") }}
+                            {{ form.qwk_upload_url(class="form-control", placeholder=t('network_ui.auto_qwk', 'Leave blank for Dove-Net auto-default')) }}
+                            <div class="form-text">{{ t('network_ui.url_auto_help', 'Leave blank — auto:') }} <code>ftp://dove.synchro.net/{hub_id}.rep</code></div>
                         </div>
                     </div>
                 </div>
@@ -236,7 +226,7 @@
                 <a href="{{ url_for('echomail_admin.networks') }}" class="btn btn-primary">
                     <i class="bi bi-x-circle"></i> {{ t('ui.cancel', 'Cancel') }}
                 </a>
-                {{ form.submit(class="btn btn-primary") }}
+                {{ form.submit(value=t('network_ui.form.submit', form.submit.label.text), class="btn btn-primary") }}
             </div>
         </form>
     </div>

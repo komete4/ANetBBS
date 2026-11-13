@@ -12,6 +12,7 @@ from flask import (Blueprint, render_template, request, redirect, url_for,
                    flash, abort, current_app)
 from flask_login import login_required, current_user
 
+from ..features.i18n import translate
 from ..models import db, Nodelist, NodelistEntry
 from ..echomail.nodelist import import_from_path, search
 
@@ -54,7 +55,7 @@ def admin_upload():
         upload = request.files.get('nodelist_file')
         domain = (request.form.get('domain') or 'fidonet').strip().lower()
         if not upload or not upload.filename:
-            flash('No file uploaded.', 'danger')
+            flash(translate('network_ui.nodelist.file_missing', 'No file uploaded.'), 'danger')
             return redirect(url_for('nodelist.admin_upload'))
 
         # Save to a tempfile so the parser can read it. Use the uploaded
@@ -66,12 +67,11 @@ def admin_upload():
                 upload.save(fh)
             nl = import_from_path(tmp, domain=domain)
             flash(
-                f'Imported {nl.entry_count} entries '
-                f'(day {nl.day_of_year}, domain {domain}).',
+                translate('network_ui.nodelist.imported', 'Imported {count} entries (day {day}, domain {domain}).', count=nl.entry_count, day=nl.day_of_year, domain=domain),
                 'success')
         except Exception as exc:
             db.session.rollback()
-            flash(f'Import failed: {exc}', 'danger')
+            flash(translate('network_ui.nodelist.import_failed', 'Import failed: {error}', error=exc), 'danger')
             current_app.logger.exception('Nodelist import failed')
         finally:
             try: os.unlink(tmp)

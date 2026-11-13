@@ -14,6 +14,7 @@ from wtforms.validators import DataRequired, Length, Optional, NumberRange, Vali
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
 
+from ..features.i18n import translate
 from ..models import (db, EchomailNetwork, EchoArea, EchomailMessage,
                        EchomailPollLog, BadAreaLog, UserAka, BinkPNode,
                        FreqRequest)
@@ -162,12 +163,13 @@ class EchoAreaForm(FlaskForm):
         network = EchomailNetwork.query.get(self.network_id.data)
         if network and network.network_type == 'qwk':
             if not (field.data or '').strip().isdigit():
-                raise ValidationError(
+                raise ValidationError(translate(
+                    'network_ui.echomail_admin.qwk_tag_number',
                     'QWK areas must use a plain numeric conference number '
                     'as the tag (e.g. "2010"), not a symbolic name -- QWK\'s '
                     'wire format has no field for anything else, and a '
                     'symbolic tag here means posts silently vanish instead '
-                    'of being delivered.')
+                    'of being delivered.'))
 
 
 class BulkImportForm(FlaskForm):
@@ -313,7 +315,7 @@ def new_network():
         )
         db.session.add(network)
         db.session.commit()
-        flash(f'Network "{network.name}" created.', 'success')
+        flash(translate('network_ui.echomail_admin.network_created', 'Network "{name}" created.', name=network.name), 'success')
         return redirect(url_for('echomail_admin.networks'))
     return render_template('echomail/admin/network_form.html', form=form, network=None)
 
@@ -342,7 +344,7 @@ def edit_network(network_id):
         if not (form.packet_password.data or '').strip():
             network.packet_password = prior_packet_password
         db.session.commit()
-        flash(f'Network "{network.name}" updated.', 'success')
+        flash(translate('network_ui.echomail_admin.network_updated', 'Network "{name}" updated.', name=network.name), 'success')
         return redirect(url_for('echomail_admin.networks'))
     return render_template('echomail/admin/network_form.html', form=form, network=network)
 
@@ -355,7 +357,7 @@ def delete_network(network_id):
     name = network.name
     db.session.delete(network)
     db.session.commit()
-    flash(f'Network "{name}" deleted.', 'success')
+    flash(translate('network_ui.echomail_admin.network_deleted', 'Network "{name}" deleted.', name=name), 'success')
     return redirect(url_for('echomail_admin.networks'))
 
 
@@ -376,7 +378,7 @@ def poll_now(network_id):
 
     t = threading.Thread(target=run, daemon=True)
     t.start()
-    flash('Poll triggered — check poll logs for results.', 'info')
+    flash(translate('network_ui.echomail_admin.poll', 'Poll triggered — check poll logs for results.'), 'info')
     return redirect(url_for('echomail_admin.networks'))
 
 
@@ -453,7 +455,7 @@ def test_connection(network_id):
                 flash(f'QWK HTTP reachable: {network.qwk_host}:{network.qwk_port}.',
                       'success')
     except Exception as exc:
-        flash(f'Connection test failed: {exc}', 'danger')
+        flash(translate('network_ui.echomail_admin.connection_failed', 'Connection test failed: {error}', error=exc), 'danger')
     return redirect(url_for('echomail_admin.networks'))
 
 
@@ -521,7 +523,7 @@ def bulk_area_action():
     lvl        = request.form.get('access_level', type=int)
 
     if not area_ids:
-        flash('No areas selected.', 'warning')
+        flash(translate('network_ui.echomail_admin.no_areas', 'No areas selected.'), 'warning')
         return _back_to_areas(network_id)
 
     target = EchoArea.query.filter(EchoArea.id.in_(area_ids)).all()
@@ -595,7 +597,7 @@ def new_area():
         )
         db.session.add(area)
         db.session.commit()
-        flash(f'Echo area "{area.name}" created.', 'success')
+        flash(translate('network_ui.echomail_admin.area_created', 'Echo area "{name}" created.', name=area.name), 'success')
         return redirect(url_for('echomail_admin.areas'))
     return render_template('echomail/admin/area_form.html', form=form, area=None)
 
@@ -611,7 +613,7 @@ def edit_area(area_id):
     if form.validate_on_submit():
         form.populate_obj(area)
         db.session.commit()
-        flash(f'Echo area "{area.name}" updated.', 'success')
+        flash(translate('network_ui.echomail_admin.area_updated', 'Echo area "{name}" updated.', name=area.name), 'success')
         return _back_to_areas(net_id)
     return render_template('echomail/admin/area_form.html', form=form, area=area)
 
@@ -625,7 +627,7 @@ def delete_area(area_id):
     net_id = area.network_id
     db.session.delete(area)
     db.session.commit()
-    flash(f'Echo area "{name}" deleted.', 'success')
+    flash(translate('network_ui.echomail_admin.area_deleted', 'Echo area "{name}" deleted.', name=name), 'success')
     return _back_to_areas(net_id)
 
 
@@ -735,11 +737,11 @@ def custom_areafix(network_id):
         return _back_to_areas(network_id)
     body = (request.form.get('body') or '').strip()
     if not body:
-        flash('Type one or more AreaFix command lines into the body field.',
+        flash(translate('network_ui.echomail_admin.areafix_body', 'Type one or more AreaFix command lines into the body field.'),
               'warning')
         return _back_to_areas(network_id)
     if not network.hub_address:
-        flash('Network has no hub_address configured.', 'danger')
+        flash(translate('network_ui.echomail_admin.address_missing', 'Network has no hub_address configured.'), 'danger')
         return _back_to_areas(network_id)
     af_pw = (getattr(network, 'areafix_password', None) or '').strip()
     if not af_pw:
@@ -847,7 +849,7 @@ def bulk_import():
                 flash(f'Could not read uploaded file: {exc}', 'danger')
                 return render_template('echomail/admin/bulk_import.html', form=form)
         if not text.strip():
-            flash('Paste an echo list or upload a backbone file.', 'warning')
+            flash(translate('network_ui.echomail_admin.paste_list', 'Paste an echo list or upload a backbone file.'), 'warning')
             return render_template('echomail/admin/bulk_import.html', form=form)
 
         entries = _parse_backbone(text)
@@ -868,7 +870,7 @@ def bulk_import():
             db.session.add(area)
             imported += 1
         db.session.commit()
-        flash(f'Imported {imported} areas, skipped {skipped} duplicates.',
+        flash(translate('network_ui.echomail_admin.areas_imported', 'Imported {imported} areas, skipped {skipped} duplicates.', imported=imported, skipped=skipped),
               'success')
         return _back_to_areas(form.network_id.data)
     return render_template('echomail/admin/bulk_import.html', form=form)
@@ -1134,11 +1136,11 @@ def network_areafix(network_id):
     plus_tags = [t for t in plus_raw.replace(',', ' ').split() if t]
     minus_tags = [t for t in minus_raw.replace(',', ' ').split() if t]
     if not plus_tags and not minus_tags:
-        flash('Enter at least one + or - tag.', 'warning')
+        flash(translate('network_ui.echomail_admin.no_plus_minus', 'Enter at least one + or - tag.'), 'warning')
         return _back_to_areas(network_id)
 
     if network.network_type != 'binkp':
-        flash('AreaFix requests are only supported on BinkP networks.', 'warning')
+        flash(translate('network_ui.echomail_admin.areafix_only', 'AreaFix requests are only supported on BinkP networks.'), 'warning')
         return _back_to_areas(network_id)
 
     from ..echomail.areafix import send_areafix_request
@@ -1186,7 +1188,7 @@ def qwk_quick_add(network_id):
     """
     network = EchomailNetwork.query.get_or_404(network_id)
     if network.network_type != 'qwk':
-        flash('Quick-add is for QWK networks only.', 'warning')
+        flash(translate('network_ui.echomail_admin.qwk_only', 'Quick-add is for QWK networks only.'), 'warning')
         return _back_to_areas(network_id)
 
     text = request.form.get('entries', '') or ''
@@ -1228,7 +1230,7 @@ def qwk_quick_add(network_id):
             ))
             added += 1
     db.session.commit()
-    flash(f'QWK areas: added {added}, updated {updated}, skipped {skipped}.',
+    flash(translate('network_ui.echomail_admin.qwk_areas', 'QWK areas: added {added}, updated {updated}, skipped {skipped}.', added=added, updated=updated, skipped=skipped),
           'success')
     return _back_to_areas(network_id)
 
@@ -1284,7 +1286,7 @@ def akas():
             existing = UserAka.query.filter_by(
                 user_id=current_user.id, address=addr).first()
             if existing:
-                flash('That AKA already exists.', 'warning')
+                flash(translate('network_ui.echomail_admin.aka_exists', 'That AKA already exists.'), 'warning')
                 return redirect(url_for('echomail_admin.akas'))
             aka = UserAka(user_id=current_user.id, address=addr, domain=domain)
             if not UserAka.query.filter_by(user_id=current_user.id).first():

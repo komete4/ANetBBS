@@ -19,29 +19,29 @@
 
             <div class="row g-3 mb-3">
                 <div class="col-md-4">
-                    {{ form.network_id.label(class="form-label") }}
+                    {{ form.network_id.label(text=t('network_ui.area.network_id', form.network_id.label.text), class="form-label") }}
                     {{ form.network_id(class="form-control") }}
                     {% for e in form.network_id.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
                 </div>
                 <div class="col-md-4">
-                    {{ form.tag.label(class="form-label") }}
+                    {{ form.tag.label(text=t('network_ui.area.tag', form.tag.label.text), class="form-label") }}
                     {{ form.tag(class="form-control", placeholder="FIDO_GENERAL") }}
                     {% for e in form.tag.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
                 </div>
                 <div class="col-md-4">
-                    {{ form.order.label(class="form-label") }}
+                    {{ form.order.label(text=t('network_ui.area.order', form.order.label.text), class="form-label") }}
                     {{ form.order(class="form-control") }}
                 </div>
             </div>
 
             <div class="mb-3">
-                {{ form.name.label(class="form-label") }}
+                {{ form.name.label(text=t('network_ui.area.name', form.name.label.text), class="form-label") }}
                 {{ form.name(class="form-control", placeholder="General Discussion") }}
                 {% for e in form.name.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
             </div>
 
             <div class="mb-3">
-                {{ form.description.label(class="form-label") }}
+                {{ form.description.label(text=t('network_ui.area.description', form.description.label.text), class="form-label") }}
                 {{ form.description(class="form-control", rows=2) }}
             </div>
 
@@ -61,33 +61,33 @@
                             <label class="form-check-label" for="is_subscribed" style="color:#44aaff;">
                                 <i class="bi bi-bell"></i> {{ t('ui.subscribed', 'Subscribed') }}
                             </label>
-                            <div class="form-text" style="font-size:.7rem;">Receive messages from hub/upstream</div>
+                            <div class="form-text" style="font-size:.7rem;">{{ t('network_ui.upstream', 'Receive messages from hub/upstream') }}</div>
                         </div>
                         <div class="form-check">
                             {{ form.is_sysop_only(class="form-check-input") }}
                             <label class="form-check-label" for="is_sysop_only" style="color:#ff8800;">
-                                <i class="bi bi-shield-lock"></i> Sysop Only
+                                <i class="bi bi-shield-lock"></i> {{ t('network_ui.sysop_only', 'Sysop Only') }}
                             </label>
                             <div class="form-text" style="font-size:.7rem;">{{ t('admin.ui.hidden_from_and_inaccessible_to_non_admins', 'Hidden from and inaccessible to non-admins') }}</div>
                         </div>
                         <div class="form-check">
                             {{ form.require_real_name(class="form-check-input") }}
                             <label class="form-check-label" for="require_real_name" style="color:#ffcc00;">
-                                <i class="bi bi-person-badge"></i> Require Real Name
+                                <i class="bi bi-person-badge"></i> {{ t('network_ui.require_full_name', 'Require Real Name') }}
                             </label>
-                            <div class="form-text" style="font-size:.7rem;">{{ form.require_real_name.description }}</div>
+                            <div class="form-text" style="font-size:.7rem;">{{ t('network_ui.area.require_real_name_help', form.require_real_name.description) }}</div>
                         </div>
                         <div class="form-check">
                             {{ form.jam_export_enabled(class="form-check-input") }}
                             <label class="form-check-label" for="jam_export_enabled" style="color:#66ccff;">
                                 <i class="bi bi-file-earmark-binary"></i> {{ t('admin.ui.export_to_jam_message_base', 'Export to JAM Message Base') }}
                             </label>
-                            <div class="form-text" style="font-size:.7rem;">{{ form.jam_export_enabled.description }}</div>
+                            <div class="form-text" style="font-size:.7rem;">{{ t('network_ui.area.jam_export_enabled_help', form.jam_export_enabled.description) }}</div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    {{ form.min_access_level.label(class="form-label") }}
+                    {{ form.min_access_level.label(text=t('network_ui.area.min_access_level', form.min_access_level.label.text), class="form-label") }}
                     {{ form.min_access_level(class="form-control") }}
                     <div class="form-text">
                         0 = all users &nbsp;|&nbsp; 10 = registered &nbsp;|&nbsp; 50 = VIP &nbsp;|&nbsp; 100 = sysop
@@ -100,7 +100,7 @@
                 <a href="{{ url_for('echomail_admin.areas') }}" class="btn btn-primary">
                     <i class="bi bi-x-circle"></i> {{ t('ui.cancel', 'Cancel') }}
                 </a>
-                {{ form.submit(class="btn btn-primary") }}
+                {{ form.submit(value=t('network_ui.area.submit', form.submit.label.text), class="btn btn-primary") }}
             </div>
         </form>
     </div>

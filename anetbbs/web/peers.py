@@ -18,6 +18,7 @@ from flask import (Blueprint, current_app, flash, redirect, render_template,
                    request, url_for)
 from flask_login import current_user, login_required
 
+from ..features.i18n import translate
 from ..models import ExternalBbsCache, PeerBbs, db
 
 peers_bp = Blueprint('peers', __name__, url_prefix='/bbses')
@@ -283,10 +284,10 @@ def submit():
         sw = (request.form.get('software') or '').strip() or None
         desc = (request.form.get('description') or '').strip() or None
         if not name or not host:
-            flash('BBS name and telnet address are required.', 'danger')
+            flash(translate('network_ui.peers.bbs_required', 'BBS name and telnet address are required.'), 'danger')
         elif PeerBbs.query.filter(
                 db.func.lower(PeerBbs.hostname) == host.lower()).first():
-            flash('That hostname is already in the directory.', 'warning')
+            flash(translate('network_ui.peers.host_exists', 'That hostname is already in the directory.'), 'warning')
         else:
             is_admin = getattr(current_user, 'is_admin', False)
             p = PeerBbs(
@@ -298,9 +299,9 @@ def submit():
             db.session.add(p)
             db.session.commit()
             if is_admin:
-                flash(f'Added {name}.', 'success')
+                flash(translate('network_ui.peers.added', 'Added {name}.', name=name), 'success')
             else:
-                flash('Submitted! Your BBS will appear after sysop review.', 'success')
+                flash(translate('network_ui.peers.submitted', 'Submitted! Your BBS will appear after sysop review.'), 'success')
             return redirect(url_for('peers.index', tab='local'))
     return render_template('peers/submit.html')
 
@@ -328,12 +329,12 @@ def admin():
             p = PeerBbs.query.get_or_404(request.form.get('peer_id', type=int))
             db.session.delete(p)
             db.session.commit()
-            flash('Deleted.', 'success')
+            flash(translate('network_ui.peers.deleted', 'Deleted.'), 'success')
         elif action == 'approve':
             p = PeerBbs.query.get_or_404(request.form.get('peer_id', type=int))
             p.is_approved = True
             db.session.commit()
-            flash(f'Approved {p.name}.', 'success')
+            flash(translate('network_ui.peers.approved', 'Approved {name}.', name=p.name), 'success')
         elif action == 'toggle':
             p = PeerBbs.query.get_or_404(request.form.get('peer_id', type=int))
             p.is_active = not bool(p.is_active)
@@ -358,7 +359,7 @@ def admin():
             p.description = (request.form.get('description') or '').strip() or None
             p.is_active   = bool(request.form.get('is_active'))
             db.session.commit()
-            flash(f'Updated {p.name}.', 'success')
+            flash(translate('network_ui.peers.updated', 'Updated {name}.', name=p.name), 'success')
         elif action == 'refresh_ext':
             source = request.form.get('source', '')
             if source in EXTERNAL_SOURCES:
@@ -366,7 +367,7 @@ def admin():
                 threading.Thread(
                     target=_refresh_source, args=(app, source), daemon=True
                 ).start()
-                flash(f'Refresh of {EXTERNAL_SOURCES[source]["label"]} queued.', 'info')
+                flash(translate('network_ui.peers.refresh', 'Refresh of {source} queued.', source=EXTERNAL_SOURCES[source]['label']), 'info')
         return redirect(url_for('peers.admin'))
 
     peers = PeerBbs.query.order_by(PeerBbs.is_approved, PeerBbs.name).all()

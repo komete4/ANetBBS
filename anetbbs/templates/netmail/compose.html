@@ -15,11 +15,7 @@
     {% if is_direct_crash_reply %}
     <div class="alert alert-info">
         <i class="bi bi-lightning-charge"></i>
-        This netmail arrived by direct crash delivery from an address not
-        covered by any network you're configured for — there's no hub to
-        route a reply through. Sending this will dial
-        <strong>{{ parent.origin_ip }}</strong> directly to deliver it,
-        the same way it reached you.
+        {{ t('network_ui.crash_reply', 'This Netmail arrived by direct delivery from an address outside your configured networks. Sending this reply will connect directly to {ip}.', ip=parent.origin_ip) }}
     </div>
     {% endif %}
 
@@ -99,7 +95,7 @@
     <div class="mb-3">
         <label for="cb_tagline_id" class="form-label">{{ t('web.user.add_a_tagline_optional', 'Add a tagline (optional)') }}</label>
         <select name="tagline_id" id="cb_tagline_id" class="form-select" size="6">
-            <option value="">-- None --</option>
+            <option value="">{{ t('network_ui.no_tagline', '-- None --') }}</option>
             {% for t in taglines %}
             <option value="{{ t.id }}">{{ t.text }}</option>
             {% endfor %}

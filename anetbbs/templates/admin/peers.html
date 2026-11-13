@@ -18,20 +18,17 @@
   <div class="ph-banner">
     <h1 class="m-0"><i class="bi bi-diagram-3"></i> {{ t('ui.heading.peer_health', 'Peer health') }}</h1>
     <div class="text-white-50 mt-1">
-      Federation-hub liveness lens. Heartbeats arrive over HTTP from
-      registered peers; probes are outbound SYSTAT round-trips initiated by this hub.
+      {{ t('network_ui.health_intro', 'Federation-hub liveness lens. Heartbeats arrive over HTTP from registered peers; probes are outbound SYSTAT round-trips initiated by this hub.') }}
     </div>
   </div>
 
   {% if not is_hub %}
     <div class="alert alert-info">
-      This install is not configured as a federation hub
-      (<code>REGISTRY_MODE_ENABLED=false</code>). Only the designated hub
-      probes peers and shows liveness here.
+      {{ t('network_ui.health_inactive', 'This install is not configured as a federation hub (REGISTRY_MODE_ENABLED=false). Only the designated hub probes peers and shows liveness here.') }}
     </div>
   {% elif not rows %}
     <div class="alert alert-warning">
-      No registered peers yet. Peers POST to <code>/registry/api/v1/register</code> to join — share that URL.
+      {{ t('network_ui.health_empty', 'No registered peers yet. Peers POST to /registry/api/v1/register to join — share that URL.') }}
     </div>
   {% else %}
   <div class="card ph-card">
@@ -39,8 +36,8 @@
       <thead class="table-light">
         <tr>
           <th>{{ t('ui.host', 'Host') }}</th><th>{{ t('ui.name', 'Name') }}</th><th>Sysop</th>
-          <th>Listed</th>
-          <th>Heartbeat</th><th>Probe</th><th>Fails</th>
+          <th>{{ t('network_ui.peer_listed', 'Listed') }}</th>
+          <th>{{ t('network_ui.peer_heartbeat', 'Heartbeat') }}</th><th>{{ t('network_ui.peer_probe', 'Probe') }}</th><th>{{ t('network_ui.peer_fails', 'Fails') }}</th>
           <th class="text-end">{{ t('ui.action', 'Action') }}</th>
         </tr>
       </thead>
@@ -52,11 +49,11 @@
           <td>{{ r.sysop or '—' }}</td>
           <td>
             {% if r.is_listed %}
-              <span class="ph-ok">yes</span>
+              <span class="ph-ok">{{ t('network_ui.peer_yes', 'yes') }}</span>
             {% elif r.is_approved and r.is_verified %}
-              <span class="ph-warn">paused</span>
+              <span class="ph-warn">{{ t('network_ui.peer_paused', 'paused') }}</span>
             {% else %}
-              <span class="ph-bad">no</span>
+              <span class="ph-bad">{{ t('network_ui.peer_no', 'no') }}</span>
             {% endif %}
           </td>
           <td><span class="ph-meta">{{ r.last_heartbeat_str }}</span></td>
@@ -77,7 +74,7 @@
           <td class="text-end">
             <button class="btn btn-sm btn-outline-primary ph-probe-btn"
                     data-id="{{ r.id }}">
-              Probe now
+              {{ t('network_ui.probe_now', 'Probe now') }}
             </button>
           </td>
         </tr>
@@ -105,7 +102,7 @@ document.querySelectorAll('.ph-probe-btn').forEach(btn => {
     const detailCell = detailRow.querySelector('td');
     btn.disabled = true;
     const oldText = btn.textContent;
-    btn.textContent = 'Probing…';
+    btn.textContent = {{ t('network_ui.probing', 'Probing…') | tojson }};
     try {
       const r = await fetch('{{ url_for("peers_health.probe_now", peer_id=0) }}'.replace('/0/', '/' + id + '/'),
                             {method: 'POST',
@@ -122,7 +119,7 @@ document.querySelectorAll('.ph-probe-btn').forEach(btn => {
       detailRow.style.display = '';
       detailCell.innerHTML = j.ok
         ? `<span class="ph-ok">${j.ms.toFixed(1)} ms</span> — ${escapeHtml(j.detail)}`
-        : `<span class="ph-bad">FAIL</span> — ${escapeHtml(j.detail)} (consecutive: ${j.failures})`;
+        : `<span class="ph-bad">${escapeHtml({{ t('network_ui.probe_failed', 'FAIL') | tojson }})}</span> — ${escapeHtml(j.detail)} (consecutive: ${j.failures})`;
     } catch (e) {
       detailRow.style.display = '';
       detailCell.innerHTML = '<span class="ph-bad">probe request failed: ' + escapeHtml(e.message) + '</span>';
