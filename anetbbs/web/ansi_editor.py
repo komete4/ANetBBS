@@ -11,6 +11,7 @@ colour pickers, and tools (pencil, eraser, line, fill, text). Save POSTs the
 grid back; the server re-renders ansi_text from grid_json so the two stay
 in sync.
 """
+from ..features.i18n import translate
 import json
 import os
 import re
@@ -571,12 +572,12 @@ def import_ans():
         width = max(20, min(132, request.form.get('width', type=int) or 80))
         height = max(5, min(50, request.form.get('height', type=int) or 25))
         if not upload or not upload.filename:
-            flash('No file uploaded.', 'danger')
+            flash(translate('ansi_editor.notice.file_required', 'No file uploaded.'), 'danger')
             return redirect(url_for('ansi_editor.import_ans'))
         try:
             raw = upload.read()
         except Exception as exc:
-            flash(f'Read failed: {exc}', 'danger')
+            flash(translate('ansi_editor.notice.read_failed', 'Read failed: {exc}', exc=exc), 'danger')
             return redirect(url_for('ansi_editor.import_ans'))
         # Strip SAUCE trailer if present so we don't get garbage chars
         # at the end. Also extract any metadata to flash for the sysop.
@@ -616,7 +617,7 @@ def import_ans():
         )
         db.session.add(art)
         db.session.commit()
-        flash(f'Imported {upload.filename} as "{art.name}".', 'success')
+        flash(translate('ansi_editor.notice.imported', 'Imported {filename} as "{name}".', filename=upload.filename, name=art.name), 'success')
         return redirect(url_for('ansi_editor.edit', art_id=art.id))
     return render_template('ansi_editor/import.html')
 
@@ -679,7 +680,7 @@ def delete(art_id):
     name = art.name
     db.session.delete(art)
     db.session.commit()
-    flash(f'Deleted "{name}".', 'success')
+    flash(translate('ansi_editor.notice.deleted', 'Deleted "{name}".', name=name), 'success')
     return redirect(url_for('ansi_editor.index'))
 
 
@@ -749,7 +750,7 @@ def duplicate(art_id):
     )
     db.session.add(new_art)
     db.session.commit()
-    flash(f'Duplicated to "{new_art.name}".', 'success')
+    flash(translate('ansi_editor.notice.duplicated', 'Duplicated to "{name}".', name=new_art.name), 'success')
     return redirect(url_for('ansi_editor.edit', art_id=new_art.id))
 
 
@@ -862,12 +863,12 @@ def import_binfile():
         name = (request.form.get('name') or '').strip()
         width = max(20, min(132, request.form.get('width', type=int) or 80))
         if not upload or not upload.filename:
-            flash('No file uploaded.', 'danger')
+            flash(translate('ansi_editor.notice.file_required', 'No file uploaded.'), 'danger')
             return redirect(url_for('ansi_editor.import_binfile'))
         try:
             raw = upload.read()
         except Exception as exc:
-            flash(f'Read failed: {exc}', 'danger')
+            flash(translate('ansi_editor.notice.read_failed', 'Read failed: {exc}', exc=exc), 'danger')
             return redirect(url_for('ansi_editor.import_binfile'))
 
         lower = upload.filename.lower()
@@ -881,7 +882,7 @@ def import_binfile():
             # or IndexError -- a genuinely truncated or hand-crafted
             # malicious upload must not 500 the route, same as any
             # other untrusted-input parse here.
-            flash(f'Could not parse {upload.filename}: {exc}', 'danger')
+            flash(translate('ansi_editor.notice.parse_failed', 'Could not parse {filename}: {exc}', filename=upload.filename, exc=exc), 'danger')
             return redirect(url_for('ansi_editor.import_binfile'))
 
         slug = _slugify(name or upload.filename) + '-' + datetime.utcnow().strftime('%H%M%S')
@@ -895,7 +896,7 @@ def import_binfile():
         )
         db.session.add(art)
         db.session.commit()
-        flash(f'Imported {upload.filename} as "{art.name}".', 'success')
+        flash(translate('ansi_editor.notice.imported', 'Imported {filename} as "{name}".', filename=upload.filename, name=art.name), 'success')
         return redirect(url_for('ansi_editor.edit', art_id=art.id))
     return render_template('ansi_editor/import_binfile.html')
 
@@ -910,7 +911,8 @@ def apply_to_menu():
     menu = BbsMenu.query.get_or_404(request.form.get('menu_id', type=int))
     menu.ansi_screen = art.ansi_text
     db.session.commit()
-    flash(f'Applied "{art.name}" to menu "{menu.name}".', 'success')
+    flash(translate('ansi_editor.notice.menu_applied', 'Applied "{art}" to menu "{menu}".',
+                    art=art.name, menu=menu.name), 'success')
     return redirect(url_for('ansi_editor.edit', art_id=art.id))
 
 
@@ -923,7 +925,7 @@ def apply_to_screen():
     art = AnsiArt.query.get_or_404(request.form.get('art_id', type=int))
     slot = (request.form.get('slot') or '').strip()
     if not slot:
-        flash('No screen slot specified.', 'danger')
+        flash(translate('ansi_editor.notice.slot_required', 'No screen slot specified.'), 'danger')
         return redirect(url_for('ansi_editor.edit', art_id=art.id))
     screen = BbsAnsiScreen.query.filter_by(slot=slot).first()
     if not screen:
@@ -932,7 +934,7 @@ def apply_to_screen():
     screen.body = art.ansi_text
     screen.is_active = True
     db.session.commit()
-    flash(f'Applied "{art.name}" to the "{slot}" screen slot.', 'success')
+    flash(translate('ansi_editor.notice.screen_applied', 'Applied "{name}" to the "{slot}" screen slot.', name=art.name, slot=slot), 'success')
     return redirect(url_for('ansi_editor.edit', art_id=art.id))
 
 
@@ -1114,7 +1116,7 @@ def save_to_disk(art_id):
     roots = dict(_browse_roots())
     root_abs = roots.get(root_label)
     if root_abs is None:
-        flash('Unknown destination directory.', 'danger')
+        flash(translate('ansi_editor.notice.destination_unknown', 'Unknown destination directory.'), 'danger')
         return redirect(url_for('ansi_editor.edit', art_id=art.id))
     if not filename:
         filename = _slugify(art.name)
@@ -1123,15 +1125,15 @@ def save_to_disk(art_id):
         filename += '.ans'
     dest = _safe_join(root_abs, filename)
     if dest is None:
-        flash('Invalid filename.', 'danger')
+        flash(translate('ansi_editor.notice.filename_invalid', 'Invalid filename.'), 'danger')
         return redirect(url_for('ansi_editor.edit', art_id=art.id))
     try:
         with open(dest, 'w', encoding='cp437', errors='replace') as f:
             f.write(art.ansi_text or '')
     except OSError as exc:
-        flash(f'Could not write file: {exc}', 'danger')
+        flash(translate('ansi_editor.notice.write_failed', 'Could not write file: {exc}', exc=exc), 'danger')
         return redirect(url_for('ansi_editor.edit', art_id=art.id))
-    flash(f'Saved to {root_label}/{filename}.', 'success')
+    flash(translate('ansi_editor.notice.disk_saved', 'Saved to {root_label}/{filename}.', root_label=root_label, filename=filename), 'success')
     return redirect(url_for('ansi_editor.edit', art_id=art.id))
 
 
@@ -1150,17 +1152,17 @@ def open_from_disk():
     roots = dict(_browse_roots())
     root_abs = roots.get(root_label)
     if root_abs is None:
-        flash('Unknown source directory.', 'danger')
+        flash(translate('ansi_editor.notice.source_unknown', 'Unknown source directory.'), 'danger')
         return redirect(url_for('ansi_editor.browse'))
     src = _safe_join(root_abs, filename)
     if src is None or not os.path.isfile(src):
-        flash('File not found.', 'danger')
+        flash(translate('ansi_editor.notice.file_missing', 'File not found.'), 'danger')
         return redirect(url_for('ansi_editor.browse'))
     try:
         with open(src, 'rb') as f:
             raw = f.read()
     except OSError as exc:
-        flash(f'Could not read file: {exc}', 'danger')
+        flash(translate('ansi_editor.notice.disk_read_failed', 'Could not read file: {exc}', exc=exc), 'danger')
         return redirect(url_for('ansi_editor.browse'))
 
     try:
@@ -1191,5 +1193,5 @@ def open_from_disk():
     )
     db.session.add(art)
     db.session.commit()
-    flash(f'Opened {root_label}/{filename} as "{art.name}".', 'success')
+    flash(translate('ansi_editor.notice.disk_opened', 'Opened {root_label}/{filename} as "{name}".', root_label=root_label, filename=filename, name=art.name), 'success')
     return redirect(url_for('ansi_editor.edit', art_id=art.id))

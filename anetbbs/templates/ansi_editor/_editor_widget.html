@@ -98,14 +98,14 @@
 
 <div class="mb-2 d-flex flex-wrap gap-1 align-items-center">
     <button id="btnSave" class="btn btn-primary btn-sm"><i class="bi bi-save"></i> {{ t('ui.save', 'Save') }}</button>
-    <button id="btnUndo" class="btn btn-outline-light btn-sm" title="Undo (Ctrl+Z)"><i class="bi bi-arrow-counterclockwise"></i></button>
-    <button id="btnRedo" class="btn btn-outline-light btn-sm" title="Redo (Ctrl+Shift+Z)"><i class="bi bi-arrow-clockwise"></i></button>
+    <button id="btnUndo" class="btn btn-outline-light btn-sm" title="{{ t('admin.appearance.undo_ctrl_z', 'Undo (Ctrl+Z)') }}"><i class="bi bi-arrow-counterclockwise"></i></button>
+    <button id="btnRedo" class="btn btn-outline-light btn-sm" title="{{ t('admin.appearance.redo_ctrl_shift_z', 'Redo (Ctrl+Shift+Z)') }}"><i class="bi bi-arrow-clockwise"></i></button>
     <button id="btnClear" class="btn btn-outline-warning btn-sm" title="{{ t('admin.ui.clear_canvas', 'Clear canvas') }}"><i class="bi bi-trash"></i> {{ t('ui.clear', 'Clear') }}</button>
-    <button id="btnImportImage" class="btn btn-outline-light btn-sm" title="Convert a .jpg/.png/.gif into CP437 art, filling the whole canvas"><i class="bi bi-image"></i> Import Image</button>
+    <button id="btnImportImage" class="btn btn-outline-light btn-sm" title="{{ t('admin.appearance.convert_a_jpg_png_gif_into_cp437_art_filling_the_whole_canvas', 'Convert a .jpg/.png/.gif into CP437 art, filling the whole canvas') }}"><i class="bi bi-image"></i> {{ t('admin.appearance.import_image', 'Import Image') }}</button>
     <input type="file" id="importImageInput" accept="image/*" style="display:none;">
-    <button id="btnPreview" class="btn btn-outline-info btn-sm" title="Preview as terminal would render"><i class="bi bi-eye"></i> {{ t('ui.preview', 'Preview') }}</button>
-    <span id="saveStatus" class="text-muted small">unsaved</span>
-    <span class="ms-3 text-muted small" id="cursorPos">row 0 col 0</span>
+    <button id="btnPreview" class="btn btn-outline-info btn-sm" title="{{ t('admin.appearance.preview_as_terminal_would_render', 'Preview as terminal would render') }}"><i class="bi bi-eye"></i> {{ t('ui.preview', 'Preview') }}</button>
+    <span id="saveStatus" class="text-muted small">{{ t('admin.appearance.unsaved_lowercase', 'unsaved') }}</span>
+    <span class="ms-3 text-muted small" id="cursorPos">{{ t('admin.appearance.row_0_col_0_lowercase', 'row 0 col 0') }}</span>
 </div>
 
 <div class="ansi-editor">
@@ -113,68 +113,68 @@
         <div id="grid" class="ansi-grid"></div>
     </div>
     <div class="ansi-tools">
-        <h6>TOOLS</h6>
-        <button class="btn btn-sm btn-outline-light tool-btn active" data-tool="pencil" title="Pencil"><i class="bi bi-pencil"></i></button>
-        <button class="btn btn-sm btn-outline-light tool-btn" data-tool="eraser" title="Eraser"><i class="bi bi-eraser"></i></button>
-        <button class="btn btn-sm btn-outline-light tool-btn" data-tool="line" title="Line"><i class="bi bi-slash-lg"></i></button>
-        <button class="btn btn-sm btn-outline-light tool-btn" data-tool="rect" title="Rectangle"><i class="bi bi-square"></i></button>
-        <button class="btn btn-sm btn-outline-light tool-btn" data-tool="ellipse" title="Ellipse"><i class="bi bi-circle"></i></button>
-        <button class="btn btn-sm btn-outline-light tool-btn" data-tool="fill" title="Fill"><i class="bi bi-paint-bucket"></i></button>
-        <button class="btn btn-sm btn-outline-light tool-btn" data-tool="shade" title="Shading brush -- drag to build up density (blank -> &#9617; -> &#9618; -> &#9619; -> &#9608;)"><i class="bi bi-brush"></i></button>
-        <button class="btn btn-sm btn-outline-light tool-btn" data-tool="colorize" title="Colorize -- recolor a cell without changing its character"><i class="bi bi-palette"></i></button>
-        <button class="btn btn-sm btn-outline-light tool-btn" data-tool="text" title="Text typing"><i class="bi bi-fonts"></i></button>
-        <button class="btn btn-sm btn-outline-light tool-btn" data-tool="select" title="Select rectangle"><i class="bi bi-bounding-box"></i></button>
+        <h6>{{ t('admin.appearance.tools_uppercase', 'TOOLS') }}</h6>
+        <button class="btn btn-sm btn-outline-light tool-btn active" data-tool="pencil" title="{{ t('admin.appearance.pencil', 'Pencil') }}"><i class="bi bi-pencil"></i></button>
+        <button class="btn btn-sm btn-outline-light tool-btn" data-tool="eraser" title="{{ t('admin.appearance.eraser', 'Eraser') }}"><i class="bi bi-eraser"></i></button>
+        <button class="btn btn-sm btn-outline-light tool-btn" data-tool="line" title="{{ t('admin.appearance.line', 'Line') }}"><i class="bi bi-slash-lg"></i></button>
+        <button class="btn btn-sm btn-outline-light tool-btn" data-tool="rect" title="{{ t('admin.appearance.rectangle', 'Rectangle') }}"><i class="bi bi-square"></i></button>
+        <button class="btn btn-sm btn-outline-light tool-btn" data-tool="ellipse" title="{{ t('admin.appearance.ellipse', 'Ellipse') }}"><i class="bi bi-circle"></i></button>
+        <button class="btn btn-sm btn-outline-light tool-btn" data-tool="fill" title="{{ t('admin.appearance.fill', 'Fill') }}"><i class="bi bi-paint-bucket"></i></button>
+        <button class="btn btn-sm btn-outline-light tool-btn" data-tool="shade" title="{{ t('admin.appearance.shade_hint', 'Shading brush: drag to increase the density (blank → ░ → ▒ → ▓ → █)') }}"><i class="bi bi-brush"></i></button>
+        <button class="btn btn-sm btn-outline-light tool-btn" data-tool="colorize" title="{{ t('admin.appearance.colorize_recolor_a_cell_without_changing_its_character', 'Colorize -- recolor a cell without changing its character') }}"><i class="bi bi-palette"></i></button>
+        <button class="btn btn-sm btn-outline-light tool-btn" data-tool="text" title="{{ t('admin.appearance.text_typing', 'Text typing') }}"><i class="bi bi-fonts"></i></button>
+        <button class="btn btn-sm btn-outline-light tool-btn" data-tool="select" title="{{ t('admin.appearance.select_rectangle', 'Select rectangle') }}"><i class="bi bi-bounding-box"></i></button>
         <button class="btn btn-sm btn-outline-light tool-btn" id="btnCopy" title="{{ t('admin.ui.copy_selection_ctrl_c', 'Copy selection (Ctrl+C)') }}"><i class="bi bi-clipboard"></i></button>
-        <button class="btn btn-sm btn-outline-light tool-btn" id="btnPaste" title="Paste (Ctrl+V)"><i class="bi bi-clipboard-check"></i></button>
-        <button class="btn btn-sm btn-outline-light tool-btn" id="btnFlipH" title="Flip selection horizontally"><i class="bi bi-symmetry-vertical"></i></button>
-        <button class="btn btn-sm btn-outline-light tool-btn" id="btnFlipV" title="Flip selection vertically"><i class="bi bi-symmetry-horizontal"></i></button>
-        <button class="btn btn-sm btn-outline-light tool-btn" id="btnSwapColors" title="Swap foreground/background colors in the selection (or whole canvas if nothing selected)"><i class="bi bi-arrow-left-right"></i></button>
-        <button class="btn btn-sm btn-outline-light tool-btn" id="btnReplaceColor" title="Replace one foreground color with another, in the selection (or whole canvas if nothing selected)"><i class="bi bi-eyedropper"></i></button>
-        <button class="btn btn-sm btn-outline-light tool-btn" id="btnCenter" title="Center the selection's content horizontally on the canvas"><i class="bi bi-distribute-horizontal"></i></button>
-        <button class="btn btn-sm btn-outline-light tool-btn" id="btnInsertRow" title="Insert a blank row at the cursor (rows below shift down; the bottom row is dropped)"><i class="bi bi-arrow-bar-down"></i></button>
-        <button class="btn btn-sm btn-outline-light tool-btn" id="btnDeleteRow" title="Delete the row at the cursor (rows below shift up)"><i class="bi bi-arrow-bar-up"></i></button>
-        <button class="btn btn-sm btn-outline-light tool-btn" id="btnInsertCol" title="Insert a blank column at the cursor (columns to the right shift right; the rightmost column is dropped)"><i class="bi bi-arrow-bar-right"></i></button>
-        <button class="btn btn-sm btn-outline-light tool-btn" id="btnDeleteCol" title="Delete the column at the cursor (columns to the right shift left)"><i class="bi bi-arrow-bar-left"></i></button>
-        <button class="btn btn-sm btn-outline-light tool-btn" data-tool="eyedrop" title="Eyedropper (click to grab a cell's char + colors)"><i class="bi bi-droplet"></i></button>
-        <button class="btn btn-sm btn-outline-light tool-btn" id="btnZoomIn" title="Zoom in"><i class="bi bi-zoom-in"></i></button>
-        <button class="btn btn-sm btn-outline-light tool-btn" id="btnZoomOut" title="Zoom out"><i class="bi bi-zoom-out"></i></button>
+        <button class="btn btn-sm btn-outline-light tool-btn" id="btnPaste" title="{{ t('admin.appearance.paste_ctrl_v', 'Paste (Ctrl+V)') }}"><i class="bi bi-clipboard-check"></i></button>
+        <button class="btn btn-sm btn-outline-light tool-btn" id="btnFlipH" title="{{ t('admin.appearance.flip_selection_horizontally', 'Flip selection horizontally') }}"><i class="bi bi-symmetry-vertical"></i></button>
+        <button class="btn btn-sm btn-outline-light tool-btn" id="btnFlipV" title="{{ t('admin.appearance.flip_selection_vertically', 'Flip selection vertically') }}"><i class="bi bi-symmetry-horizontal"></i></button>
+        <button class="btn btn-sm btn-outline-light tool-btn" id="btnSwapColors" title="{{ t('admin.appearance.swap_foreground_background_colors_in_the_selection_or_whole_canvas_if_nothing_selected', 'Swap foreground/background colors in the selection (or whole canvas if nothing selected)') }}"><i class="bi bi-arrow-left-right"></i></button>
+        <button class="btn btn-sm btn-outline-light tool-btn" id="btnReplaceColor" title="{{ t('admin.appearance.replace_one_foreground_color_with_another_in_the_selection_or_whole_canvas_if_nothing_selected', 'Replace one foreground color with another, in the selection (or whole canvas if nothing selected)') }}"><i class="bi bi-eyedropper"></i></button>
+        <button class="btn btn-sm btn-outline-light tool-btn" id="btnCenter" title="{{ t('admin.appearance.center_the_selection_s_content_horizontally_on_the_canvas', "Center the selection's content horizontally on the canvas") }}"><i class="bi bi-distribute-horizontal"></i></button>
+        <button class="btn btn-sm btn-outline-light tool-btn" id="btnInsertRow" title="{{ t('admin.appearance.insert_a_blank_row_at_the_cursor_rows_below_shift_down_the_bottom_row_is_dropped', 'Insert a blank row at the cursor (rows below shift down; the bottom row is dropped)') }}"><i class="bi bi-arrow-bar-down"></i></button>
+        <button class="btn btn-sm btn-outline-light tool-btn" id="btnDeleteRow" title="{{ t('admin.appearance.delete_the_row_at_the_cursor_rows_below_shift_up', 'Delete the row at the cursor (rows below shift up)') }}"><i class="bi bi-arrow-bar-up"></i></button>
+        <button class="btn btn-sm btn-outline-light tool-btn" id="btnInsertCol" title="{{ t('admin.appearance.insert_a_blank_column_at_the_cursor_columns_to_the_right_shift_right_the_rightmost_column_is_dropped', 'Insert a blank column at the cursor (columns to the right shift right; the rightmost column is dropped)') }}"><i class="bi bi-arrow-bar-right"></i></button>
+        <button class="btn btn-sm btn-outline-light tool-btn" id="btnDeleteCol" title="{{ t('admin.appearance.delete_the_column_at_the_cursor_columns_to_the_right_shift_left', 'Delete the column at the cursor (columns to the right shift left)') }}"><i class="bi bi-arrow-bar-left"></i></button>
+        <button class="btn btn-sm btn-outline-light tool-btn" data-tool="eyedrop" title="{{ t('admin.appearance.eyedropper_click_to_grab_a_cell_s_char_colors', "Eyedropper (click to grab a cell's char + colors)") }}"><i class="bi bi-droplet"></i></button>
+        <button class="btn btn-sm btn-outline-light tool-btn" id="btnZoomIn" title="{{ t('admin.appearance.zoom_in', 'Zoom in') }}"><i class="bi bi-zoom-in"></i></button>
+        <button class="btn btn-sm btn-outline-light tool-btn" id="btnZoomOut" title="{{ t('admin.appearance.zoom_out', 'Zoom out') }}"><i class="bi bi-zoom-out"></i></button>
 
-        <h6 class="mt-3">BRUSH SIZE</h6>
+        <h6 class="mt-3">{{ t('admin.appearance.brush_size_uppercase', 'BRUSH SIZE') }}</h6>
         <div class="d-flex gap-1">
             <button class="btn btn-sm btn-outline-light tool-btn brush-btn active" data-brush="1">1×1</button>
             <button class="btn btn-sm btn-outline-light tool-btn brush-btn" data-brush="2">2×2</button>
             <button class="btn btn-sm btn-outline-light tool-btn brush-btn" data-brush="3">3×3</button>
         </div>
 
-        <h6 class="mt-3">MODES</h6>
+        <h6 class="mt-3">{{ t('admin.appearance.modes_uppercase', 'MODES') }}</h6>
         <div class="form-check form-check-sm">
             <input class="form-check-input" type="checkbox" id="mirrorMode">
             <label class="form-check-label small text-light" for="mirrorMode">
-                Mirror (left/right)
+                {{ t('admin.appearance.mirror_left_right', 'Mirror (left/right)') }}
             </label>
         </div>
         <div class="form-check form-check-sm">
             <input class="form-check-input" type="checkbox" id="halfBlockMode">
             <label class="form-check-label small text-light" for="halfBlockMode"
-                   title="Pencil/eraser paint the top or bottom half of a cell independently, doubling vertical resolution">
-                Half-block pixels
+                   title="{{ t('admin.appearance.pencil_eraser_paint_the_top_or_bottom_half_of_a_cell_independently_doubling_vertical_resolution', 'Pencil/eraser paint the top or bottom half of a cell independently, doubling vertical resolution') }}">
+                {{ t('admin.appearance.half_block_pixels', 'Half-block pixels') }}
             </label>
         </div>
 
-        <h6 class="mt-3">FOREGROUND</h6>
+        <h6 class="mt-3">{{ t('admin.appearance.foreground_uppercase', 'FOREGROUND') }}</h6>
         <div class="swatches" id="fgSwatches"></div>
-        <h6 class="mt-2">BACKGROUND</h6>
+        <h6 class="mt-2">{{ t('admin.appearance.background_uppercase', 'BACKGROUND') }}</h6>
         <div class="swatches" id="bgSwatches" style="grid-template-columns:repeat(8,1fr);"></div>
 
-        <h6 class="mt-3">SELECTED CHAR</h6>
+        <h6 class="mt-3">{{ t('admin.appearance.selected_char_uppercase', 'SELECTED CHAR') }}</h6>
         <div class="d-flex align-items-center gap-2">
             <div id="curCharPreview" style="font-family:monospace;font-size:24px;width:32px;height:32px;background:#000;color:#fff;text-align:center;line-height:32px;border:1px solid #333;">█</div>
             <small class="text-muted">code <span id="curCharCode">219</span></small>
         </div>
 
-        <h6 class="mt-3">THEDRAW FONTS</h6>
+        <h6 class="mt-3">{{ t('admin.appearance.thedraw_fonts_uppercase', 'THEDRAW FONTS') }}</h6>
         <div id="tdfInstallPanel" class="mb-1" style="display:none;">
-            <p class="small text-muted mb-1">No fonts installed yet.</p>
+            <p class="small text-muted mb-1">{{ t('admin.appearance.no_fonts_installed_yet', 'No fonts installed yet.') }}</p>
             <button id="btnTdfInstall" class="btn btn-sm btn-outline-light w-100">
                 <i class="bi bi-cloud-download"></i> {{ t('admin.ui.download_install_fonts', 'Download & Install Fonts') }}
             </button>
@@ -182,7 +182,7 @@
         </div>
         <div class="mb-1">
             <input type="text" id="tdfSearch" class="form-control form-control-sm"
-                   placeholder="Search fonts...">
+                   placeholder="{{ t('admin.appearance.search_fonts', 'Search fonts...') }}">
         </div>
         <div id="tdfFontList" style="max-height:120px;overflow-y:auto;background:#000;border:1px solid #333;font-size:0.8rem;"></div>
         <div class="mt-1">
@@ -191,39 +191,38 @@
         </div>
         <div id="tdfPreview" style="background:#000;padding:4px;margin-top:4px;overflow-x:auto;white-space:pre;font-family:monospace;line-height:1;min-height:1.2em;"></div>
         <button id="btnTdfInsert" class="btn btn-sm btn-outline-light w-100 mt-1" disabled>
-            <i class="bi bi-fonts"></i> Insert at cursor
+            <i class="bi bi-fonts"></i> {{ t('admin.appearance.insert_at_cursor', 'Insert at cursor') }}
         </button>
 
-        <h6 class="mt-3">REFERENCE IMAGE</h6>
-        <p class="small text-muted mb-1">Trace over a photo/sketch --
-            never saved or exported, purely an editing aid.</p>
+        <h6 class="mt-3">{{ t('admin.appearance.reference_image_uppercase', 'REFERENCE IMAGE') }}</h6>
+        <p class="small text-muted mb-1">{{ t('admin.appearance.trace_over_a_photo_sketch_never_saved_or_exported_purely_an_editing_aid', 'Trace over a photo/sketch -- never saved or exported, purely an editing aid.') }}</p>
         <button id="btnRefImageLoad" class="btn btn-sm btn-outline-light w-100">
-            <i class="bi bi-image"></i> Load reference image
+            <i class="bi bi-image"></i> {{ t('admin.appearance.load_reference_image', 'Load reference image') }}
         </button>
         <input type="file" id="refImageInput" accept="image/*" style="display:none;">
         <div id="refImageControls" style="display:none;">
             <div class="form-check form-check-sm mt-2">
                 <input class="form-check-input" type="checkbox" id="refImageShow" checked>
-                <label class="form-check-label small text-light" for="refImageShow">Show image</label>
+                <label class="form-check-label small text-light" for="refImageShow">{{ t('admin.appearance.show_image', 'Show image') }}</label>
             </div>
             <div class="form-check form-check-sm">
                 <input class="form-check-input" type="checkbox" id="refImageDim">
                 <label class="form-check-label small text-light" for="refImageDim"
-                       title="Lowers the whole grid's opacity so the image shows through what you've already drawn, not just blank cells">
-                    Dim canvas while tracing
+                       title="{{ t('admin.appearance.lowers_the_whole_grid_s_opacity_so_the_image_shows_through_what_you_ve_already_drawn_not_just_blank_cells', "Lowers the whole grid's opacity so the image shows through what you've already drawn, not just blank cells") }}">
+                    {{ t('admin.appearance.dim_canvas_while_tracing', 'Dim canvas while tracing') }}
                 </label>
             </div>
             <label class="small text-muted d-block mt-1">{{ t('admin.ui.image_opacity', 'Image opacity') }}</label>
             <input type="range" id="refImageOpacity" class="form-range" min="10" max="100" value="60">
             <button id="btnRefImageRemove" class="btn btn-sm btn-outline-warning w-100 mt-1">
-                <i class="bi bi-x-circle"></i> Remove image
+                <i class="bi bi-x-circle"></i> {{ t('admin.appearance.remove_image', 'Remove image') }}
             </button>
         </div>
 
-        <h6 class="mt-3">CHARACTER PALETTE</h6>
+        <h6 class="mt-3">{{ t('admin.appearance.character_palette_uppercase', 'CHARACTER PALETTE') }}</h6>
         <div class="charset" id="charset"></div>
 
-        <h6 class="mt-3">QUICK GLYPHS</h6>
+        <h6 class="mt-3">{{ t('admin.appearance.quick_glyphs_uppercase', 'QUICK GLYPHS') }}</h6>
         <div>
             <button class="btn btn-sm btn-outline-light tool-btn" data-quickch="█">█</button>
             <button class="btn btn-sm btn-outline-light tool-btn" data-quickch="▓">▓</button>
@@ -302,6 +301,7 @@
     let brushSize = 1;        // 1×1, 2×2, 3×3
 
     const grid = document.getElementById('grid');
+    const unsavedLabel = {{ t('admin.appearance.unsaved', 'unsaved')|tojson }};
     const cursorPos = document.getElementById('cursorPos');
 
     // Flat grid: cells go directly into #grid via CSS Grid.
@@ -341,7 +341,7 @@
         const idx = cursorR * W + cursorC;
         const node = cellNodes[idx];
         if (node) node.classList.add('cur');
-        cursorPos.textContent = `row ${cursorR} col ${cursorC}`;
+        cursorPos.textContent = {{ t('admin.appearance.cursor_position', 'row {row} col {column}')|tojson }}.replace(/\{(row|column)\}/g, (_, key) => key === 'row' ? cursorR : cursorC);
     }
 
     function paint(r, c, ch, _isMirrorPass) {
@@ -370,7 +370,7 @@
             if (mc !== c) paint(r, mc, ch, true);
         }
         dirty = true;
-        document.getElementById('saveStatus').textContent = 'unsaved';
+        document.getElementById('saveStatus').textContent = unsavedLabel;
     }
 
     function erase(r, c) {
@@ -469,7 +469,7 @@
             }
         }
         dirty = true;
-        document.getElementById('saveStatus').textContent = 'unsaved';
+        document.getElementById('saveStatus').textContent = unsavedLabel;
     }
 
     // Colorize: recolors a cell (fg/bg only) without touching its
@@ -490,7 +490,7 @@
             }
         }
         dirty = true;
-        document.getElementById('saveStatus').textContent = 'unsaved';
+        document.getElementById('saveStatus').textContent = unsavedLabel;
     }
 
     // Half-block pixel mode: a cell holds two independently-colored
@@ -527,7 +527,7 @@
         cells[i] = computeHalfBlockCell(cells[i], which, color);
         drawCell(i);
         dirty = true;
-        document.getElementById('saveStatus').textContent = 'unsaved';
+        document.getElementById('saveStatus').textContent = unsavedLabel;
     }
 
     function cellHalfAtEvent(e, cellEl) {
@@ -579,7 +579,7 @@
             }
         }
         dirty = true;
-        document.getElementById('saveStatus').textContent = 'unsaved';
+        document.getElementById('saveStatus').textContent = unsavedLabel;
     }
 
     // Pastes a TDF font render ({width,height,cells}, from /fonts/
@@ -601,7 +601,7 @@
             }
         }
         dirty = true;
-        document.getElementById('saveStatus').textContent = 'unsaved';
+        document.getElementById('saveStatus').textContent = unsavedLabel;
     }
 
     // ---- Image -> ANSI import ----
@@ -652,7 +652,7 @@
         const im = new Image();
         im.onerror = () => {
             URL.revokeObjectURL(url);
-            alert('Could not read that image file.');
+            alert({{ t('admin.appearance.could_not_read_image', 'Could not read that image file.')|tojson }});
         };
         im.onload = () => {
             try {
@@ -679,9 +679,9 @@
                     }
                 }
                 dirty = true;
-                document.getElementById('saveStatus').textContent = 'unsaved';
+                document.getElementById('saveStatus').textContent = unsavedLabel;
             } catch (e) {
-                alert('Image import failed: ' + e.message);
+                alert({{ t('admin.appearance.image_import_failed', 'Image import failed: ')|tojson }} + e.message);
             } finally {
                 URL.revokeObjectURL(url);
             }
@@ -690,7 +690,7 @@
     }
 
     document.getElementById('btnImportImage').addEventListener('click', () => {
-        if (!confirm('Import an image? This replaces the entire canvas. (Undo will restore it.)')) return;
+        if (!confirm({{ t('admin.appearance.confirm_import_image', 'Import an image? This replaces the entire canvas. (Undo will restore it.)')|tojson }})) return;
         document.getElementById('importImageInput').click();
     });
     document.getElementById('importImageInput').addEventListener('change', (e) => {
@@ -781,7 +781,7 @@
             }
         }
         dirty = true;
-        document.getElementById('saveStatus').textContent = 'unsaved';
+        document.getElementById('saveStatus').textContent = unsavedLabel;
     }
 
     function flipSelectionVertical() {
@@ -798,7 +798,7 @@
             }
         }
         dirty = true;
-        document.getElementById('saveStatus').textContent = 'unsaved';
+        document.getElementById('saveStatus').textContent = unsavedLabel;
     }
 
     function activeRegion() {
@@ -828,7 +828,7 @@
             }
         }
         dirty = true;
-        document.getElementById('saveStatus').textContent = 'unsaved';
+        document.getElementById('saveStatus').textContent = unsavedLabel;
     }
 
     // Pure: new {c,fg,bg} with fg recolored from fromFg to toFg,
@@ -840,11 +840,11 @@
     }
 
     function replaceColorInSelection() {
-        const fromStr = prompt('Replace which foreground color? (0-15)', '');
+        const fromStr = prompt({{ t('admin.appearance.replace_color', 'Replace which foreground color? (0-15)')|tojson }}, '');
         if (fromStr === null) return;
         const fromFg = parseInt(fromStr, 10);
         if (isNaN(fromFg) || fromFg < 0 || fromFg > 15) {
-            alert('Enter a color number from 0 to 15.');
+            alert({{ t('admin.appearance.color_number', 'Enter a color number from 0 to 15.')|tojson }});
             return;
         }
         const region = activeRegion();
@@ -857,7 +857,7 @@
             }
         }
         dirty = true;
-        document.getElementById('saveStatus').textContent = 'unsaved';
+        document.getElementById('saveStatus').textContent = unsavedLabel;
     }
 
     // Pure: given the leftmost/rightmost occupied columns (inclusive)
@@ -900,7 +900,7 @@
             }
         }
         dirty = true;
-        document.getElementById('saveStatus').textContent = 'unsaved';
+        document.getElementById('saveStatus').textContent = unsavedLabel;
     }
 
     // Insert/delete a row or column at the cursor position -- shifts
@@ -917,7 +917,7 @@
         for (let c = 0; c < W; c++) cells[row * W + c] = { c: ' ', fg: 7, bg: 0 };
         for (let i = 0; i < cells.length; i++) drawCell(i);
         dirty = true;
-        document.getElementById('saveStatus').textContent = 'unsaved';
+        document.getElementById('saveStatus').textContent = unsavedLabel;
     }
 
     function deleteRowAt(row) {
@@ -928,7 +928,7 @@
         for (let c = 0; c < W; c++) cells[(H - 1) * W + c] = { c: ' ', fg: 7, bg: 0 };
         for (let i = 0; i < cells.length; i++) drawCell(i);
         dirty = true;
-        document.getElementById('saveStatus').textContent = 'unsaved';
+        document.getElementById('saveStatus').textContent = unsavedLabel;
     }
 
     function insertColAt(col) {
@@ -939,7 +939,7 @@
         }
         for (let i = 0; i < cells.length; i++) drawCell(i);
         dirty = true;
-        document.getElementById('saveStatus').textContent = 'unsaved';
+        document.getElementById('saveStatus').textContent = unsavedLabel;
     }
 
     function deleteColAt(col) {
@@ -950,7 +950,7 @@
         }
         for (let i = 0; i < cells.length; i++) drawCell(i);
         dirty = true;
-        document.getElementById('saveStatus').textContent = 'unsaved';
+        document.getElementById('saveStatus').textContent = unsavedLabel;
     }
 
     function fillFlood(r, c) {
@@ -1176,7 +1176,7 @@
         cells = snap.map(c => ({ c: c.c, fg: c.fg, bg: c.bg }));
         for (let i = 0; i < cells.length; i++) drawCell(i);
         dirty = true;
-        document.getElementById('saveStatus').textContent = 'unsaved';
+        document.getElementById('saveStatus').textContent = unsavedLabel;
     }
 
     function doUndo() {
@@ -1312,7 +1312,7 @@
 
         installBtn.addEventListener('click', async () => {
             installBtn.disabled = true;
-            installStatus.textContent = 'Downloading and installing…';
+            installStatus.textContent = {{ t('admin.appearance.installing', 'Downloading and installing…')|tojson }};
             try {
                 const csrfMeta = document.querySelector('meta[name="csrf-token"]');
                 const csrf = csrfMeta ? csrfMeta.getAttribute('content') : '';
@@ -1326,7 +1326,7 @@
                 installStatus.textContent = `Installed ${data.installed} fonts.`;
                 loadFonts();
             } catch (e) {
-                installStatus.textContent = 'Install failed: ' + e.message;
+                installStatus.textContent = {{ t('admin.appearance.install_failed', 'Install failed: ')|tojson }} + e.message;
             } finally {
                 installBtn.disabled = false;
             }
@@ -1369,14 +1369,14 @@
 
     // Clear canvas
     document.getElementById('btnClear').addEventListener('click', () => {
-        if (!confirm('Clear the entire canvas? (Undo will restore it.)')) return;
+        if (!confirm({{ t('admin.appearance.confirm_clear_canvas', 'Clear the entire canvas? (Undo will restore it.)')|tojson }})) return;
         pushHistory();
         for (let i = 0; i < cells.length; i++) {
             cells[i] = { c: ' ', fg: 7, bg: 0 };
             drawCell(i);
         }
         dirty = true;
-        document.getElementById('saveStatus').textContent = 'unsaved';
+        document.getElementById('saveStatus').textContent = unsavedLabel;
     });
 
     // Preview window — opens the rendered .ans in a new tab.
@@ -1422,7 +1422,7 @@
     // ---- Save ----
     document.getElementById('btnSave').addEventListener('click', async () => {
         const status = document.getElementById('saveStatus');
-        status.textContent = 'saving…';
+        status.textContent = {{ t('admin.appearance.saving', 'saving…')|tojson }};
         try {
             const csrfMeta = document.querySelector('meta[name="csrf-token"]');
             const csrf = csrfMeta ? csrfMeta.getAttribute('content') : '';
@@ -1436,11 +1436,11 @@
             });
             if (!r.ok) throw new Error('HTTP ' + r.status);
             const data = await r.json();
-            if (!data.ok) throw new Error(data.error || 'save failed');
-            status.textContent = 'saved ' + new Date().toLocaleTimeString();
+            if (!data.ok) throw new Error(data.error || {{ t('admin.appearance.save_failed', 'save failed')|tojson }});
+            status.textContent = {{ t('admin.appearance.saved_prefix', 'saved ')|tojson }} + new Date().toLocaleTimeString();
             dirty = false;
         } catch (e) {
-            status.textContent = 'save failed: ' + e.message;
+            status.textContent = {{ t('admin.appearance.save_failed_prefix', 'save failed: ')|tojson }} + e.message;
         }
     });
 

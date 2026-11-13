@@ -5,7 +5,7 @@
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-easel-fill"></i> {{ t('ui.heading.ansi_art_library', 'ANSI Art Library') }}</h1>
-    <p>Build CP437 ANSI screens for your BBS menus, welcome banners, and more.</p>
+    <p>{{ t('admin.appearance.build_cp437_ansi_screens_for_your_bbs_menus_welcome_banners_and_more', 'Build CP437 ANSI screens for your BBS menus, welcome banners, and more.') }}</p>
 </div>
 
 <div class="mb-3">
@@ -13,7 +13,7 @@
         <i class="bi bi-plus-square"></i> {{ t('ui.heading.new_ansi_art', 'New ANSI Art') }}
     </a>
     <a href="{{ url_for('ansi_editor.import_ans') }}" class="btn btn-outline-secondary">
-        <i class="bi bi-upload"></i> Import .ans
+        <i class="bi bi-upload"></i> {{ t('admin.appearance.import_ans', 'Import .ans') }}
     </a>
     <a href="{{ url_for('ansi_editor.import_binfile') }}" class="btn btn-outline-secondary">
         <i class="bi bi-upload"></i> {{ t('admin.ui.import_bin_xbin', 'Import .BIN/.XBin') }}
@@ -43,12 +43,12 @@
                     <td><small>{{ a.updated_at|eastern('%Y-%m-%d %H:%M', '—') }}</small></td>
                     <td>{{ a.created_by.username if a.created_by else '?' }}</td>
                     <td>
-                        <a href="{{ url_for('ansi_editor.edit', art_id=a.id) }}" class="btn btn-sm btn-outline-primary">edit</a>
+                        <a href="{{ url_for('ansi_editor.edit', art_id=a.id) }}" class="btn btn-sm btn-outline-primary">{{ t('admin.appearance.edit_lowercase', 'edit') }}</a>
                         <a href="{{ url_for('ansi_editor.raw_ansi', art_id=a.id) }}" class="btn btn-sm btn-outline-secondary">.ans</a>
                         <form method="post" action="{{ url_for('ansi_editor.delete', art_id=a.id) }}" style="display:inline;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button class="btn btn-sm btn-link text-danger p-0"
-                                    onclick="return confirm('Delete {{ a.name }}?')">delete</button>
+                                    onclick="return confirm(this.dataset.confirm)" data-confirm="{{ t('admin.appearance.delete_art', 'Delete {name}?', name=a.name) }}">{{ t('admin.appearance.delete_lowercase', 'delete') }}</button>
                         </form>
                     </td>
                 </tr>
@@ -56,7 +56,7 @@
             </tbody>
         </table>
     {% else %}
-        <div class="p-3 text-muted">No art yet — click "New ANSI Art" to start.</div>
+        <div class="p-3 text-muted">{{ t('admin.appearance.no_art_yet_click_new_ansi_art_to_start_section', 'No art yet — click "New ANSI Art" to start.') }}</div>
     {% endif %}
     </div>
 </div>

@@ -1019,3 +1019,36 @@ def test_daily_admin_labels_and_lock_feedback(
                      token_path='/admin/control/', follow_redirects=True)
     status = 'Reinicio de anetbbs-web: correcto' if language == 'es' else 'restart anetbbs-web: OK'
     assert status in _soup(response).get_text(' ', strip=True)
+
+
+@pytest.mark.parametrize('language, brush, unsaved, title_required, invalid_json', [
+    ('es', 'Lápiz', 'sin guardar', 'Introduce el nombre interno y el título.',
+     'Los parámetros deben tener un formato JSON válido.'),
+    ('en', 'Pencil', 'unsaved', 'Name and title are required.',
+     'params_json is not valid JSON.'),
+])
+def test_admin_appearance_editors_and_validation(
+        client, make_user, language, brush, unsaved, title_required, invalid_json):
+    admin_id, name, _ = make_user(language, is_admin=True)
+    _authenticate(client, admin_id)
+    art = _soup(_post(client, '/admin/ansi/new', {
+        'name': name, 'width': 20, 'height': 5,
+    }, token_path='/admin/ansi/new', follow_redirects=True))
+    assert art.select_one('[data-tool="pencil"]')['title'] == brush
+    assert art.select_one('#saveStatus').get_text(strip=True) == unsaved
+    assert [slot['value'] for slot in art.select('select[name=slot] option')] == [
+        'welcome', 'goodbye', 'newuser',
+    ]
+
+    for path in ('/admin/bbs-menus/new', '/admin/petscii-menus/new'):
+        response = _post(client, path, {}, token_path=path, follow_redirects=True)
+        assert title_required in _soup(response).get_text(' ', strip=True)
+
+    path = '/admin/login-modules/new'
+    response = _post(client, path, {'params_json': '['}, token_path=path,
+                     follow_redirects=True)
+    module = _soup(response)
+    assert invalid_json in module.get_text(' ', strip=True)
+    assert [event['value'] for event in module.select('[name=event_type] option')] == [
+        'logon', 'logoff',
+    ]

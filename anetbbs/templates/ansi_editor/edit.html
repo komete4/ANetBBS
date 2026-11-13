@@ -19,10 +19,10 @@
     </a>
     <div class="dropdown d-inline">
         <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-            <i class="bi bi-download"></i> More formats
+            <i class="bi bi-download"></i> {{ t('admin.appearance.more_formats', 'More formats') }}
         </button>
         <ul class="dropdown-menu" style="background-color:var(--theme-bg-dark);border:1px solid var(--theme-primary);">
-            <li><a class="dropdown-item" href="{{ url_for('ansi_editor.raw_bin', art_id=art.id) }}">.bin (raw char+attribute)</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('ansi_editor.raw_bin', art_id=art.id) }}">{{ t('admin.appearance.bin_raw_char_attribute_lowercase', '.bin (raw char+attribute)') }}</a></li>
             <li><a class="dropdown-item" href="{{ url_for('ansi_editor.raw_xbin', art_id=art.id) }}">.xb (XBin)</a></li>
             <li><a class="dropdown-item" href="{{ url_for('ansi_editor.raw_pcboard', art_id=art.id) }}">.pcb (PCBoard @X codes)</a></li>
             <li><a class="dropdown-item" href="{{ url_for('ansi_editor.raw_pipe', art_id=art.id) }}">.ren (Renegade/Mystic pipe codes)</a></li>
@@ -31,15 +31,15 @@
     </div>
     <form method="post" action="{{ url_for('ansi_editor.duplicate', art_id=art.id) }}" style="display:inline;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-files"></i> Duplicate</button>
+        <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-files"></i> {{ t('admin.appearance.duplicate', 'Duplicate') }}</button>
     </form>
     <a href="{{ url_for('ansi_editor.browse', art_id=art.id) }}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-save"></i> Save to disk
+        <i class="bi bi-save"></i> {{ t('admin.appearance.save_to_disk', 'Save to disk') }}
     </a>
     <a href="{{ url_for('ansi_editor.browse') }}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-folder2-open"></i> Open from disk
+        <i class="bi bi-folder2-open"></i> {{ t('admin.appearance.open_from_disk', 'Open from disk') }}
     </a>
-    <a href="{{ url_for('ansi_editor.index') }}" class="btn btn-link btn-sm">← Library</a>
+    <a href="{{ url_for('ansi_editor.index') }}" class="btn btn-link btn-sm">{{ t('admin.appearance.library_back', '← Library') }}</a>
 </div>
 
 {% set save_url = url_for('ansi_editor.save', art_id=art.id) %}
@@ -49,27 +49,25 @@
 <div class="card mt-3">
     <div class="card-header"><i class="bi bi-arrow-right-square"></i> {{ t('admin.ui.apply_to_a_bbs_menu', 'Apply to a BBS Menu') }}</div>
     <div class="card-body">
-        <p class="small text-muted mb-2">Pick a menu and click Apply — this art
-            replaces the auto-rendered screen for that menu. Save your work
-            first; the rendered ANSI from the last save is what gets applied.</p>
+        <p class="small text-muted mb-2">{{ t('admin.appearance.pick_a_menu_and_click_apply_this_art_replaces_the_auto_rendered_screen_for_that_menu_save_your_work_first_the_rendered_ansi_from_the_last_save_is_what_gets_applied_section', 'Pick a menu and click Apply — this art replaces the auto-rendered screen for that menu. Save your work first; the rendered ANSI from the last save is what gets applied.') }}</p>
         <form method="post" action="{{ url_for('ansi_editor.apply_to_menu') }}"
               class="row g-2 align-items-end">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="art_id" value="{{ art.id }}">
             <div class="col-md-8">
-                <label class="form-label">Target Menu</label>
+                <label class="form-label">{{ t('admin.appearance.target_menu', 'Target Menu') }}</label>
                 <select name="menu_id" class="form-select" required>
                     {% for m in menus %}
                         <option value="{{ m.id }}">
                             {{ m.name }} — {{ m.title }}
-                            {% if m.is_default %}(default){% endif %}
+                            {% if m.is_default %}{{ t('admin.appearance.default_lowercase', '(default)') }}{% endif %}
                         </option>
                     {% endfor %}
                 </select>
             </div>
             <div class="col-md-4">
                 <button class="btn btn-success w-100"
-                        onclick="return confirm('Apply this art as the ANSI screen for the selected menu?')">
+                        onclick="return confirm(this.dataset.confirm)" data-confirm="{{ t('admin.appearance.apply_menu', 'Apply this art as the ANSI screen for the selected menu?') }}">
                     <i class="bi bi-check2-circle"></i> {{ t('ui.apply', 'Apply') }}
                 </button>
             </div>
@@ -80,24 +78,22 @@
 <div class="card mt-3">
     <div class="card-header"><i class="bi bi-display"></i> {{ t('admin.ui.apply_to_a_screen_slot', 'Apply to a Screen Slot') }}</div>
     <div class="card-body">
-        <p class="small text-muted mb-2">Set this art as a logon, logoff, or new-user
-            screen. Save your work first. This writes directly to the screen slot — no
-            paste required.</p>
+        <p class="small text-muted mb-2">{{ t('admin.appearance.set_this_art_as_a_logon_logoff_or_new_user_screen_save_your_work_first_this_writes_directly_to_the_screen_slot_no_paste_required_section', 'Set this art as a logon, logoff, or new-user screen. Save your work first. This writes directly to the screen slot — no paste required.') }}</p>
         <form method="post" action="{{ url_for('ansi_editor.apply_to_screen') }}"
               class="row g-2 align-items-end">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="art_id" value="{{ art.id }}">
             <div class="col-md-8">
-                <label class="form-label">Screen Slot</label>
+                <label class="form-label">{{ t('admin.appearance.screen_slot', 'Screen Slot') }}</label>
                 <select name="slot" class="form-select" required>
-                    <option value="welcome">welcome — pre-login / logon screen</option>
-                    <option value="goodbye">goodbye — logoff screen</option>
-                    <option value="newuser">newuser — new user registration screen</option>
+                    <option value="welcome">{{ t('admin.appearance.welcome_pre_login_logon_screen_lowercase_section', 'welcome — pre-login / logon screen') }}</option>
+                    <option value="goodbye">{{ t('admin.appearance.goodbye_logoff_screen_lowercase_section', 'goodbye — logoff screen') }}</option>
+                    <option value="newuser">{{ t('admin.appearance.newuser_new_user_registration_screen_lowercase_section', 'newuser — new user registration screen') }}</option>
                 </select>
             </div>
             <div class="col-md-4">
                 <button class="btn btn-info w-100"
-                        onclick="return confirm('Apply this art to the selected screen slot?')">
+                        onclick="return confirm(this.dataset.confirm)" data-confirm="{{ t('admin.appearance.apply_screen', 'Apply this art to the selected screen slot?') }}">
                     <i class="bi bi-check2-circle"></i> {{ t('ui.apply', 'Apply') }}
                 </button>
             </div>

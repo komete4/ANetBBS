@@ -8,19 +8,15 @@
 </div>
 
 <p class="text-muted">
-  Custom menus shown to Commodore 64/128 (PETSCII) users -- completely
-  separate from the ANSI "BBS Menus" tree, since most ANSI actions (art
-  screens, chat, most doors) have no PETSCII equivalent. If no menu here
-  has "Default" checked, PETSCII sessions use the built-in Phase 1 menu
-  unchanged.
+  {{ t('admin.appearance.custom_menus_shown_to_commodore_64_128_petscii_users_completely_separate_from_the_ansi_bbs_menus_tree_since_most_ansi_actions_art_screens_chat_most_doors_have_no_petscii_equivalent_if_no_menu_here_has_default_checked_petscii_sessions_use_the_built_in_phase_1_menu_unchanged', 'Custom menus shown to Commodore 64/128 (PETSCII) users -- completely separate from the ANSI "BBS Menus" tree, since most ANSI actions (art screens, chat, most doors) have no PETSCII equivalent. If no menu here has "Default" checked, PETSCII sessions use the built-in Phase 1 menu unchanged.') }}
 </p>
 
 <div class="mb-3">
-  <a href="{{ url_for('petscii_menu_admin.new_menu') }}" class="btn btn-primary"><i class="bi bi-plus"></i> New PETSCII menu</a>
+  <a href="{{ url_for('petscii_menu_admin.new_menu') }}" class="btn btn-primary"><i class="bi bi-plus"></i> {{ t('admin.appearance.new_petscii_menu', 'New PETSCII menu') }}</a>
 </div>
 
 <table class="table table-dark table-hover">
-  <thead><tr><th>{{ t('ui.name', 'Name') }}</th><th>{{ t('ui.title', 'Title') }}</th><th>{{ t('ui.items', 'Items') }}</th><th>Default?</th><th>{{ t('ui.min_access', 'Min access') }}</th><th></th></tr></thead>
+  <thead><tr><th>{{ t('ui.name', 'Name') }}</th><th>{{ t('ui.title', 'Title') }}</th><th>{{ t('ui.items', 'Items') }}</th><th>{{ t('admin.appearance.default', 'Default?') }}</th><th>{{ t('ui.min_access', 'Min access') }}</th><th></th></tr></thead>
   <tbody>
     {% for m in menus %}
     <tr>
@@ -31,14 +27,14 @@
       <td>{{ m.min_access }}</td>
       <td>
         <a href="{{ url_for('petscii_menu_admin.edit_menu', menu_id=m.id) }}" class="btn btn-sm btn-primary"><i class="bi bi-pencil"></i></a>
-        <form method="post" action="{{ url_for('petscii_menu_admin.delete_menu', menu_id=m.id) }}" class="d-inline" onsubmit="return confirm('Delete PETSCII menu {{ m.name }}?')">
+        <form method="post" action="{{ url_for('petscii_menu_admin.delete_menu', menu_id=m.id) }}" class="d-inline" onsubmit="return confirm(this.dataset.confirm)" data-confirm="{{ t('admin.appearance.delete_petscii', 'Delete PETSCII menu {name}?', name=m.name) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button>
         </form>
       </td>
     </tr>
     {% else %}
-    <tr><td colspan="6" class="text-muted">No PETSCII menus yet -- PETSCII sessions use the built-in menu. Click "New PETSCII menu" to build a custom one.</td></tr>
+    <tr><td colspan="6" class="text-muted">{{ t('admin.appearance.no_petscii_menus_yet_petscii_sessions_use_the_built_in_menu_click_new_petscii_menu_to_build_a_custom_one', 'No PETSCII menus yet -- PETSCII sessions use the built-in menu. Click "New PETSCII menu" to build a custom one.') }}</td></tr>
     {% endfor %}
   </tbody>
 </table>

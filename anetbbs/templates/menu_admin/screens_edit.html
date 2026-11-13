@@ -2,7 +2,7 @@
 {% block title %}{% if row %}{{ t('ui.edit', 'Edit') }}{% else %}{{ t('ui.new', 'New') }}{% endif %} {{ t('admin.ui.ansi_screen', 'ANSI Screen') }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-tv"></i> {% if row %}{{ t('admin.ui.edit_screen', 'Edit screen') }} <code>{{ row.slot }}</code>{% else %}New ANSI screen{% endif %}</h1>
+    <h1><i class="bi bi-tv"></i> {% if row %}{{ t('admin.ui.edit_screen', 'Edit screen') }} <code>{{ row.slot }}</code>{% else %}{{ t('admin.appearance.new_ansi_screen', 'New ANSI screen') }}{% endif %}</h1>
 </div>
 
 <form method="post">
@@ -10,22 +10,21 @@
 
     <div class="row mb-3">
         <div class="col-md-4">
-            <label class="form-label">Slot name (key)</label>
+            <label class="form-label">{{ t('admin.appearance.slot_name_key', 'Slot name (key)') }}</label>
             {% if row and row.slot in ('welcome','goodbye','newuser') %}
                 <input type="text" name="slot" class="form-control" value="{{ row.slot }}" readonly>
-                <small class="text-muted">This is a built-in slot used by the session lifecycle.</small>
+                <small class="text-muted">{{ t('admin.appearance.this_is_a_built_in_slot_used_by_the_session_lifecycle', 'This is a built-in slot used by the session lifecycle.') }}</small>
             {% else %}
                 <input type="text" name="slot" class="form-control"
                        value="{{ row.slot if row else prefill_slot }}" required
                        placeholder="welcome, goodbye, newuser, weather_intro, ...">
                 <small class="text-muted">
-                    Built-in slots: <code>welcome</code>, <code>goodbye</code>, <code>newuser</code>.
-                    Custom slots can be referenced from menu items via action_type=<code>ansi</code>.
+                    {{ t('admin.appearance.screen_slots_help', 'Built-in slots: {slots}. To show a custom slot from a menu, use action_type={action}.', slots='welcome, goodbye, newuser', action='ansi') }}
                 </small>
             {% endif %}
         </div>
         <div class="col-md-8">
-            <label class="form-label">Title (optional, sysop reference only)</label>
+            <label class="form-label">{{ t('admin.appearance.title_optional_sysop_reference_only', 'Title (optional, sysop reference only)') }}</label>
             <input type="text" name="title" class="form-control" value="{{ row.title if row else '' }}" maxlength="120">
         </div>
     </div>
@@ -37,12 +36,11 @@
                 <textarea id="ansi-source" name="body" class="form-control font-monospace"
                           rows="20" style="white-space: pre;" oninput="updateAnsiPreview()">{{ row.body if row else '' }}</textarea>
                 <small class="text-muted">
-                    Paste any .ans file content. Codes like
-                    <code>\x1b[1;36m</code>, <code>\x1b[2J\x1b[H</code> work.
+                    {{ t('admin.appearance.screen_ansi_example', 'Paste the contents of a .ans file. ANSI codes such as {color} and {clear} are supported.', color='\\x1b[1;36m', clear='\\x1b[2J\\x1b[H') }}
                 </small>
             </div>
             <div class="col-md-6">
-                <label class="form-label small">Live preview:</label>
+                <label class="form-label small">{{ t('admin.appearance.live_preview_label', 'Live preview:') }}</label>
                 <pre id="ansi-preview" class="font-monospace"
                      style="background:#000;color:#ccc;padding:10px;min-height:400px;
                             border:1px solid var(--theme-border);border-radius:4px;
@@ -54,7 +52,7 @@
     <div class="form-check mb-2">
         <input type="checkbox" name="pause_after" id="pa" class="form-check-input"
                {% if row and row.pause_after %}checked{% endif %}>
-        <label for="pa" class="form-check-label">Wait for user to press Enter before continuing</label>
+        <label for="pa" class="form-check-label">{{ t('admin.appearance.wait_for_user_to_press_enter_before_continuing', 'Wait for user to press Enter before continuing') }}</label>
     </div>
     <div class="form-check mb-3">
         <input type="checkbox" name="is_active" id="ia" class="form-check-input"

@@ -5,14 +5,12 @@
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-folder2-open"></i> {{ t('ui.heading.browse_ansi_files_on_disk', 'Browse ANSI files on disk') }}</h1>
-    <p>Real <code>.ans</code> files under each configured directory (set via
-        <code>ANSI_EDITOR_BROWSE_DIRS</code>) — separate from, and in addition
-        to, the art library above.</p>
+    <p>{{ t('admin.appearance.browse_help', 'Browse .ans files in the directories configured with {setting}, separate from the art library.', setting='ANSI_EDITOR_BROWSE_DIRS') }}</p>
 </div>
 
 {% if art_id %}
 <div class="alert alert-info">
-    Saving <strong>this piece</strong> to disk — pick a directory and filename below.
+    {{ t('admin.appearance.browse_save_help', 'Choose a directory and filename to save this piece to disk.') }}
 </div>
 {% endif %}
 
@@ -26,13 +24,13 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="root" value="{{ root.label }}">
             <div class="col-md-8">
-                <label class="form-label small">Save as (filename)</label>
+                <label class="form-label small">{{ t('admin.appearance.save_as_filename', 'Save as (filename)') }}</label>
                 <input type="text" name="filename" class="form-control form-control-sm"
-                       placeholder="e.g. matrix.ans">
+                       placeholder="{{ t('admin.appearance.e_g_matrix_ans_lowercase', 'e.g. matrix.ans') }}">
             </div>
             <div class="col-md-4">
                 <button class="btn btn-primary btn-sm w-100">
-                    <i class="bi bi-save"></i> Save here
+                    <i class="bi bi-save"></i> {{ t('admin.appearance.save_here', 'Save here') }}
                 </button>
             </div>
         </form>
@@ -60,13 +58,13 @@
             </tbody>
         </table>
         {% else %}
-        <div class="text-muted small">No .ans files here yet.</div>
+        <div class="text-muted small">{{ t('admin.appearance.no_ans_files_here_yet', 'No .ans files here yet.') }}</div>
         {% endif %}
     </div>
 </div>
 {% else %}
-<div class="text-muted">No browse directories configured.</div>
+<div class="text-muted">{{ t('admin.appearance.no_browse_directories_configured', 'No browse directories configured.') }}</div>
 {% endfor %}
 
-<a href="{{ url_for('ansi_editor.index') }}" class="btn btn-link btn-sm">← Library</a>
+<a href="{{ url_for('ansi_editor.index') }}" class="btn btn-link btn-sm">{{ t('admin.appearance.library_back', '← Library') }}</a>
 {% endblock %}

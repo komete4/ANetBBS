@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Logon/Logoff Modules - Admin{% endblock %}
+{% block title %}{{ t('admin.appearance.logon_logoff_modules_admin_title', 'Logon/Logoff Modules - Admin') }}{% endblock %}
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-lightning-charge-fill"></i> {{ t('ui.heading.logon_logoff_modules', 'Logon / Logoff Modules') }}</h1>
@@ -13,14 +13,14 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn {{ 'btn-success' if fast_logon_enabled else 'btn-outline-secondary' }}">
             <i class="bi bi-lightning-fill"></i>
-            Fast Logon: <strong>{{ 'ON' if fast_logon_enabled else 'OFF' }}</strong>
+            {{ t('admin.appearance.fast_logon_label', 'Fast Logon:') }} <strong>{{ t('ui.enabled', 'ON') if fast_logon_enabled else t('ui.disabled', 'OFF') }}</strong>
         </button>
     </form>
-    <small class="text-muted">When ON, users are prompted at login to skip intro modules.</small>
+    <small class="text-muted">{{ t('admin.appearance.when_on_users_are_prompted_at_login_to_skip_intro_modules', 'When ON, users are prompted at login to skip intro modules.') }}</small>
 </div>
 
-{% for event_label, mods in [('Logon', logon_mods), ('Logoff', logoff_mods)] %}
-<h5 class="mt-4">{{ event_label }} Modules</h5>
+{% for is_logon, mods in [(true, logon_mods), (false, logoff_mods)] %}
+<h5 class="mt-4">{% if is_logon %}{{ t('admin.appearance.logon_modules', 'Logon Modules') }}{% else %}{{ t('admin.appearance.logoff_modules', 'Logoff Modules') }}{% endif %}</h5>
 {% if mods %}
 <div class="table-responsive">
 <table class="table table-sm table-hover align-middle">
@@ -29,8 +29,8 @@
             <th>{{ t('ui.sort', 'Sort') }}</th>
             <th>{{ t('ui.name', 'Name') }}</th>
             <th>{{ t('ui.type', 'Type') }}</th>
-            <th>Min Level</th>
-            <th>Skip Fast?</th>
+            <th>{{ t('admin.appearance.min_level', 'Min Level') }}</th>
+            <th>{{ t('admin.appearance.skip_fast', 'Skip Fast?') }}</th>
             <th>{{ t('ui.active', 'Active') }}</th>
             <th>{{ t('ui.actions', 'Actions') }}</th>
         </tr>
@@ -50,16 +50,16 @@
                 <form method="post" action="{{ url_for('login_modules_admin.toggle', mod_id=mod.id) }}" style="display:inline">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button class="btn btn-sm {{ 'btn-success' if mod.is_active else 'btn-outline-secondary' }}">
-                        {{ 'On' if mod.is_active else 'Off' }}
+                        {{ t('ui.enabled', 'On') if mod.is_active else t('ui.disabled', 'Off') }}
                     </button>
                 </form>
             </td>
             <td>
                 <a href="{{ url_for('login_modules_admin.edit', mod_id=mod.id) }}" class="btn btn-sm btn-outline-primary">{{ t('ui.edit', 'Edit') }}</a>
                 <form method="post" action="{{ url_for('login_modules_admin.delete', mod_id=mod.id) }}" style="display:inline"
-                      onsubmit="return confirm('Delete module {{ mod.name }}?')">
+                      onsubmit="return confirm(this.dataset.confirm)" data-confirm="{{ t('admin.appearance.delete_module', 'Delete module {name}?', name=mod.name) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button class="btn btn-sm btn-outline-danger">Del</button>
+                    <button class="btn btn-sm btn-outline-danger">{{ t('admin.appearance.del', 'Del') }}</button>
                 </form>
             </td>
         </tr>
@@ -68,20 +68,20 @@
 </table>
 </div>
 {% else %}
-<p class="text-muted">{{ t('ui.no', 'No') }} {{ event_label.lower() }} modules configured.</p>
+<p class="text-muted">{% if is_logon %}{{ t('admin.appearance.no_logon_modules', 'No logon modules configured.') }}{% else %}{{ t('admin.appearance.no_logoff_modules', 'No logoff modules configured.') }}{% endif %}</p>
 {% endif %}
 {% endfor %}
 
 <div class="mt-4 card p-3">
-    <h6>Module Types</h6>
+    <h6>{{ t('admin.appearance.module_types', 'Module Types') }}</h6>
     <ul class="mb-0 small">
-        <li><code>wall</code> — Show the Graffiti Wall</li>
-        <li><code>ansi</code> — Display an ANSI screen slot (params: <code>{"slot":"welcome"}</code>)</li>
-        <li><code>file_bulletin</code> — Browse file bulletins (.txt/.asc/.ans) — manage which files show at
+        <li><code>wall</code> {{ t('admin.appearance.show_the_graffiti_wall_dash', '— Show the Graffiti Wall') }}</li>
+        <li><code>ansi</code> {{ t('admin.appearance.display_an_ansi_screen_slot_params_dash_label', '— Display an ANSI screen slot (params:') }} <code>{"slot":"welcome"}</code>)</li>
+        <li><code>file_bulletin</code> {{ t('admin.appearance.browse_file_bulletins_txt_asc_ans_manage_which_files_show_at_dash_section', '— Browse file bulletins (.txt/.asc/.ans) — manage which files show at') }}
             <a href="{{ url_for('file_bulletins_admin.index') }}">{{ t('admin.ui.bulletins_files', 'Bulletins → Files') }}</a></li>
-        <li><code>shell</code> — Run a shell command (params: <code>{"command":"/path/script.sh"}</code>)</li>
-        <li><code>door_native</code> — Native Linux door binary (params: <code>{"path":"/path/door","args":"--node $NODE"}</code>)</li>
-        <li><code>door_python</code> — Python door module (params: <code>{"module":"anetbbs.doors.mything","func":"run"}</code>)</li>
+        <li><code>shell</code> {{ t('admin.appearance.run_a_shell_command_params_dash_label', '— Run a shell command (params:') }} <code>{"command":"/path/script.sh"}</code>)</li>
+        <li><code>door_native</code> {{ t('admin.appearance.native_linux_door_binary_params_dash_label', '— Native Linux door binary (params:') }} <code>{"path":"/path/door","args":"--node $NODE"}</code>)</li>
+        <li><code>door_python</code> {{ t('admin.appearance.python_door_module_params_dash_label', '— Python door module (params:') }} <code>{"module":"anetbbs.doors.mything","func":"run"}</code>)</li>
     </ul>
 </div>
 {% endblock %}

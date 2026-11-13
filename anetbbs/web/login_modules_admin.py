@@ -9,6 +9,7 @@ Routes:
 """
 from __future__ import annotations
 
+from ..features.i18n import translate
 import json
 import os
 
@@ -55,7 +56,7 @@ def _params_help(module_type: str) -> str:
                        '-- the login-event POST to FSX_DAT always happens regardless of '
                        'this module or fast-logon, same as the local Last Callers feed.',
     }
-    return helps.get(module_type, '{}')
+    return translate(f'admin.appearance.params.{module_type}', helps.get(module_type, '{}'))
 
 
 def _env_path():
@@ -111,10 +112,10 @@ def fast_logon_toggle():
     try:
         _write_env_key('FAST_LOGON_ENABLED', 'true' if new_val else 'false')
     except Exception as e:
-        flash(f'Fast logon updated in memory but .env write failed: {e}', 'warning')
+        flash(translate('login_modules_admin.notice.env_failed', 'Fast logon updated in memory but .env write failed: {e}', e=e), 'warning')
         return redirect(url_for('.index'))
-    state = 'enabled' if new_val else 'disabled'
-    flash(f'Fast logon {state}.', 'success')
+    flash(translate('admin.appearance.fast_enabled', 'Fast logon enabled.') if new_val
+          else translate('admin.appearance.fast_disabled', 'Fast logon disabled.'), 'success')
     return redirect(url_for('.index'))
 
 
@@ -127,7 +128,7 @@ def new():
         try:
             json.loads(params_raw)
         except json.JSONDecodeError:
-            flash('params_json is not valid JSON.', 'danger')
+            flash(translate('login_modules_admin.notice.invalid_json', 'params_json is not valid JSON.'), 'danger')
             return redirect(url_for('.new'))
         mod = LoginModule(
             name=request.form['name'].strip(),
@@ -142,7 +143,7 @@ def new():
         )
         db.session.add(mod)
         db.session.commit()
-        flash(f'Module "{mod.name}" created.', 'success')
+        flash(translate('login_modules_admin.notice.created', 'Module "{name}" created.', name=mod.name), 'success')
         return redirect(url_for('.index'))
     return render_template('admin/login_module_form.html',
                            mod=None,
@@ -161,7 +162,7 @@ def edit(mod_id):
         try:
             json.loads(params_raw)
         except json.JSONDecodeError:
-            flash('params_json is not valid JSON.', 'danger')
+            flash(translate('login_modules_admin.notice.invalid_json', 'params_json is not valid JSON.'), 'danger')
             return redirect(url_for('.edit', mod_id=mod_id))
         mod.name = request.form['name'].strip()
         mod.description = request.form.get('description', '').strip()
@@ -173,7 +174,7 @@ def edit(mod_id):
         mod.sort_order = int(request.form.get('sort_order') or 0)
         mod.skip_on_fast_logon = ('skip_on_fast_logon' in request.form)
         db.session.commit()
-        flash(f'Module "{mod.name}" updated.', 'success')
+        flash(translate('login_modules_admin.notice.updated', 'Module "{name}" updated.', name=mod.name), 'success')
         return redirect(url_for('.index'))
     return render_template('admin/login_module_form.html',
                            mod=mod,
@@ -190,7 +191,7 @@ def delete(mod_id):
     name = mod.name
     db.session.delete(mod)
     db.session.commit()
-    flash(f'Module "{name}" deleted.', 'success')
+    flash(translate('login_modules_admin.notice.deleted', 'Module "{name}" deleted.', name=name), 'success')
     return redirect(url_for('.index'))
 
 
@@ -201,6 +202,9 @@ def toggle(mod_id):
     mod = LoginModule.query.get_or_404(mod_id)
     mod.is_active = not mod.is_active
     db.session.commit()
-    state = 'enabled' if mod.is_active else 'disabled'
-    flash(f'Module "{mod.name}" {state}.', 'success')
+    if mod.is_active:
+        message = translate('admin.appearance.module_enabled', 'Module "{name}" enabled.', name=mod.name)
+    else:
+        message = translate('admin.appearance.module_disabled', 'Module "{name}" disabled.', name=mod.name)
+    flash(message, 'success')
     return redirect(url_for('.index'))

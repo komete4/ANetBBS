@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Preview: {{ art.name }}{% endblock %}
+{% block title %}{{ t('admin.appearance.preview_label', 'Preview:') }} {{ art.name }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -22,8 +22,8 @@
 
 {% block content %}
 <div class="bbs-header">
-    <h1><i class="bi bi-eye-fill"></i> Preview: {{ art.name }}</h1>
-    <p>Approximate render of the saved ANSI bytes (mIRC palette).</p>
+    <h1><i class="bi bi-eye-fill"></i> {{ t('admin.appearance.preview_label', 'Preview:') }} {{ art.name }}</h1>
+    <p>{{ t('admin.appearance.approximate_render_of_the_saved_ansi_bytes_mirc_palette', 'Approximate render of the saved ANSI bytes (mIRC palette).') }}</p>
 </div>
 
 <div class="ansi-preview">
@@ -44,7 +44,7 @@
 </div>
 
 <div class="mt-3">
-    <a href="{{ url_for('ansi_editor.edit', art_id=art.id) }}" class="btn btn-link">← Back to editor</a>
+    <a href="{{ url_for('ansi_editor.edit', art_id=art.id) }}" class="btn btn-link">{{ t('admin.appearance.back_to_editor_back', '← Back to editor') }}</a>
     <a href="{{ url_for('ansi_editor.raw_ansi', art_id=art.id) }}" class="btn btn-outline-secondary btn-sm">{{ t('admin.ui.download_ans', 'Download .ans') }}</a>
 </div>
 {% endblock %}

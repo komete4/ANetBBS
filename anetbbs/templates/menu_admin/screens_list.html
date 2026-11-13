@@ -4,16 +4,13 @@
 <div class="bbs-header">
     <h1><i class="bi bi-tv"></i> {{ t('ui.heading.login_logoff_ansi_screens', 'Login / Logoff ANSI Screens') }}</h1>
     <p class="small text-muted">
-        These are the raw CP437/ANSI screens shown by the telnet/SSH/rlogin
-        BBS at lifecycle events. Welcome is shown to telnet visitors before
-        they log in; auto-login SSH/rlogin clients skip it. Goodbye appears
-        on logoff for everyone.
+        {{ t('admin.appearance.these_are_the_raw_cp437_ansi_screens_shown_by_the_telnet_ssh_rlogin_bbs_at_lifecycle_events_welcome_is_shown_to_telnet_visitors_before_they_log_in_auto_login_ssh_rlogin_clients_skip_it_goodbye_appears_on_logoff_for_everyone', 'These are the raw CP437/ANSI screens shown by the telnet/SSH/rlogin BBS at lifecycle events. Welcome is shown to telnet visitors before they log in; auto-login SSH/rlogin clients skip it. Goodbye appears on logoff for everyone.') }}
     </p>
 </div>
 
 <div class="mb-3 d-flex gap-2">
     <a href="{{ url_for('menu_admin.edit_screen') }}" class="btn btn-primary">
-        <i class="bi bi-plus"></i> New screen / slot
+        <i class="bi bi-plus"></i> {{ t('admin.appearance.new_screen_slot', 'New screen / slot') }}
     </a>
     <a href="{{ url_for('menu_admin.list_menus') }}" class="btn btn-secondary">
         <i class="bi bi-arrow-left"></i> {{ t('admin.ui.back_to_menus', 'Back to menus') }}
@@ -39,23 +36,23 @@
 {% if rows %}
 <table class="table table-sm">
     <thead>
-        <tr><th>Slot</th><th>{{ t('ui.title', 'Title') }}</th><th>{{ t('ui.active', 'Active') }}</th><th>Pause</th><th>{{ t('ui.updated', 'Updated') }}</th><th></th></tr>
+        <tr><th>{{ t('admin.appearance.slot', 'Slot') }}</th><th>{{ t('ui.title', 'Title') }}</th><th>{{ t('ui.active', 'Active') }}</th><th>{{ t('admin.appearance.pause', 'Pause') }}</th><th>{{ t('ui.updated', 'Updated') }}</th><th></th></tr>
     </thead>
     <tbody>
     {% for r in rows %}
     <tr>
         <td><code>{{ r.slot }}</code>
             {% if r.slot in ('welcome','goodbye','newuser') %}
-              <span class="badge bg-secondary ms-1">built-in</span>
+              <span class="badge bg-secondary ms-1">{{ t('admin.appearance.built_in_lowercase', 'built-in') }}</span>
             {% endif %}
         </td>
         <td>{{ r.title or '' }}</td>
         <td>{% if r.is_active %}<i class="bi bi-check-lg text-success"></i>{% else %}<i class="bi bi-x text-muted"></i>{% endif %}</td>
-        <td>{% if r.pause_after %}<span class="badge bg-warning">wait Enter</span>{% endif %}</td>
+        <td>{% if r.pause_after %}<span class="badge bg-warning">{{ t('admin.appearance.wait_enter', 'wait Enter') }}</span>{% endif %}</td>
         <td><small>{{ r.updated_at|eastern('%Y-%m-%d %H:%M', '') }}</small></td>
         <td>
             <a href="{{ url_for('menu_admin.edit_screen', screen_id=r.id) }}" class="btn btn-sm btn-primary"><i class="bi bi-pencil"></i></a>
-            <form method="post" action="{{ url_for('menu_admin.delete_screen', screen_id=r.id) }}" class="d-inline" onsubmit="return confirm('Delete this screen?');">
+            <form method="post" action="{{ url_for('menu_admin.delete_screen', screen_id=r.id) }}" class="d-inline" onsubmit="return confirm(this.dataset.confirm);" data-confirm="{{ t('admin.appearance.delete_screen', 'Delete this screen?') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
             </form>
@@ -65,6 +62,6 @@
     </tbody>
 </table>
 {% else %}
-<p class="text-muted">No screens defined yet.</p>
+<p class="text-muted">{{ t('admin.appearance.no_screens_defined_yet', 'No screens defined yet.') }}</p>
 {% endif %}
 {% endblock %}

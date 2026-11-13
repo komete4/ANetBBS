@@ -8,13 +8,11 @@
 </div>
 
 <p class="text-muted">
-  Data-driven menus shown to users on telnet/SSH/rlogin. The menu named
-  <code>main</code> is the entry point after login. If no menus exist the
-  hard-coded fallback is used.
+  {{ t('admin.appearance.menu_list_intro', 'Data-driven menus shown to users on telnet/SSH/rlogin. The menu named {main} is the entry point after login. If no menus exist the hard-coded fallback is used.', main='main') }}
 </p>
 
 <div class="mb-3">
-  <a href="{{ url_for('menu_admin.new_menu') }}" class="btn btn-primary"><i class="bi bi-plus"></i> New menu</a>
+  <a href="{{ url_for('menu_admin.new_menu') }}" class="btn btn-primary"><i class="bi bi-plus"></i> {{ t('admin.appearance.new_menu', 'New menu') }}</a>
   <a href="{{ url_for('menu_admin.list_screens') }}" class="btn btn-outline-primary"><i class="bi bi-tv"></i> {{ t('admin.ui.ansi_screens_welcome_goodbye', 'ANSI screens (welcome / goodbye)') }}</a>
   {% if menus|length > 0 %}
     <form method="post" action="{{ url_for('menu_admin.seed_samples') }}" class="d-inline">
@@ -25,14 +23,14 @@
   {% if menus|length == 0 %}
     <form method="post" action="{{ url_for('menu_admin.seed_defaults') }}" class="d-inline">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button class="btn btn-outline-secondary"><i class="bi bi-magic"></i> Seed default 'main' menu</button>
+      <button class="btn btn-outline-secondary"><i class="bi bi-magic"></i> {{ t('admin.appearance.seed_default_main_menu', "Seed default 'main' menu") }}</button>
     </form>
   {% endif %}
 </div>
 
 {% if roots %}
 <div class="card mb-3">
-  <div class="card-header"><i class="bi bi-diagram-3"></i> Menu tree (entry points → submenus)</div>
+  <div class="card-header"><i class="bi bi-diagram-3"></i> {{ t('admin.appearance.menu_tree_entry_points_submenus', 'Menu tree (entry points → submenus)') }}</div>
   <ul class="list-group list-group-flush" id="menu-tree">
   {% macro render_node(m, depth=0, visited=[]) %}
     {% if m.name not in visited %}
@@ -43,9 +41,9 @@
           <strong><code>{{ m.name }}</code></strong>
         </a>
         — {{ m.title }}
-        {% if m.is_default %}<span class="badge bg-success ms-1">default entry</span>{% endif %}
-        {% if m.min_access > 0 %}<span class="badge bg-warning ms-1">access ≥ {{ m.min_access }}</span>{% endif %}
-        <small class="text-muted ms-2">({{ m.items.count() }} items)</small>
+        {% if m.is_default %}<span class="badge bg-success ms-1">{{ t('admin.appearance.default_entry_lowercase', 'default entry') }}</span>{% endif %}
+        {% if m.min_access > 0 %}<span class="badge bg-warning ms-1">{{ t('admin.appearance.access_lowercase', 'access ≥') }} {{ m.min_access }}</span>{% endif %}
+        <small class="text-muted ms-2">{{ t('admin.appearance.item_count', '({count} items)', count=m.items.count()) }}</small>
       </li>
       {% for c in children.get(m.name, []) %}
         {% set child_menu = name_to_menu.get(c.name) %}
@@ -64,7 +62,7 @@
 
 <h4 class="mt-3">{{ t('admin.ui.all_menus', 'All menus') }}</h4>
 <table class="table table-dark table-hover">
-  <thead><tr><th>{{ t('ui.name', 'Name') }}</th><th>{{ t('ui.title', 'Title') }}</th><th>{{ t('ui.items', 'Items') }}</th><th>Default?</th><th>{{ t('ui.min_access', 'Min access') }}</th><th></th></tr></thead>
+  <thead><tr><th>{{ t('ui.name', 'Name') }}</th><th>{{ t('ui.title', 'Title') }}</th><th>{{ t('ui.items', 'Items') }}</th><th>{{ t('admin.appearance.default', 'Default?') }}</th><th>{{ t('ui.min_access', 'Min access') }}</th><th></th></tr></thead>
   <tbody>
     {% for m in menus %}
     <tr>
@@ -75,14 +73,14 @@
       <td>{{ m.min_access }}</td>
       <td>
         <a href="{{ url_for('menu_admin.edit_menu', menu_id=m.id) }}" class="btn btn-sm btn-primary"><i class="bi bi-pencil"></i></a>
-        <form method="post" action="{{ url_for('menu_admin.delete_menu', menu_id=m.id) }}" class="d-inline" onsubmit="return confirm('Delete menu {{ m.name }}?')">
+        <form method="post" action="{{ url_for('menu_admin.delete_menu', menu_id=m.id) }}" class="d-inline" onsubmit="return confirm(this.dataset.confirm)" data-confirm="{{ t('admin.appearance.delete_menu', 'Delete menu {name}?', name=m.name) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button>
         </form>
       </td>
     </tr>
     {% else %}
-    <tr><td colspan="6" class="text-muted">No menus yet — click "Seed default 'main' menu" or "New menu".</td></tr>
+    <tr><td colspan="6" class="text-muted">{{ t('admin.appearance.no_menus_yet_click_seed_default_main_menu_or_new_menu_section', 'No menus yet — click "Seed default \'main\' menu" or "New menu".') }}</td></tr>
     {% endfor %}
   </tbody>
 </table>

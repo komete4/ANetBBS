@@ -129,6 +129,7 @@ class RowColumnRippleOpsTests(unittest.TestCase):
     let W = 4, H = 3;
     let cells = [];
     let dirty = false;
+    const unsavedLabel = 'unsaved';
     const drawnIndexes = [];
     function drawCell(i) { drawnIndexes.push(i); }
     function pushHistory() {}

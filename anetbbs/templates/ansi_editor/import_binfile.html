@@ -5,11 +5,7 @@
 {% block content %}
 <div class="bbs-header">
     <h1><i class="bi bi-upload"></i> {{ t('ui.heading.import_bin_xbin_file', 'Import .BIN / .XBin File') }}</h1>
-    <p>Upload a raw <code>.bin</code> or <code>.xb</code>/<code>.xbin</code> file.
-       Format is picked from the filename extension. A plain <code>.bin</code>
-       has no way to declare its own width — set it below (80 is the
-       near-universal convention); an XBin file's real width/height come
-       from its own header and the field below is ignored for it.</p>
+    <p>{{ t('admin.appearance.binary_import_help', 'Upload a .bin, .xb or .xbin file. The extension selects the format. Set the width for .bin files below (normally 80). XBin stores its dimensions in the file header.') }}</p>
 </div>
 
 <form method="post" enctype="multipart/form-data" class="card">
@@ -22,12 +18,12 @@
                        accept=".bin,.xb,.xbin">
             </div>
             <div class="col-md-3">
-                <label class="form-label">Width (.bin only, default 80)</label>
+                <label class="form-label">{{ t('admin.appearance.width_bin_only_default_80', 'Width (.bin only, default 80)') }}</label>
                 <input type="number" name="width" class="form-control" value="80" min="20" max="132">
             </div>
         </div>
         <div class="mb-3">
-            <label class="form-label">Name (optional)</label>
+            <label class="form-label">{{ t('admin.appearance.name_optional', 'Name (optional)') }}</label>
             <input type="text" name="name" class="form-control" placeholder="{{ t('admin.advanced.filename_used_if_blank_lowercase', '(filename used if blank)') }}">
         </div>
         <button class="btn btn-primary"><i class="bi bi-upload"></i> {{ t('admin.ui.import_edit', 'Import & Edit') }}</button>

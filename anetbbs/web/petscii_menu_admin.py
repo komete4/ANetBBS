@@ -9,6 +9,7 @@ docstring for why. Mirrors menu_admin.py's route/template shape closely
 action_type list (only what petscii_ui.py actually implements) and no
 ANSI-screen field at all.
 """
+from ..features.i18n import translate
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required
 
@@ -56,10 +57,10 @@ def new_menu():
         name = (request.form.get('name') or '').strip().lower()
         title = (request.form.get('title') or '').strip()
         if not name or not title:
-            flash('Name and title are required.', 'danger')
+            flash(translate('petscii_menu_admin.notice.name_title', 'Name and title are required.'), 'danger')
             return redirect(url_for('petscii_menu_admin.new_menu'))
         if PetsciiMenu.query.filter_by(name=name).first():
-            flash(f"PETSCII menu '{name}' already exists.", 'danger')
+            flash(translate('petscii_menu_admin.notice.exists', "PETSCII menu '{name}' already exists.", name=name), 'danger')
             return redirect(url_for('petscii_menu_admin.new_menu'))
         theme_color = (request.form.get('theme_color') or '').strip().upper()
         m = PetsciiMenu(
@@ -89,7 +90,7 @@ def edit_menu(menu_id):
         theme_color = (request.form.get('theme_color') or '').strip().upper()
         m.theme_color = theme_color if theme_color in COLOR_NAMES else None
         db.session.commit()
-        flash('PETSCII menu saved.', 'success')
+        flash(translate('petscii_menu_admin.notice.saved', 'PETSCII menu saved.'), 'success')
         return redirect(url_for('petscii_menu_admin.edit_menu', menu_id=m.id))
     items = m.items.order_by(PetsciiMenuItem.sort_order, PetsciiMenuItem.id).all()
     return render_template('petscii_menu_admin/edit.html', menu=m, items=items,
@@ -103,7 +104,7 @@ def edit_menu(menu_id):
 def delete_menu(menu_id):
     m = PetsciiMenu.query.get_or_404(menu_id)
     db.session.delete(m); db.session.commit()
-    flash(f"Deleted PETSCII menu '{m.name}'.", 'success')
+    flash(translate('petscii_menu_admin.notice.deleted', "Deleted PETSCII menu '{name}'.", name=m.name), 'success')
     return redirect(url_for('petscii_menu_admin.list_menus'))
 
 
@@ -164,10 +165,10 @@ def spawn_submenu(menu_id):
     hotkey = (request.form.get('hotkey') or '').strip().upper()[:4]
     label = (request.form.get('label') or title or name).strip()
     if not name or not title or not hotkey:
-        flash('Name, title and hotkey are required.', 'danger')
+        flash(translate('petscii_menu_admin.notice.submenu_required', 'Name, title and hotkey are required.'), 'danger')
         return redirect(url_for('petscii_menu_admin.edit_menu', menu_id=parent.id))
     if PetsciiMenu.query.filter_by(name=name).first():
-        flash(f"PETSCII menu '{name}' already exists.", 'danger')
+        flash(translate('petscii_menu_admin.notice.exists', "PETSCII menu '{name}' already exists.", name=name), 'danger')
         return redirect(url_for('petscii_menu_admin.edit_menu', menu_id=parent.id))
     sub = PetsciiMenu(name=name[:50], title=title[:100],
                       prompt='Choice: ', is_default=False, min_access=0)
@@ -179,5 +180,5 @@ def spawn_submenu(menu_id):
         menu_id=parent.id, hotkey=hotkey, label=label[:80],
         action_type='goto', action_args=name, sort_order=500))
     db.session.commit()
-    flash(f'Created PETSCII submenu "{name}" — edit its items below.', 'success')
+    flash(translate('petscii_menu_admin.notice.submenu_created', 'Created PETSCII submenu "{name}" — edit its items below.', name=name), 'success')
     return redirect(url_for('petscii_menu_admin.edit_menu', menu_id=sub.id))

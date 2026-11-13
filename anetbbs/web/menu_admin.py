@@ -2,6 +2,7 @@
 Web admin pages to CRUD the data-driven BBS menus.
 Routes mounted under /admin/bbs-menus/.
 """
+from ..features.i18n import translate
 import json
 import os
 from flask import Blueprint, render_template, redirect, url_for, request, flash
@@ -60,10 +61,10 @@ def new_menu():
         name = (request.form.get('name') or '').strip()
         title = (request.form.get('title') or '').strip()
         if not name or not title:
-            flash('Name and title are required.', 'danger')
+            flash(translate('menu_admin.notice.name_title', 'Name and title are required.'), 'danger')
             return redirect(url_for('menu_admin.new_menu'))
         if BbsMenu.query.filter_by(name=name).first():
-            flash(f"Menu '{name}' already exists.", 'danger')
+            flash(translate('menu_admin.notice.exists', "Menu '{name}' already exists.", name=name), 'danger')
             return redirect(url_for('menu_admin.new_menu'))
         # Real gap found in a security/performance audit: every
         # min_access/sort_order field in this file used to be
@@ -100,7 +101,7 @@ def edit_menu(menu_id):
         m.is_default = bool(request.form.get('is_default'))
         m.min_access = request.form.get('min_access', 0, type=int)
         db.session.commit()
-        flash('Menu saved.', 'success')
+        flash(translate('menu_admin.notice.saved', 'Menu saved.'), 'success')
         return redirect(url_for('menu_admin.edit_menu', menu_id=m.id))
     items = m.items.order_by(BbsMenuItem.sort_order, BbsMenuItem.id).all()
     return render_template('menu_admin/edit.html', menu=m, items=items, action_types=ACTION_TYPES)
@@ -112,7 +113,7 @@ def edit_menu(menu_id):
 def delete_menu(menu_id):
     m = BbsMenu.query.get_or_404(menu_id)
     db.session.delete(m); db.session.commit()
-    flash(f"Deleted menu '{m.name}'.", 'success')
+    flash(translate('menu_admin.notice.deleted', "Deleted menu '{name}'.", name=m.name), 'success')
     return redirect(url_for('menu_admin.list_menus'))
 
 
@@ -168,7 +169,7 @@ def seed_defaults():
     """Populate the default 'main' menu if no menus exist."""
     from ..features.menu_engine import seed_default_menus
     n = seed_default_menus()
-    flash(f'Seeded {n} default menu items.', 'success')
+    flash(translate('menu_admin.notice.defaults', 'Seeded {n} default menu items.', n=n), 'success')
     return redirect(url_for('menu_admin.list_menus'))
 
 
@@ -199,7 +200,7 @@ def edit_screen(screen_id=None):
     if request.method == 'POST':
         slot = (request.form.get('slot') or '').strip()
         if not slot:
-            flash('Slot name required.', 'danger')
+            flash(translate('menu_admin.notice.slot_required', 'Slot name required.'), 'danger')
             return redirect(url_for('menu_admin.list_screens'))
         if row is None:
             row = BbsAnsiScreen.query.filter_by(slot=slot).first()
@@ -213,7 +214,7 @@ def edit_screen(screen_id=None):
         row.pause_after = bool(request.form.get('pause_after'))
         row.is_active = bool(request.form.get('is_active'))
         db.session.commit()
-        flash(f'Screen "{row.slot}" saved.', 'success')
+        flash(translate('menu_admin.notice.screen_saved', 'Screen "{slot}" saved.', slot=row.slot), 'success')
         return redirect(url_for('menu_admin.list_screens'))
 
     # Allow GET with ?slot=foo to pre-fill (for the "Create" link from the
@@ -230,7 +231,7 @@ def edit_screen(screen_id=None):
 def delete_screen(screen_id):
     row = BbsAnsiScreen.query.get_or_404(screen_id)
     db.session.delete(row); db.session.commit()
-    flash(f'Deleted screen "{row.slot}".', 'success')
+    flash(translate('menu_admin.notice.screen_deleted', 'Deleted screen "{slot}".', slot=row.slot), 'success')
     return redirect(url_for('menu_admin.list_screens'))
 
 
@@ -250,7 +251,7 @@ def seed_samples():
     """
     main = BbsMenu.query.filter_by(name='main').first()
     if not main:
-        flash('No "main" menu found. Seed defaults first.', 'danger')
+        flash(translate('menu_admin.notice.main_required', 'No "main" menu found. Seed defaults first.'), 'danger')
         return redirect(url_for('menu_admin.list_menus'))
 
     added = 0
@@ -292,7 +293,7 @@ def seed_samples():
         added += 1
 
     db.session.commit()
-    flash(f'Added {added} sample item(s) to the main menu.', 'success')
+    flash(translate('menu_admin.notice.samples', 'Added {added} sample item(s) to the main menu.', added=added), 'success')
     return redirect(url_for('menu_admin.edit_menu', menu_id=main.id))
 
 
@@ -308,10 +309,10 @@ def spawn_submenu(menu_id):
     hotkey = (request.form.get('hotkey') or '').strip().upper()[:4]
     label = (request.form.get('label') or title or name).strip()
     if not name or not title or not hotkey:
-        flash('Name, title and hotkey are required.', 'danger')
+        flash(translate('menu_admin.notice.submenu_required', 'Name, title and hotkey are required.'), 'danger')
         return redirect(url_for('menu_admin.edit_menu', menu_id=parent.id))
     if BbsMenu.query.filter_by(name=name).first():
-        flash(f"Menu '{name}' already exists.", 'danger')
+        flash(translate('menu_admin.notice.exists', "Menu '{name}' already exists.", name=name), 'danger')
         return redirect(url_for('menu_admin.edit_menu', menu_id=parent.id))
     sub = BbsMenu(name=name[:50], title=title[:100],
                   prompt='Choice: ', is_default=False, min_access=0)
@@ -325,5 +326,5 @@ def spawn_submenu(menu_id):
         menu_id=parent.id, hotkey=hotkey, label=label[:80],
         action_type='goto', action_args=name, sort_order=500))
     db.session.commit()
-    flash(f'Created submenu "{name}" — edit its items below.', 'success')
+    flash(translate('menu_admin.notice.submenu_created', 'Created submenu "{name}" — edit its items below.', name=name), 'success')
     return redirect(url_for('menu_admin.edit_menu', menu_id=sub.id))
