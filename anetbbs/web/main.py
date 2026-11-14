@@ -17,6 +17,19 @@ from ..features.access_control import evaluate_access
 
 main_bp = Blueprint('main', __name__)
 
+@main_bp.after_app_request
+def gks_wiki_robots(response):
+    from .wiki import gks_wiki_indexing_enabled, gks_wiki_path, _GKS_WIKI_DESCRIPTIONS
+
+    if not gks_wiki_indexing_enabled():
+        return response
+    crawlable = {'/robots.txt', '/sitemap.xml'}
+    crawlable.update(gks_wiki_path(slug) for slug in _GKS_WIKI_DESCRIPTIONS)
+    if response.status_code != 200 or request.path not in crawlable:
+        response.headers['X-Robots-Tag'] = 'noindex, nofollow'
+    return response
+
+
 # In-memory cache for the dashboard's "MRC Stats" widget -- same
 # key/lock shape as control.py's _probe_cached. ANetBBS's web service
 # runs single-process (deploy/serve.py, eventlet's native WSGI server,
@@ -420,6 +433,9 @@ def search_suggest():
 def robots_txt():
     from flask import Response, request as _r
     base = _r.host_url.rstrip('/')
+    from .wiki import gks_wiki_indexing_enabled
+    if gks_wiki_indexing_enabled():
+        base = 'https://bbs.gks.es'
     body = (
         "User-agent: *\n"
         "Disallow: /admin/\n"
@@ -454,6 +470,20 @@ def sitemap_xml():
     base = _r.host_url.rstrip('/')
     out = ['<?xml version="1.0" encoding="UTF-8"?>',
            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    from .wiki import gks_wiki_indexing_enabled, gks_wiki_path, _GKS_WIKI_DESCRIPTIONS
+    if gks_wiki_indexing_enabled():
+        from ..models import WikiPage
+
+        pages = WikiPage.query.filter(
+            WikiPage.is_deleted.is_(False),
+            WikiPage.slug.in_(_GKS_WIKI_DESCRIPTIONS),
+        ).order_by(WikiPage.slug)
+        for page in pages:
+            url = 'https://bbs.gks.es' + gks_wiki_path(page.slug)
+            lastmod = page.updated_at.strftime('%Y-%m-%d') if page.updated_at else ''
+            out.append(f'<url><loc>{_xe(url)}</loc><lastmod>{lastmod}</lastmod></url>')
+        out.append('</urlset>')
+        return Response('\n'.join(out), mimetype='application/xml')
     static_paths = ['/', '/about', '/help', '/tour', '/boards/',
                     '/file-areas/', '/calendar/', '/leaderboard/',
                     '/groups/', '/bulletins/']

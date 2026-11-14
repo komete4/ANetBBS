@@ -1,5 +1,11 @@
 {% extends "base.html" %}
 {% block title %}{{ page.title }} — Wiki{% endblock %}
+{% block head_extra %}
+{% if wiki_canonical %}
+<link rel="canonical" href="{{ wiki_canonical }}">
+<meta name="description" content="{{ wiki_description }}">
+{% endif %}
+{% endblock %}
 {% block content %}
 {% include "wiki/_layout.html" %}
 

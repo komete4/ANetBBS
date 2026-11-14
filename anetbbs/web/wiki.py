@@ -40,6 +40,40 @@ from ..wiki.render import render as render_wiki, extract_outgoing_links
 
 wiki_bp = Blueprint('wiki', __name__, url_prefix='/wiki')
 
+# Editorial pages published by GKS. The rest of the wiki remains readable
+# without being included in the search index.
+_GKS_WIKI_DESCRIPTIONS = {
+    'home': 'Manual en castellano de GKS BBS. Aprende a entrar, usar los tablones y el IRC, y descubre la historia y la tecnología de las BBS.',
+    'como-entrar-en-gks': 'Guía paso a paso para crear una cuenta en GKS BBS, confirmar el correo y presentarte en los tablones. Incluye cómo entrar en #gks desde el móvil.',
+    'servicios-de-gks': 'Qué puedes usar en GKS, con enlaces a la BBS, el wiki y el webchat, servidor y puerto IRC y estado de Telnet, SSH, MRC y BinkP.',
+    'que-es-una-bbs': 'Qué significa Bulletin Board System, qué puedes hacer en una BBS moderna y por qué siguen siendo útiles para comunidades pequeñas.',
+    'historia-de-las-bbs': 'Cómo nacieron los tablones electrónicos, cómo se llamaba a una BBS y qué cambió con FidoNet, los juegos door y la web.',
+    'que-es-anetbbs': 'Qué diferencia hay entre GKS y ANetBBS, qué pinta tienen SQLite, ANSI, SSH, IRC y BinkP y qué hace falta para montar una BBS propia.',
+    'bbs-sin-internet': 'Experimento de autonomía digital. Monta una BBS en red local, reparte guías y comprueba qué sigue funcionando cuando desconectas Internet.',
+    'preguntas-frecuentes-gks': 'Respuestas sobre el alta, correo de confirmación, permisos, chat y puertos de GKS BBS.',
+}
+
+
+def gks_wiki_indexing_enabled():
+    return current_app.config.get('BBS_DOMAIN') == 'bbs.gks.es'
+
+
+def gks_wiki_path(slug):
+    return url_for('wiki.index') if slug == 'home' else url_for('wiki.view', slug=slug)
+
+
+def _gks_wiki_metadata(page):
+    if not page or not gks_wiki_indexing_enabled():
+        return {}
+    description = _GKS_WIKI_DESCRIPTIONS.get(page.slug)
+    if not description:
+        return {}
+    return {
+        'wiki_description': description,
+        'wiki_canonical': 'https://bbs.gks.es' + gks_wiki_path(page.slug),
+    }
+
+
 # Real gap found in a security/performance audit: nothing capped a
 # wiki page body's length -- the only bound was Flask's app-wide
 # MAX_CONTENT_LENGTH (110 MB, sized for file uploads, a completely
@@ -146,7 +180,7 @@ def index():
     return render_template('wiki/index.html',
                            home=home, body_html=body_html,
                            recent=recent, total=total,
-                           nav=_topnav_pages())
+                           nav=_topnav_pages(), **_gks_wiki_metadata(home))
 
 
 @wiki_bp.route('/all')
@@ -298,7 +332,7 @@ def view(slug):
     body_html = render_wiki(page.body, _all_slugs())
     return render_template('wiki/view.html', page=page,
                            body_html=body_html,
-                           nav=_topnav_pages())
+                           nav=_topnav_pages(), **_gks_wiki_metadata(page))
 
 
 # ----------------------------------------------------------------------
