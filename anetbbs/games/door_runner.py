@@ -1204,12 +1204,12 @@ def _build_dosemu_command(game, node_number, dosemu_path, token_ctx=None,
     Returns ``(cmd, game_dir)``. The COM1 link and config live in the
     launch's private scratch directory.
 
-    Drive layout (dosemu2 with FDPP assigns C:–F: to internal FreeDOS drives;
-    user ``-d`` mounts start at G:):
+    Reserve C: for the standard user drive and D:–F: to keep the door's
+    configured drive letters stable across DOSEMU2 installations:
 
       ``G:`` = FOSSIL bundle (``anetbbs/games/dos_runtime/``)
       ``H:`` = game dir (``executable_path``'s dir, or ``working_directory``)
-      ``I:`` = per-node scratch dir (``data/temp/nodeN/``) — optional
+      ``I:`` = private session scratch
 
     In the door's config point the drop-file path at ``I:\\`` (e.g.,
     ``I:\\DOOR32.SYS`` or ``I:\\DOOR.SYS``).
@@ -1303,10 +1303,10 @@ def _build_dosemu_command(game, node_number, dosemu_path, token_ctx=None,
 
     bat_body = (
         '@echo off\r\n'
+        'H:\r\n'
+        'CD \\\r\n'
         + _fossil_load
-        + tw2002_lines +
-        'H:\r\n'                        # switch to game drive
-        'CD \\\r\n'                     # root of game drive
+        + tw2002_lines
         + cmd_str + '\r\n'
         'EXIT\r\n'
     )
@@ -1324,11 +1324,18 @@ def _build_dosemu_command(game, node_number, dosemu_path, token_ctx=None,
     # and symlinks the slave at pts_path.  ANetBBS polls for the symlink then
     # opens it as com1_slave_fd.  DCD=1 is automatic (pseudo=TRUE).
     pts_path, conf_path = _dosemu_paths(node_number, scratch)
+    # DOSEMU splits hdimage on whitespace. Keep its config tokens simple
+    # even if the sysop installs their game or the BBS under a spaced path.
+    fossil_mount = _dosemu_mount_path(fossil_base, per_node_host, 'fossil')
+    game_mount = _dosemu_mount_path(game_dir, per_node_host, 'game')
     try:
         with open(conf_path, 'w') as _cf:
             _cf.write(f'$_com1 = "pts {pts_path}"\n')
             _cf.write('$_layout = "us"\n')
             _cf.write('$_loglevel = (0)\n')
+            # Defaults and -d append order vary across packages. Pin G/H/I
+            # and keep the FDPP boot and utility drives in group +1.
+            _cf.write(f'$_hdimage = "+0 -3 {fossil_mount} {game_mount} {per_node_host} +1"\n')
     except OSError as exc:
         raise OSError(f'Cannot write dosemu2 conf {conf_path}: {exc}')
 
@@ -1338,12 +1345,7 @@ def _build_dosemu_command(game, node_number, dosemu_path, token_ctx=None,
     _raw_bin = '/usr/libexec/dosemu2/dosemu2.bin'
     if os.path.isfile(_raw_bin):
         _exe = _raw_bin
-        try:
-            _dosemu_dir = os.path.join(os.path.expanduser('~'), '.dosemu')
-            os.makedirs(_dosemu_dir, exist_ok=True)
-            _boot_log = os.path.join(_dosemu_dir, 'boot.log')
-        except OSError:
-            _boot_log = '/tmp/dosemu_boot.log'  # nosec B108 -- transient debug log, safe to lose
+        _boot_log = os.path.join(per_node_host, 'boot.log')
         logger.info('dosemu2: using raw binary %s', _raw_bin)
     else:
         _exe = dosemu_path
@@ -1358,14 +1360,19 @@ def _build_dosemu_command(game, node_number, dosemu_path, token_ctx=None,
         # I/O (that flows via COM1 pts slave), but kept so FreeDOS boot
         # messages appear on the outer PTY for diagnostics.
         '-td',
-        '-f', conf_path,               # pts COM1 config
-        '-d', fossil_base,             # G: = FOSSIL bundle
-        '-d', game_dir,                # H: = game dir
+        '-f', conf_path,
+        '-E', 'I:\\_ANET.BAT',
     ]
-    if per_node_host:
-        cmd.extend(['-d', per_node_host])  # I: = per-node scratch
-    cmd.extend(['-E', 'I:\\_ANET.BAT'])
     return cmd, game_dir
+
+
+def _dosemu_mount_path(directory, scratch, alias):
+    directory = os.path.abspath(directory)
+    if re.fullmatch(r'/[A-Za-z0-9_./-]+', directory):
+        return directory
+    path = os.path.join(scratch, f'.mount-{alias}')
+    os.symlink(directory, path, target_is_directory=True)
+    return path
 
 
 def _dosemu_paths(node_number, scratch):
@@ -1477,7 +1484,7 @@ def _build_mystic_python_command(game, cwd, temp_files_out=None):
 def preview_door_command(game, bbs_name='ANetBBS', user=None):
     """Build a command for validation without leaving files for a future launch."""
     temp_files = []
-    root = temp_root()
+    root = _door_scratch_root(game)
     os.makedirs(root, exist_ok=True)
     try:
         with tempfile.TemporaryDirectory(prefix='door-preview-', dir=root) as scratch:
@@ -1489,6 +1496,12 @@ def preview_door_command(game, bbs_name='ANetBBS', user=None):
                 os.unlink(path)
             except OSError:
                 pass
+
+
+def _door_scratch_root(game):
+    # The DOSEMU config grammar also tokenizes its COM1 path. Use a
+    # private mkdtemp directory under a predictable, space-free root.
+    return '/tmp' if game.game_type == 'door_dosemu' else temp_root()  # nosec B108
 
 
 def launch_door_game(game, user, socketio_emit_fn, bbs_name='ANetBBS',
@@ -1568,7 +1581,7 @@ def launch_door_game(game, user, socketio_emit_fn, bbs_name='ANetBBS',
     _door_temp_files = []
     master_fd = slave_fd = None
     try:
-        root = temp_root()
+        root = _door_scratch_root(game)
         os.makedirs(root, exist_ok=True)
         scratch = tempfile.mkdtemp(prefix='door-', dir=root)
         workspace = _DoorWorkspace(scratch)
