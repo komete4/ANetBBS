@@ -31,31 +31,11 @@
 #   anetbbs-finger      RFC 1288 finger daemon
 #   anetbbs-binkp       BinkP/1.1 inbound echomail listener
 #
-# In-place upgrade wrapper. Strictly arg-validated inside the script
-# (version regex, sha256 regex, URL pattern). The path varies by
-# install location; install.sh / update.sh rewrite /etc/sudoers.d/anetbbs
-# at every run with the correct INSTALL_DIR substituted.
-#
-# Deliberately ONE plain invocation form, nothing else -- this grant
-# must never again need to change to match a detachment mechanism's
-# flags. Two past real live outages (2026-10-27's --scope bug, then a
-# SECOND one on 2026-10-28 when a stale box's sudoers refresh had
-# silently failed on an earlier upgrade while the code kept moving
-# forward) both came from encoding `systemd-run`'s exact flags HERE,
-# in the one thing sudo has to literally pattern-match. The wrapper
-# (deploy/run_upgrade.sh) now re-execs itself into a detached systemd
-# unit internally, once it's already root -- no sudo call needed for
-# that part at all, so this line can stay exactly this simple forever
-# regardless of how detachment works internally. See
-# run_upgrade.sh's own detach-block comment for the full writeup.
+# Privileged helpers are installed outside the application tree.
 Cmnd_Alias ANETBBS_UPGRADE = \
-    /opt/anetbbs/deploy/run_upgrade.sh *
-
-# Restore helper — invoked by /admin/backups/ to copy a snapshot's
-# .env or DB back into place. Same path-rewrite from /opt/anetbbs/
-# happens via update.sh's sed.
+    /usr/local/libexec/anetbbs/run_upgrade.sh *
 Cmnd_Alias ANETBBS_RESTORE = \
-    /opt/anetbbs/deploy/run_restore.sh *
+    /usr/local/libexec/anetbbs/run_restore.sh *
 
 Cmnd_Alias ANETBBS_SYSCTL = \
     /usr/bin/systemctl start  anetbbs, \
@@ -100,4 +80,4 @@ Defaults!ANETBBS_UPGRADE  !log_input, !log_output
 Defaults!ANETBBS_RESTORE  !log_input, !log_output
 Defaults!ANETBBS_SYSCTL   !log_input, !log_output
 
-__SERVICE_USER__ ALL=(root) NOPASSWD: ANETBBS_SYSCTL, ANETBBS_UPGRADE, ANETBBS_RESTORE
+__SERVICE_USER__ ALL=(root) NOPASSWD: NOSETENV: ANETBBS_SYSCTL, ANETBBS_UPGRADE, ANETBBS_RESTORE

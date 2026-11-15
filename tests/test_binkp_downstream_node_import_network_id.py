@@ -239,6 +239,8 @@ class DownstreamNodeImportNetworkIdTests(unittest.TestCase):
                  patch.object(EchomailMessage, 'direction', _FakeColumn('direction')), \
                  patch.object(EchomailMessage, 'sent_at', _FakeColumn('sent_at')), \
                  patch.object(db, 'init_app', lambda app: None), \
+                 patch.object(mod, '_verify_peer_credentials',\
+                              lambda _source, _peer, *args: mod._verify_binkp_password(*args)), \
                  patch.object(db, 'session', recording_session), \
                  patch.object(tosser_mod, 'get_pending_for_node', lambda node_id: []), \
                  patch.object(tosser_mod, 'mark_sent_for_node', lambda node_id, ids: None), \

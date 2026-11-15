@@ -146,20 +146,12 @@ class SecurityQuestionDecoyTimingTests(unittest.TestCase):
                 os.remove(path)
 
     def _set_decoy_session(self, client):
-        with client.session_transaction() as sess:
-            sess['sq_nonce'] = 'test-nonce'
-            sess['sq_attempts'] = 0
-            sess['sq_user_id'] = None
-            sess['sq_answer_id'] = None
-            sess['sq_decoy_question'] = 'What was the name of your first pet?'
+        result = client.post('/auth/forgot', data={'identifier': 'missing-sq-user'})
+        self.assertEqual(result.status_code, 302)
 
     def _set_real_session(self, client):
-        with client.session_transaction() as sess:
-            sess['sq_nonce'] = 'test-nonce'
-            sess['sq_attempts'] = 0
-            sess['sq_user_id'] = self.real_user_id
-            sess['sq_answer_id'] = self.real_qa_id
-            sess.pop('sq_decoy_question', None)
+        result = client.post('/auth/forgot', data={'identifier': 'sqtestuser'})
+        self.assertEqual(result.status_code, 302)
 
     def test_decoy_branch_still_calls_check_password_hash(self):
         from anetbbs.web import auth as auth_mod

@@ -139,6 +139,7 @@ class _FakeEchomailNetwork:
         self.binkp_password = binkp_password
         self.our_address = our_address
         self.hub_identity_id = hub_identity_id
+        self.is_active = True
         self.name = name
 
 
@@ -225,6 +226,8 @@ class ServerCrashStillLoggedTests(unittest.TestCase):
                  patch.object(EchomailMessage, 'direction', _FakeColumn('direction')), \
                  patch.object(EchomailMessage, 'sent_at', _FakeColumn('sent_at')), \
                  patch.object(db, 'init_app', lambda app: None), \
+                 patch.object(mod, '_verify_peer_credentials',\
+                              lambda _source, _peer, *args: mod._verify_binkp_password(*args)), \
                  patch.object(db, 'session', session), \
                  patch('anetbbs.echomail.tosser.get_pending_netmail_for_network', lambda network_id, include_hold=False: []), \
                  patch.object(mod, '_receive_files', _raising_receive_files):
@@ -285,6 +288,8 @@ class ServerCrashStillLoggedTests(unittest.TestCase):
                  patch.object(EchomailMessage, 'direction', _FakeColumn('direction')), \
                  patch.object(EchomailMessage, 'sent_at', _FakeColumn('sent_at')), \
                  patch.object(db, 'init_app', lambda app: None), \
+                 patch.object(mod, '_verify_peer_credentials',\
+                              lambda _source, _peer, *args: mod._verify_binkp_password(*args)), \
                  patch.object(db, 'session', session), \
                  patch('anetbbs.echomail.tosser.get_pending_netmail_for_network', lambda network_id, include_hold=False: []):
                 writer = _FakeWriter()

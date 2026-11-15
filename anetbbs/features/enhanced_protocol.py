@@ -150,19 +150,19 @@ def decode_client_message(raw):
     error that should end the session."""
     try:
         msg = json.loads(raw)
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, RecursionError):
         return b''
     if not isinstance(msg, dict):
         return b''
     mtype = msg.get('type')
     if mtype == 'key':
         ch = msg.get('ch', '')
-        if not isinstance(ch, str) or not ch:
+        if not isinstance(ch, str) or not ch or len(ch) > 4096:
             return b''
         return ch.encode('utf-8', errors='replace')
     if mtype == 'click':
         hotkey = msg.get('hotkey', '')
-        if not isinstance(hotkey, str) or not hotkey:
+        if not isinstance(hotkey, str) or not hotkey or len(hotkey) > 16:
             return b''
         return hotkey.encode('utf-8', errors='replace')
     return b''

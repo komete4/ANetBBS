@@ -23,6 +23,7 @@ Reuses the real-frame session-simulator pattern from
 test_binkp_server_crash_still_logged.py / test_binkp_eob_sent_before_receive.py.
 """
 import asyncio
+from types import SimpleNamespace
 import struct
 import sys
 import unittest
@@ -95,6 +96,9 @@ class _FakeQuery:
     def filter_by(self, **kwargs):
         return self
 
+    def order_by(self, *args):
+        return self
+
     def first(self):
         return self._rows[0] if self._rows else None
 
@@ -119,17 +123,20 @@ class _NoOpSession:
 class BinkpFreqRateLimitSourceIpTests(unittest.TestCase):
     def test_freq_rate_limiter_is_keyed_on_real_socket_ip_not_claimed_address(self):
         from anetbbs.echomail import binkp_server as mod
-        from anetbbs.models import EchomailNetwork, BinkPNode, db
+        from anetbbs.models import EchomailNetwork, BinkPNode, EchomailMessage, HatchQueue, FreqRequest, db
 
-        claimed_address = 'NOT-A-REAL-9999:9999/9999'
+        claimed_address = '1:234/567'
         real_peer_ip = '198.51.100.42'
+        network = SimpleNamespace(id=1, name='Test net', is_active=True,
+                                  network_type='binkp', hub_address=claimed_address,
+                                  our_address='1:1/1', binkp_password='test-secret')
         req_filename = '000C0002.req'
         req_payload = b'a.zip'
         mtime = 1700000000
 
         frames = [
             (True, _cmd_payload(mod.CMD_ADR, claimed_address)),
-            (True, _cmd_payload(mod.CMD_PWD, '')),
+            (True, _cmd_payload(mod.CMD_PWD, network.binkp_password)),
             (True, _cmd_payload(mod.CMD_FILE,
                                 f'{req_filename} {len(req_payload)} {mtime} 0')),
             (False, req_payload),
@@ -145,24 +152,32 @@ class BinkpFreqRateLimitSourceIpTests(unittest.TestCase):
             # was called with, not FileArea matching.
             return True
 
-        EchomailNetwork.query = _FakeQuery()
+        EchomailNetwork.query = _FakeQuery([network])
         BinkPNode.query = _FakeQuery()
+        EchomailMessage.query = _FakeQuery()
+        HatchQueue.query = _FakeQuery()
+        FreqRequest.query = _FakeQuery()
         try:
             with patch.object(db, 'init_app', lambda app: None), \
+                 patch.object(mod, '_verify_peer_credentials',\
+                              lambda _source, _peer, *args: mod._verify_binkp_password(*args)), \
                  patch.object(db, 'session', _NoOpSession()), \
-                 patch.object(mod, '_freq_rate_limited', _spy_freq_rate_limited):
+                 patch.object(mod, '_freq_rate_limited', _spy_freq_rate_limited), \
+                 patch('anetbbs.echomail.tosser.get_pending_netmail_for_network', return_value=[]):
                 writer = _FakeWriter(peer_ip=real_peer_ip)
                 reader = _ScriptedReader(frames)
                 asyncio.run(mod._handle_connection(reader, writer, '1:1/1', 'ANetBBS'))
         finally:
             del EchomailNetwork.query
             del BinkPNode.query
+            del EchomailMessage.query
+            del HatchQueue.query
+            del FreqRequest.query
 
         self.assertEqual(
             calls, [real_peer_ip],
             'the FREQ rate limiter must be keyed on the real socket source '
-            "IP, not the peer's own self-claimed (unauthenticated, freely "
-            'chosen) M_ADR address')
+            "IP, independent of the M_ADR address")
         self.assertNotIn(claimed_address, calls)
 
 

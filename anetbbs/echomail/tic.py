@@ -36,6 +36,7 @@ import zlib
 import datetime
 import logging
 import shutil
+import tempfile
 
 from ..models import db, TicFile, FileArea, FileEchoSubscription, HatchQueue
 from .areafix import _passwords_match
@@ -56,6 +57,97 @@ logger = logging.getLogger(__name__)
 # retried forever and surfaces as 'failed' in the log instead of sitting
 # in 'pending' indefinitely with no visible sign anything is wrong.
 HATCH_RETRY_MAX = 20
+MAX_TIC_BYTES = 256 * 1024
+
+
+def inbound_root(data_dir):
+    return os.environ.get('BINKP_INBOUND_DIR') or os.path.join(
+        data_dir or 'data', 'binkp', 'inbound')
+
+
+def peer_inbound_dir(data_dir, network_id, node_id=None):
+    """Separate upstream and downstream spools by database identity."""
+    return os.path.join(inbound_root(data_dir), f'network-{network_id}',
+                        f'node-{node_id}' if node_id is not None else 'upstream')
+
+
+def iter_peer_inbound_dirs(root):
+    if not os.path.isdir(root):
+        return
+    for network_dir in os.scandir(root):
+        match = re.fullmatch(r'network-(\d+)', network_dir.name)
+        if not match or not network_dir.is_dir(follow_symlinks=False):
+            continue
+        for peer_dir in os.scandir(network_dir.path):
+            node = re.fullmatch(r'node-(\d+)', peer_dir.name)
+            if (peer_dir.name == 'upstream' or node) and peer_dir.is_dir(
+                    follow_symlinks=False):
+                yield peer_dir.path, int(match[1]), int(node[1]) if node else None
+
+
+def stash_inbound_file(inbound_dir, name, data):
+    """Publish a complete file to its authenticated peer's private spool."""
+    from .binkp import _sanitize_inbound_filename
+
+    name = _sanitize_inbound_filename(name)
+    if name.lower().endswith('.tic') and len(data) > MAX_TIC_BYTES:
+        raise OSError('TIC manifest exceeds size limit')
+    os.makedirs(inbound_dir, mode=0o700, exist_ok=True)
+    with tempfile.NamedTemporaryFile(dir=inbound_dir, delete=False) as staged:
+        path = staged.name
+        try:
+            staged.write(data)
+            staged.close()
+            os.link(path, os.path.join(inbound_dir, name))
+        except FileExistsError:
+            pass  # Keep the previous complete delivery for the same peer.
+        finally:
+            os.unlink(path)
+    return name
+
+
+def _authorized_file_area(area, parsed, network_id, node_id):
+    from ..models import BinkPNode, EchomailNetwork
+    from .routing import parse_address, self_hub_binkp_network
+
+    if area is None or area.network_id != network_id or not area.is_active:
+        return False
+    network = db.session.get(EchomailNetwork, network_id)
+    if not network or not network.is_active or network.network_type != 'binkp':
+        return False
+    node = db.session.get(BinkPNode, node_id) if node_id is not None else None
+    if node_id is not None:
+        # Nodelist areas only accept the configured upstream for their
+        # network. FileFix subscriptions let leaf nodes download a feed.
+        # Leaf peers can subscribe to receive via FileFix. Publishing
+        # additionally requires the area password configured by a sysop.
+        if (not node or not node.is_active or area.is_sysop_only
+                or area.is_nodelist_source or not area.password):
+            return False
+        if node.network_id is None:
+            resolved = self_hub_binkp_network(node.hub_identity_id)
+            if not resolved or resolved.id != network_id:
+                return False
+        elif node.network_id != network_id:
+            return False
+        if not FileEchoSubscription.query.filter_by(
+                file_area_id=area.id, peer_address=node.ftn_address,
+                is_active=True).first():
+            return False
+    elif not area.is_subscribed:
+        return False
+    peer_address = node.ftn_address if node else network.hub_address
+    peer_aka = parse_address((peer_address or '').split('@', 1)[0])
+    manifest_aka = parse_address(parsed['from'].split('@', 1)[0])
+    return peer_aka is not None and peer_aka == manifest_aka
+
+
+def _read_tic(path):
+    with open(path, 'r', encoding='cp437', errors='replace') as stream:
+        content = stream.read(MAX_TIC_BYTES + 1)
+    if len(content) > MAX_TIC_BYTES:
+        raise OSError('TIC manifest exceeds size limit')
+    return content
 
 
 def record_hatch_attempt_failure(item, message):
@@ -194,7 +286,7 @@ def _move_to_processed(inbound_dir, *paths):
                          ', '.join(str(p) for p in paths if p))
 
 
-def process_tic(tic_path, inbound_dir):
+def process_tic(tic_path, inbound_dir, network_id=None, node_id=None):
     """Process a single .tic file. Returns the TicFile DB row.
 
     `tic_path`  — full path to the .tic file
@@ -207,8 +299,7 @@ def process_tic(tic_path, inbound_dir):
       - sets TicFile.status to 'filed', 'error', or 'skipped'
     """
     try:
-        with open(tic_path, 'r', encoding='cp437', errors='replace') as f:
-            content = f.read()
+        content = _read_tic(tic_path)
     except OSError as exc:
         # Can't even read the TIC — record an error row anyway.
         tic = TicFile(filename=os.path.basename(tic_path),
@@ -235,6 +326,15 @@ def process_tic(tic_path, inbound_dir):
     )
     db.session.add(tic)
     db.session.commit()
+
+    area = (FileArea.query.filter_by(tag=parsed['area']).first()
+            if parsed['area'] else None)
+    if network_id is not None and not _authorized_file_area(
+            area, parsed, network_id, node_id):
+        tic.status = 'error'
+        tic.error_message = 'BinkP peer is not authorized for this TIC area or sender'
+        db.session.commit()
+        return tic
 
     # Locate the binary
     if not parsed['file']:
@@ -327,9 +427,6 @@ def process_tic(tic_path, inbound_dir):
 
     # File-area integration: look up a FileArea by tag and copy the binary
     # into its storage directory.
-    area = (FileArea.query.filter_by(tag=parsed['area']).first()
-            if parsed['area'] else None)
-
     # Real gap found in the same audit: FileArea.password ("optional
     # area password", models.py) exists specifically to gate TIC
     # filing the same way network.areafix_password gates AreaFix --
@@ -379,21 +476,8 @@ def process_tic(tic_path, inbound_dir):
             data_dir = current_app.config.get('DATA_DIR') or 'data'
         except RuntimeError:
             data_dir = 'data'
-        # Real Medium finding from a security/performance audit
-        # (2026-09-02): area.tag comes straight from the peer-supplied
-        # TIC manifest's Area: line (only uppercased, see parsed['area']
-        # above) -- a manifest containing "Area .." auto-creates a
-        # FileArea whose storage_path normalizes to data_dir ITSELF
-        # (os.path.normpath('data/file_areas/..') -> 'data'), landing
-        # the attached binary directly in DATA_DIR instead of under
-        # file_areas/. Reachable by ANY BinkP peer able to deliver a
-        # TIC, including a fully unauthenticated anonymous crashmail
-        # connection (binkp_server.py dispatches .tic-shaped files
-        # unconditionally, no net_id/downstream_node_id gate). The '/'
-        # replacement below already existed; '.'/'..'/empty were not
-        # rejected -- same class of gap _sanitize_inbound_filename()
-        # (this module's sibling fix for the attached binary's own
-        # File: field) already closes for filenames.
+        # The legacy manual import may supply a new area tag. Keep
+        # its default storage directory within the file-area root.
         tag_component = (area.tag or '').replace('/', '_').replace('\\', '_').strip()
         if tag_component in ('', '.', '..'):
             tag_component = 'UNKNOWN_AREA'
@@ -401,11 +485,29 @@ def process_tic(tic_path, inbound_dir):
     try:
         os.makedirs(area.storage_path, exist_ok=True)
         dest = os.path.join(area.storage_path, safe_filename)
-        # Don't clobber an existing file with the same name — re-distributed
-        # TICs could legitimately replace, but we treat that as the sysop's
-        # choice and currently skip if the same name already exists.
-        if not os.path.exists(dest):
-            shutil.copy2(bin_path, dest)
+        with tempfile.NamedTemporaryFile(dir=area.storage_path, delete=False) as staged:
+            staged_path = staged.name
+            try:
+                with open(bin_path, 'rb') as incoming:
+                    shutil.copyfileobj(incoming, staged)
+                staged.close()
+                try:
+                    os.link(staged_path, dest)
+                except FileExistsError:
+                    previous = TicFile.query.filter_by(
+                        file_area_id=area.id, filename=parsed['file'],
+                        crc32=parsed['crc'], status='filed').first()
+                    if not previous or not parsed['crc'] or (
+                            _crc32_file(dest) != parsed['crc']):
+                        raise
+                    tic.file_area_id = area.id
+                    tic.status = 'skipped'
+                    tic.error_message = 'File already delivered'
+                    db.session.commit()
+                    _move_to_processed(inbound_dir, bin_path, tic_path)
+                    return tic
+            finally:
+                os.unlink(staged_path)
         tic.stored_path = dest
     except OSError as exc:
         tic.status = 'error'
@@ -630,29 +732,36 @@ def build_tic_text(item, our_address):
     return '\r\n'.join(lines) + '\r\n'
 
 
-def scan_inbound(inbound_dir):
+def scan_inbound(inbound_dir, network_id=None, node_id=None):
     """Scan an inbound dir for unprocessed .tic files and process them.
 
     Returns the number of TICs processed (any status — including errors)."""
     if not os.path.isdir(inbound_dir):
         return 0
     processed = 0
+    if network_id is None:
+        # A sysop's explicit rescan also retries files in the peer spools.
+        for peer_dir, peer_network_id, peer_node_id in iter_peer_inbound_dirs(inbound_dir):
+            processed += scan_inbound(
+                peer_dir, network_id=peer_network_id, node_id=peer_node_id)
     for fn in sorted(os.listdir(inbound_dir)):
         if not fn.lower().endswith('.tic'):
             continue
         tic_path = os.path.join(inbound_dir, fn)
+        if network_id is not None:
+            process_tic(tic_path, inbound_dir, network_id=network_id, node_id=node_id)
+            processed += 1
+            continue
         # Skip TICs whose binary was already successfully filed.
         # TicFile.filename stores the binary name (e.g. "tqwinfo.zip"), not
         # the .tic manifest name — so peek at the content to get it.
         try:
-            with open(tic_path, 'r', encoding='cp437', errors='replace') as _f:
-                _peeked = parse_tic(_f.read())
+            _peeked = parse_tic(_read_tic(tic_path))
             bin_name = _peeked.get('file', '')
         except Exception:
             bin_name = ''
         if bin_name:
-            existing = TicFile.query.filter_by(
-                filename=bin_name, status='filed').first()
+            existing = TicFile.query.filter_by(filename=bin_name, status='filed').first()
             if existing:
                 # Real bug found live: a sysop saw a real .tic sitting
                 # in inbound_dir, but "Rescan" reported none found and

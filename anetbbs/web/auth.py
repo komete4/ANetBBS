@@ -2,16 +2,19 @@
 """
 Authentication blueprint for user login, registration, and logout
 """
-from copy import copy
+import base64
+import hashlib
+import hmac
+import json
 import random
 import ipaddress
 import secrets
 import threading
-import time
 import idna
 from copy import copy
 from datetime import datetime, timedelta
 from urllib.parse import urlsplit
+from cryptography.fernet import Fernet, InvalidToken
 from sqlalchemy.exc import IntegrityError
 
 from flask import (Blueprint, render_template, redirect, url_for, flash, abort,
@@ -23,12 +26,17 @@ from flask_wtf import FlaskForm
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from .validators import PermissiveEmail as Email
-from ..models import (db, User, PasswordResetToken, RegistrationAttempt,
+from ..models import (db, User, PasswordResetToken,
                       UserSecurityAnswer, SecurityQuestion,
                       PasswordRecoverySettings,
                       EmailVerifyToken, AutoBanConfig)
-from ..features.rate_limit import rate_limit
 from ..features.i18n import FormTranslations, current_language, translate as _t
+from ..features.rate_limit import _check, rate_limit
+from ..core.registration import (
+    REGISTER_LIMIT_WINDOW_MINUTES, registration_block_reason,
+    reserve_registration_attempt,
+)
+from ..core.registration import _ip_country_blocked, _ip_is_banned, _ip_is_whitelisted
 
 
 def _active_security_questions():
@@ -46,29 +54,20 @@ def _security_questions_enabled():
     return PasswordRecoverySettings.get().security_questions_enabled
 
 
-# In-memory country-lookup cache: ip -> (country_code, expiry_timestamp)
-_geoip_cache: dict = {}
-_geoip_lock = threading.Lock()
-# Real gap found in a security/performance audit: entries here were
-# written on every cache miss but never evicted -- expiry is only
-# checked on READ, so a stale entry for an IP that never comes back
-# just sits in the dict forever. On a long-running production process
-# with BLOCKED_COUNTRIES set (this feature exists specifically to
-# reject scanner/credential-stuffing traffic, so every distinct
-# attacking source IP gets its own permanent entry), this is the same
-# "quiet unbounded creep on a long-running worker" shape as the
-# v1.0.21 incident, and structurally the same bug
-# features/rate_limit.py's own _buckets dict already has a fix for
-# (probabilistic sweep on write). Same pattern here.
-_GEOIP_SWEEP_PROBABILITY = 500  # ~1-in-500 writes triggers a sweep
+def _challenge_index(identifier, size):
+    return int.from_bytes(_recovery_digest(b'select\0' + identifier.casefold().encode('utf-8')),
+                          'big') % size
 
 
-def _sweep_stale_geoip_entries():
-    now = time.time()
-    stale_ips = [ip for ip, (_country, expiry) in _geoip_cache.items()
-                if expiry < now]
-    for ip in stale_ips:
-        del _geoip_cache[ip]
+def _recovery_digest(message):
+    key = current_app.secret_key
+    if isinstance(key, str):
+        key = key.encode('utf-8')
+    return hmac.digest(key, b'recovery-question\0' + message, hashlib.sha256)
+
+
+def _recovery_cipher():
+    return Fernet(base64.urlsafe_b64encode(_recovery_digest(b'challenge-cookie')))
 
 
 def _client_ip():
@@ -93,65 +92,6 @@ def _client_ip():
     function doesn't need to know or care which case it's in.
     """
     return request.remote_addr or ''
-
-
-def _cidr_match(ip_str, cidr_list):
-    """Return True if ip_str matches any entry in cidr_list (IP strings or CIDR strings)."""
-    import ipaddress as _ipa
-    try:
-        addr = _ipa.ip_address(ip_str)
-    except ValueError:
-        return False
-    for entry in cidr_list:
-        try:
-            if addr in _ipa.ip_network(entry, strict=False):
-                return True
-        except ValueError:
-            if entry == ip_str:
-                return True
-    return False
-
-
-def _ip_is_whitelisted(ip):
-    """Return True if ip matches any IpWhitelist row. Whitelisted IPs bypass all blocks."""
-    if not ip:
-        return False
-    try:
-        from ..models import IpWhitelist
-        rows = IpWhitelist.query.with_entities(IpWhitelist.cidr).all()
-        return _cidr_match(ip, [r.cidr for r in rows])
-    except Exception:
-        return False
-
-
-def _ip_is_banned(ip):
-    """Return True if `ip` matches any active IpBan row. Whitelisted IPs always return False."""
-    if not ip:
-        return False
-    if _ip_is_whitelisted(ip):
-        return False
-    try:
-        from ..models import IpBan
-        from datetime import datetime as _dt
-        # Real gap found in a security audit: this used to load EVERY
-        # IpBan row ever created (expired ones included) on every
-        # single login/registration request, then filter expiry in
-        # Python. Because _auto_ban_ip() below inserts a new row every
-        # time the login rate limiter trips, and a public BBS is a
-        # routine target for scanners/credential-stuffing bots, this
-        # table only grows -- and so did the per-request cost, the
-        # same "quiet unbounded creep on a long-running worker" shape
-        # as this project's own v1.0.21 production incident. Filtering
-        # expiry in SQL means an expired row costs nothing once it's
-        # actually expired, instead of being fetched and discarded
-        # forever.
-        now = _dt.utcnow()
-        rows = (IpBan.query
-                .filter(db.or_(IpBan.expires_at.is_(None), IpBan.expires_at >= now))
-                .with_entities(IpBan.cidr).all())
-        return _cidr_match(ip, [r.cidr for r in rows])
-    except Exception:
-        return False
 
 
 def _auto_ban_ip(ip):
@@ -201,45 +141,16 @@ def _auto_ban_ip(ip):
         db.session.rollback()
 
 
-def _ip_country_blocked(ip):
-    """Return True if ip's country is in BLOCKED_COUNTRIES.
-    Uses ip-api.com (free, no registration). Results cached in-memory for 1 hour.
-    Fails open — returns False on any network error so a downed lookup never locks out users."""
-    if not ip:
-        return False
-    try:
-        blocked = current_app.config.get('BLOCKED_COUNTRIES', '')
-        if not blocked:
-            return False
-        countries = {c.strip().upper() for c in blocked.split(',') if c.strip()}
-        if not countries:
-            return False
-
-        now = time.time()
-        with _geoip_lock:
-            entry = _geoip_cache.get(ip)
-            if entry and entry[1] > now:
-                return entry[0] in countries
-
-        import urllib.request, json as _json
-        url = f'http://ip-api.com/json/{ip}?fields=countryCode'
-        with urllib.request.urlopen(url, timeout=2) as resp:  # nosec B310 -- hardcoded ip-api.com host, only the query param varies
-            data = _json.loads(resp.read())
-        country = (data.get('countryCode') or '').upper()
-
-        with _geoip_lock:
-            _geoip_cache[ip] = (country, now + 3600)
-            if random.randint(1, _GEOIP_SWEEP_PROBABILITY) == 1:
-                _sweep_stale_geoip_entries()
-
-        return country in countries
-    except Exception:
-        return False
-
-
 def _login_rate_exceeded():
     """Side-effect fired when the login rate limiter trips — permanently bans the source IP."""
     _auto_ban_ip(_client_ip())
+
+
+def _record_failed_login(ip):
+    cfg = AutoBanConfig.get()
+    if not _check(f'login_failed:{ip}', cfg.attempt_limit, cfg.window_seconds):
+        _login_rate_exceeded()
+        abort(429, description='Too many unsuccessful sign-in attempts. Try again later.')
 
 
 def _log_activity(user_id, activity_type, details=None, caller_log_id=None):
@@ -353,10 +264,6 @@ def _check_password_recovery_host():
 # request) so a flood of login attempts against nonexistent usernames
 # doesn't ALSO pay the cost of re-hashing this dummy value every time.
 _DUMMY_PASSWORD_HASH = generate_password_hash('not-a-real-password-timing-normalization')
-
-# Registration rate limit — at most this many attempts per IP per window.
-REGISTER_LIMIT_COUNT = 3
-REGISTER_LIMIT_WINDOW_MINUTES = 60
 
 # Password-reset token TTL.
 PASSWORD_RESET_TTL_HOURS = 2
@@ -533,10 +440,7 @@ class RegisterForm(AuthForm):
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
-@rate_limit('login',
-           limit=lambda: AutoBanConfig.get().attempt_limit,
-           window=lambda: AutoBanConfig.get().window_seconds,
-           on_exceed=_login_rate_exceeded)
+@rate_limit('login_page', limit=60, window=60)
 def login():
     """Login page"""
     if current_user.is_authenticated:
@@ -564,9 +468,11 @@ def login():
             # takes statistically the same time as a real username
             # with a wrong password, not a short-circuited instant return.
             check_password_hash(_DUMMY_PASSWORD_HASH, form.password.data)
+            _record_failed_login(ip)
             flash(_t('auth.invalid_credentials', 'Invalid username or password'), 'danger')
             return redirect(url_for('auth.login'))
         if not user.check_password(form.password.data):
+            _record_failed_login(ip)
             flash(_t('auth.invalid_credentials', 'Invalid username or password'), 'danger')
             return redirect(url_for('auth.login'))
 
@@ -651,7 +557,6 @@ def login():
         # Random MOTD pick.
         try:
             from ..models import MotdEntry
-            import random
             pool = MotdEntry.query.filter_by(is_active=True).all()
             if pool:
                 weighted = []
@@ -712,36 +617,20 @@ def register():
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
 
-    if not current_app.config.get('REGISTRATION_OPEN', True):
-        flash(_t('auth.registration_closed', 'New account registration is currently closed.'), 'warning')
-        return redirect(url_for('auth.login'))
-
     ip = _client_ip()
-    if _ip_is_banned(ip):
-        flash(_t('auth.registration_ip_blocked', 'Registrations from your IP are not permitted.'), 'danger')
-        return redirect(url_for('auth.login'))
-    if _ip_country_blocked(ip):
-        flash(_t('auth.registration_region_blocked', 'Registrations from your region are not permitted.'), 'danger')
+    block_reason = registration_block_reason(ip)
+    if block_reason:
+        key, message = block_reason
+        flash(_t(key, message), 'danger')
         return redirect(url_for('auth.login'))
     form = RegisterForm()
 
-    # Rate limit BEFORE form validation so even invalid payloads count.
+    attempt = None
     if request.method == 'POST':
-        window_start = datetime.utcnow() - timedelta(
-            minutes=REGISTER_LIMIT_WINDOW_MINUTES)
-        recent = RegistrationAttempt.query.filter(
-            RegistrationAttempt.ip_address == ip,
-            RegistrationAttempt.created_at >= window_start,
-        ).count()
-        if recent >= REGISTER_LIMIT_COUNT:
-            db.session.add(RegistrationAttempt(
-                ip_address=ip,
-                username_attempted=request.form.get('username', '')[:80],
-                success=False,
-                error_reason='rate_limited',
-                user_agent=(request.headers.get('User-Agent') or '')[:255],
-            ))
-            db.session.commit()
+        attempt = reserve_registration_attempt(
+            ip, request.form.get('username', ''), request.headers.get('User-Agent', ''),
+        )
+        if attempt is None:
             flash(
                 _t('auth.registration_rate_limited', 'Too many registration attempts from this IP — please wait '
                    '{minutes} minutes and try again.', minutes=REGISTER_LIMIT_WINDOW_MINUTES),
@@ -769,12 +658,9 @@ def register():
         )
         user.set_password(form.password.data)
         db.session.add(user)
-        db.session.add(RegistrationAttempt(
-            ip_address=ip,
-            username_attempted=form.username.data[:80],
-            success=True,
-            user_agent=(request.headers.get('User-Agent') or '')[:255],
-        ))
+        attempt.username_attempted = form.username.data[:80]
+        attempt.success = True
+        attempt.error_reason = None
         # Real gap found in a full auth-security audit: no try/except
         # existed around this flush -- validate_username()/
         # validate_email() above already pre-check for a collision, but
@@ -948,15 +834,8 @@ def register():
             db.session.rollback()
         return redirect(url_for('main.index'))
 
-    if request.method == 'POST':
-        # Validation failed — record the failed attempt for rate-limit accounting
-        db.session.add(RegistrationAttempt(
-            ip_address=ip,
-            username_attempted=request.form.get('username', '')[:80],
-            success=False,
-            error_reason='validation_failed',
-            user_agent=(request.headers.get('User-Agent') or '')[:255],
-        ))
+    if attempt is not None:
+        attempt.error_reason = 'validation_failed'
         db.session.commit()
 
     return render_template('auth/register.html', form=form)
@@ -1086,9 +965,10 @@ def forgot_password():
     if form.validate_on_submit():
         ident = form.identifier.data.strip()
         user = (User.query.filter(db.func.lower(User.username) == ident.lower()).first()
-                or User.query.filter_by(email=ident).first())
+                or User.query.filter(db.func.lower(User.email) == ident.lower()).first())
 
-        real_answers = list(user.security_answers) if (user and user.is_active) else []
+        real_answers = (sorted(user.security_answers, key=lambda answer: answer.id)
+                        if user and user.is_active else [])
         questions_enabled = _security_questions_enabled()
 
         # Real gap reported live (2026-09-25): a sysop can now turn the
@@ -1110,33 +990,50 @@ def forgot_password():
                 return render_template('auth/forgot_password_sent.html')
 
         if questions_enabled:
-            nonce = secrets.token_urlsafe(24)
-            flask_session['sq_nonce'] = nonce
+            active_questions = _active_security_questions()
+            real_by_question = {a.question: a for a in real_answers}
+            # Show the same question on repeated requests. Include legacy
+            # answered questions so disabling a prompt cannot lock a user out.
+            questions = (list(real_by_question) or active_questions
+                         or ['What was the name of your first pet?'])
+            question = questions[_challenge_index(ident, len(questions))]
+            chosen = real_by_question.get(question)
+            _clear_sq_session()
+            # Flask signs its session cookie but clients can read it.
+            # Seal and pad the challenge so cookie contents don't disclose
+            # whether it is backed by an actual account.
+            challenge = json.dumps({
+                'user': user.id if chosen else None,
+                'version': user.auth_version if chosen else None,
+                'answer': chosen.id if chosen else None,
+                'question': question,
+            }, ensure_ascii=False).encode('utf-8')
+            flask_session['sq_challenge'] = _recovery_cipher().encrypt(
+                challenge.ljust(2048, b' ')).decode('ascii')
             flask_session['sq_attempts'] = 0
-            if real_answers:
-                import random
-                chosen = random.choice(real_answers)
-                flask_session['sq_user_id'] = user.id
-                flask_session['sq_answer_id'] = chosen.id
-                flask_session.pop('sq_decoy_question', None)
-            else:
-                # No real account/question to bind to -- a fixed-pool decoy
-                # question that can never be answered correctly. Deterministic
-                # per identifier (not re-randomized on every submit) so a
-                # user who mistypes and resubmits sees a consistent question,
-                # same as the real flow always shows the same chosen question.
-                active_questions = _active_security_questions()
-                import hashlib
-                idx = int(hashlib.sha256(ident.encode('utf-8', errors='replace'))
-                          .hexdigest(), 16) % max(1, len(active_questions))
-                flask_session['sq_user_id'] = None
-                flask_session['sq_answer_id'] = None
-                flask_session['sq_decoy_question'] = (
-                    active_questions[idx] if active_questions
-                    else 'What was the name of your first pet?')
             return redirect(url_for('auth.security_question_verify'))
 
     return render_template('auth/forgot_password.html', form=form)
+
+
+def _issue_reset_token(user):
+    if user is None or not PasswordResetToken.lock_account(
+            db.session, user.id, user.auth_version):
+        db.session.rollback()
+        return None
+    now = datetime.utcnow()
+    PasswordResetToken.query.filter_by(user_id=user.id, used_at=None).update(
+        {PasswordResetToken.used_at: now})
+    token = secrets.token_urlsafe(32)
+    db.session.add(PasswordResetToken(
+        user_id=user.id,
+        token=token,
+        auth_version=user.auth_version,
+        expires_at=now + timedelta(hours=PASSWORD_RESET_TTL_HOURS),
+        requested_ip=_client_ip(),
+    ))
+    db.session.commit()
+    return token
 
 
 def _issue_reset_token_and_notify(user):
@@ -1153,15 +1050,9 @@ def _issue_reset_token_and_notify(user):
     except ValueError as exc:
         current_app.logger.error('Password recovery unavailable: %s', exc)
         return
-    token = secrets.token_urlsafe(32)
-    db.session.add(PasswordResetToken(
-        user_id=user.id,
-        token=token,
-        auth_version=user.auth_version,
-        expires_at=datetime.utcnow() + timedelta(hours=PASSWORD_RESET_TTL_HOURS),
-        requested_ip=_client_ip(),
-    ))
-    db.session.commit()
+    token = _issue_reset_token(user)
+    if token is None:
+        return
     reset_url = origin + url_for('auth.reset_password', token=token, _external=False)
     from ..mailer import smtp_enabled, send_password_reset_email
     if smtp_enabled():
@@ -1193,7 +1084,7 @@ def _issue_reset_token_and_notify(user):
 
 def _clear_sq_session():
     for key in ('sq_nonce', 'sq_user_id', 'sq_answer_id', 'sq_decoy_question',
-               'sq_attempts'):
+                'sq_attempts', 'sq_challenge'):
         flask_session.pop(key, None)
 
 
@@ -1223,29 +1114,29 @@ def security_question_verify():
         _clear_sq_session()
         return redirect(url_for('auth.forgot_password'))
 
-    nonce = flask_session.get('sq_nonce')
-    if not nonce:
+    sealed_challenge = flask_session.get('sq_challenge')
+    try:
+        if not sealed_challenge:
+            raise InvalidToken
+        challenge = json.loads(_recovery_cipher().decrypt(
+            sealed_challenge.encode('ascii'), ttl=PASSWORD_RESET_TTL_HOURS * 3600))
+    except InvalidToken:
+        _clear_sq_session()
         flash(_t('auth.session_expired', 'Session expired. Please try again.'), 'warning')
         return redirect(url_for('auth.forgot_password'))
 
-    user_id = flask_session.get('sq_user_id')
-    answer_id = flask_session.get('sq_answer_id')
-    decoy_question = flask_session.get('sq_decoy_question')
+    user_id = challenge['user']
+    answer_id = challenge['answer']
+    question = challenge['question']
 
     qa = None
     if user_id and answer_id:
         qa = UserSecurityAnswer.query.get(answer_id)
-        if qa is None or qa.user_id != user_id:
+        if (qa is None or qa.user_id != user_id or not qa.user.is_active
+                or qa.user.auth_version != challenge['version']):
             _clear_sq_session()
             flash(_t('auth.session_expired', 'Session expired. Please try again.'), 'warning')
             return redirect(url_for('auth.forgot_password'))
-        question = qa.question
-    elif decoy_question:
-        question = decoy_question
-    else:
-        _clear_sq_session()
-        flash(_t('auth.session_expired', 'Session expired. Please try again.'), 'warning')
-        return redirect(url_for('auth.forgot_password'))
 
     error = None
     if request.method == 'POST':
@@ -1262,19 +1153,9 @@ def security_question_verify():
         elif qa is not None and qa.check_answer(raw):
             # Correct — issue reset token and send user straight to reset page
             _clear_sq_session()
-            user = db.session.get(User, user_id)
-            if user is None:
-                flash(_t('auth.session_expired', 'Session expired. Please try again.'), 'warning')
+            token = _issue_reset_token(qa.user)
+            if token is None:
                 return redirect(url_for('auth.forgot_password'))
-            token = secrets.token_urlsafe(32)
-            db.session.add(PasswordResetToken(
-                user_id=user_id,
-                token=token,
-                auth_version=user.auth_version,
-                expires_at=datetime.utcnow() + timedelta(hours=PASSWORD_RESET_TTL_HOURS),
-                requested_ip=_client_ip(),
-            ))
-            db.session.commit()
             _log_activity(user_id, 'password_reset_via_security_question')
             return redirect(url_for('auth.reset_password', token=token))
         else:

@@ -16,6 +16,7 @@ from flask import (Blueprint, render_template, redirect, url_for, flash,
 from flask_login import login_required, current_user
 
 from ..models import db, FileQueueEntry, FileArea
+from ..features.file_publish import UploadRejected, approve_queued_upload
 from .access_control import require_admin_or_403 as _require_admin
 
 
@@ -56,15 +57,10 @@ def approve(entry_id):
 
     try:
         os.makedirs(area.storage_path, exist_ok=True)
-        safe_name = os.path.basename(entry.filename)
-        dest = os.path.join(area.storage_path, safe_name)
-        if os.path.exists(dest):
-            # Don't clobber existing files
-            base, ext = os.path.splitext(safe_name)
-            dest = os.path.join(area.storage_path,
-                                f'{base}-{entry.id}{ext}')
-        os.rename(entry.quarantine_path, dest)
-    except OSError as exc:
+        dest = approve_queued_upload(entry.quarantine_path, area.storage_path,
+                                     entry.filename, entry.id)
+        safe_name = os.path.basename(dest)
+    except (OSError, UploadRejected) as exc:
         flash(f'Approve failed: {exc}', 'danger')
         return redirect(url_for('file_queue.index'))
 
@@ -72,6 +68,10 @@ def approve(entry_id):
     entry.reviewed_by_id = current_user.id
     entry.reviewed_at = datetime.utcnow()
     db.session.commit()
+    try:
+        os.unlink(entry.quarantine_path)
+    except OSError:
+        current_app.logger.exception('Failed to delete approved quarantine file')
     if area.network_id is not None:
         try:
             from ..echomail.tic import hatch_local_file

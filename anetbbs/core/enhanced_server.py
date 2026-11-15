@@ -115,7 +115,7 @@ class _WSReaderAdapter:
         self._ws = ws
         self._buf = bytearray()
         self._exc = None
-        self._queue = asyncio.Queue()
+        self._queue = asyncio.Queue(maxsize=32)
         self._pump_task = asyncio.ensure_future(self._pump())
 
     def exception(self):
@@ -288,7 +288,7 @@ class EnhancedServer:
             headers={'Cache-Control': 'no-cache, no-store, must-revalidate'})
 
     async def _handle_ws(self, request):
-        ws = web.WebSocketResponse(heartbeat=30)
+        ws = web.WebSocketResponse(heartbeat=30, max_msg_size=32 * 1024)
         await ws.prepare(request)
 
         peer = request.remote or ''

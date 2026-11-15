@@ -4,6 +4,48 @@ The defaults are designed so a fresh install isn't trivially
 compromised, but production deployment requires a few extra steps.
 Read this whole file before exposing the BBS to the internet.
 
+## Updating an existing installation
+
+Set `PUBLIC_BASE_URL` to the public web origin, for example
+`https://bbs.example.org`. If you run your own proxy, preserve the
+public Host and set the forwarded scheme and client IP there.
+
+For systemd installs, apply the first update from a trusted checkout
+as the system administrator. The installer and updater place the
+privileged helpers in `/usr/local/libexec/anetbbs` and refresh sudoers.
+The updater verifies release metadata over HTTPS against the registry
+in root-owned `/etc/anetbbs.install`. For a private registry, pass
+`ANETBBS_TRUSTED_REGISTRY=https://your-registry.example.org` to the
+root-run installer/updater. Set the matching `REGISTRY_URL` in the BBS
+configuration so the dashboard checks that same registry.
+
+For dashboard rollbacks, stage a compatible release as root in
+`/usr/local/libexec/anetbbs/releases`. Older releases must include
+the privileged-helper hardening to qualify for a dashboard rollback.
+
+The dashboard restores backups readable by the BBS service account.
+For older root-owned backups, the system administrator can transfer
+ownership of the intended snapshot before restoring it.
+
+BinkP links require a nonempty matching secret. Downstream file echo
+senders also need a file-area subscription and its configured TIC
+password. The authentication limits survive service restarts. The upgrade
+redacts credentials from stored transcripts. Rotate exposed credentials
+and review historical backups separately.
+
+When MRC uses TLS, both bridge backends validate the remote certificate
+and hostname. Set `tls_ca_file` in the bridge JSON configuration when
+the upstream uses a private CA.
+
+FTP area names now include a stable ID. Update bookmarks after the
+migration. Uploads publish only after validation and require a new
+filename. Owners can manage files uploaded through the new FTP path.
+
+Inspection of optional 7z, RAR and LHA formats uses bounded Linux
+decoders when `bsdtar` and `prlimit` are available (for example,
+`libarchive-tools` and `util-linux` on Debian). Transfers still work
+when the optional inspection tools are absent.
+
 ## What's enabled by default
 
 - **Random initial admin password.** First start generates a 16-byte

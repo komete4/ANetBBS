@@ -216,7 +216,8 @@ class UserManager:
             ).scalar_one_or_none()
             return row is not None
 
-    def create_user(self, username: str, password: str, email: str) -> str:
+    def create_user(self, username: str, password: str, email: str, *,
+                    registration_attempt_id: Optional[int] = None) -> str:
         """Create a new user. Returns 'ok', 'ok_pending', 'username_taken',
         or 'email_taken'. 'ok_pending' means the account was created but
         is_verified=False (NUV_ENABLED) -- the caller must NOT treat this
@@ -230,7 +231,7 @@ class UserManager:
         over telnet/SSH/rlogin, self-register, and skip the queue
         entirely. Mirrors web/auth.py's register() route.
         """
-        from anetbbs.models import User
+        from anetbbs.models import RegistrationAttempt, User
 
         nuv_on = False
         try:
@@ -260,6 +261,12 @@ class UserManager:
                 login_count=0,
             )
             s.add(user)
+            if registration_attempt_id is not None:
+                attempt = s.get(RegistrationAttempt, registration_attempt_id)
+                if attempt:
+                    attempt.username_attempted = username
+                    attempt.success = True
+                    attempt.error_reason = None
             try:
                 s.commit()
             except IntegrityError as exc:

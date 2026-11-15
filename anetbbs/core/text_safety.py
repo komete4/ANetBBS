@@ -29,7 +29,7 @@ _ESCAPE_SEQUENCE_RE = re.compile(
 # survive even if it doesn't match the tidy pattern above. Untrusted
 # single-line text (message titles, sender names, chat bodies) has no
 # legitimate reason to contain any C0 control byte at all.
-_CONTROL_BYTE_RE = re.compile(r'[\x00-\x1f\x7f]')
+_CONTROL_BYTE_RE = re.compile(r'[\x00-\x1f\x7f-\x9f]')
 
 
 def strip_untrusted_escapes(text):

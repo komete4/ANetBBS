@@ -40,6 +40,7 @@ plainport   = {plainport!r}
 sslport     = {sslport!r}
 usessl      = {usessl!r}
 nocertcheck = {nocertcheck!r}
+tls_ca_file = {tls_ca_file!r}
 info_web    = {info_web!r}
 info_telnet = {info_telnet!r}
 info_ssh    = {info_ssh!r}
@@ -69,10 +70,8 @@ def bbs_config_to_mystic_fields(bridge_config: dict) -> dict:
         'plainport':   port if not use_ssl else 5000,
         'sslport':     port if use_ssl else 5001,
         'usessl':      1 if use_ssl else 0,
-        # Matches MRCConnection.connect()'s own unconditional
-        # check_hostname=False/verify_mode=CERT_NONE -- same lenient
-        # cert policy regardless of which backend is active.
-        'nocertcheck': 1,
+        'nocertcheck': 0,
+        'tls_ca_file': bridge_config.get('tls_ca_file') or None,
         'info_web':    bridge_config.get('bbs_website', ''),
         'info_telnet': bridge_config.get('bbs_telnet', ''),
         'info_ssh':    bridge_config.get('bbs_ssh', ''),

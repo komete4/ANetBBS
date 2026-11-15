@@ -167,9 +167,7 @@ def _safe_backup_dir(name: str) -> Optional[str]:
 
 
 def _restore_helper() -> Optional[str]:
-    install_root = current_app.config.get('INSTALL_DIR') or os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    p = os.path.join(install_root, 'deploy', 'run_restore.sh')
+    p = '/usr/local/libexec/anetbbs/run_restore.sh'
     return p if os.path.isfile(p) else None
 
 

@@ -213,7 +213,9 @@ def _tick(app):
             logger.warning('registry-client: heartbeat failed: %s', exc)
             return {'ok': False, 'action': 'heartbeat', 'reason': str(exc)}
 
-    # Full register (first time, or after a 404/401 fallback).
+    # Updates to an established registration need proof of ownership.
+    if state.get('host_registered') == meta['host'] and state.get('heartbeat_key'):
+        meta['heartbeat_key'] = state['heartbeat_key']
     try:
         r = sess.post(f'{base}/registry/api/v1/register', json=meta,
                       timeout=20)

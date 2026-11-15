@@ -5,7 +5,7 @@ File gallery blueprint
 import os
 import uuid
 import mimetypes
-from flask import Blueprint, render_template, redirect, url_for, flash, send_from_directory, abort, current_app, request, session as flask_session
+from flask import Blueprint, render_template, redirect, url_for, flash, send_file, abort, current_app, request, session as flask_session
 from flask_login import login_required, current_user
 from wtforms import TextAreaField, SubmitField, SelectField
 from wtforms.validators import Optional
@@ -16,6 +16,8 @@ from werkzeug.utils import secure_filename
 from ..models import db, FileUpload, FileArea, UserActivity
 from ..features.archive_meta import extract_archive_description
 from ..features.access_control import evaluate_access
+from ..features.file_publish import (UploadRejected, file_identity, is_staging_path,
+                                     save_new_upload)
 from .list_pagination import ListPagination
 
 FILES_PER_PAGE = 50
@@ -41,6 +43,28 @@ def _visible_to(user, area):
     return evaluate_access(user, area.min_access_level,
                            is_sysop_only=area.is_sysop_only,
                            bypass_admin=True)
+
+
+def _registered_file(upload):
+    """Resolve the recorded file under its gallery or file-area storage root."""
+    if (not upload.file_path or os.path.islink(upload.file_path)
+            or not os.path.isfile(upload.file_path)):
+        return None, False
+    path = os.path.realpath(upload.file_path)
+    if is_staging_path(upload.file_path) or is_staging_path(path):
+        return None, False
+    uploads = current_app.config.get('UPLOADS_DIR') or os.path.join(
+        current_app.config['DATA_DIR'], 'uploads')
+    if os.path.dirname(path) == os.path.realpath(uploads):
+        return path, True
+    if upload.file_area is not None and upload.file_area.storage_path:
+        root = os.path.realpath(upload.file_area.storage_path)
+        try:
+            if os.path.commonpath((root, path)) == root:
+                return path, False
+        except ValueError:
+            pass
+    return None, False
 
 
 class UploadForm(FlaskForm):
@@ -93,7 +117,8 @@ def upload():
         abort(404)
     form = UploadForm()
     # Build the file-area picker. (0, '— Top-level —') means no area scoping.
-    areas = FileArea.query.filter_by(is_active=True).order_by(FileArea.name).all()
+    areas = [a for a in FileArea.query.filter_by(is_active=True).order_by(FileArea.name)
+             if _visible_to(current_user, a)]
     form.file_area_id.choices = [(0, '— Top-level (no area) —')] + [
         (a.id, f'{a.name or a.tag}') for a in areas]
 
@@ -110,8 +135,11 @@ def upload():
         chosen_area = None
         if form.file_area_id.data:
             chosen_area = FileArea.query.get(form.file_area_id.data)
-            if chosen_area is None or not chosen_area.is_active:
+            if chosen_area is None or not _visible_to(current_user, chosen_area):
                 flash('That file area no longer exists.', 'danger')
+                return render_template('files/upload.html', form=form)
+            if not evaluate_access(current_user, chosen_area.min_write_level):
+                flash('You do not have permission to upload to this area.', 'danger')
                 return render_template('files/upload.html', form=form)
             perm = (chosen_area.upload_permission or 'users').lower()
             if perm == 'none':
@@ -143,42 +171,15 @@ def upload():
         os.makedirs(uploads_dir, exist_ok=True)
 
         filepath = os.path.join(uploads_dir, unique_name)
-        f.save(filepath)
-
-        # Optional virus scan. If clamscan is installed and detects an
-        # infection we delete the file and reject the upload.
         try:
-            from ..features.virus_scan import scan_path
-            result = scan_path(filepath)
-            if result.infected:
-                try:
-                    os.remove(filepath)
-                except OSError:
-                    pass
-                flash(f'Upload rejected: virus detected ({result.signature}).',
-                      'danger')
-                return redirect(url_for('files.upload'))
-        except Exception:
-            current_app.logger.exception(
-                'virus scan crashed during user upload; allowing file')
-
-        # Optional archive integrity test. Same reject pattern as the
-        # virus scan above; fails open on anything we can't actually
-        # check (missing optional library, unrecognized format).
-        try:
-            from ..features.archive_meta import test_archive_integrity
-            result = test_archive_integrity(filepath)
-            if not result.ok:
-                try:
-                    os.remove(filepath)
-                except OSError:
-                    pass
-                flash(f'Upload rejected: corrupt archive ({result.message}).',
-                      'danger')
-                return redirect(url_for('files.upload'))
-        except Exception:
-            current_app.logger.exception(
-                'archive integrity test crashed during user upload; allowing file')
+            save_new_upload(f, filepath)
+        except UploadRejected as exc:
+            flash(f'Upload rejected: {exc}', 'danger')
+            return redirect(url_for('files.upload'))
+        except OSError:
+            current_app.logger.exception('Gallery upload failed')
+            flash('The upload could not be saved.', 'danger')
+            return redirect(url_for('files.upload'))
 
         # Duplicate-content check, scoped to the same file area (a
         # top-level upload only dupe-checks against other top-level
@@ -239,7 +240,9 @@ def download(file_id):
     if not _visible_to(current_user, upload_obj.file_area):
         abort(403)
 
-    uploads_dir = current_app.config.get('UPLOADS_DIR', os.path.join(current_app.config['DATA_DIR'], 'uploads'))
+    filepath, _ = _registered_file(upload_obj)
+    if filepath is None:
+        abort(404)
 
     # Daily download quota (FR: Firehawke, 2026-07-24) -- see
     # features/file_quota.py. Anonymous visitors (no login_required on
@@ -278,12 +281,8 @@ def download(file_id):
     db.session.commit()
     consume_quota(current_user, upload_obj.file_size or 0)
 
-    return send_from_directory(
-        uploads_dir,
-        upload_obj.filename,
-        as_attachment=True,
-        download_name=upload_obj.original_filename
-    )
+    return send_file(filepath, as_attachment=True,
+                     download_name=upload_obj.original_filename)
 
 
 @files_bp.route('/delete/<int:file_id>', methods=['POST'])
@@ -295,10 +294,12 @@ def delete_file(file_id):
     if upload_obj.uploader_id != current_user.id and not current_user.is_admin:
         abort(403)
 
-    uploads_dir = current_app.config.get('UPLOADS_DIR', os.path.join(current_app.config['DATA_DIR'], 'uploads'))
-    filepath = os.path.join(uploads_dir, upload_obj.filename)
-
-    if os.path.exists(filepath):
+    filepath, gallery_file = _registered_file(upload_obj)
+    if filepath is not None:
+        if not (current_user.is_admin or (gallery_file and not upload_obj.ftp_file_identity) or (
+                _visible_to(current_user, upload_obj.file_area)
+                and upload_obj.ftp_file_identity == file_identity(filepath))):
+            abort(403)
         os.remove(filepath)
 
     db.session.delete(upload_obj)

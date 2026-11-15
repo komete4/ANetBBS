@@ -15,7 +15,9 @@ import tarfile
 import tempfile
 import unittest
 import zipfile
+from io import BytesIO
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -67,10 +69,9 @@ class ArchiveIntegrityPureTests(unittest.TestCase):
         try:
             with tarfile.open(path, 'w') as tf:
                 data = b'hello world' * 100
-                with tempfile.NamedTemporaryFile() as src:
-                    src.write(data)
-                    src.flush()
-                    tf.add(src.name, arcname='hello.txt')
+                member = tarfile.TarInfo('hello.txt')
+                member.size = len(data)
+                tf.addfile(member, BytesIO(data))
             result = test_archive_integrity(path)
             self.assertTrue(result.ok)
         finally:
@@ -111,10 +112,9 @@ class ArchiveIntegrityPureTests(unittest.TestCase):
         try:
             with tarfile.open(path, 'w:gz') as tf:
                 data = b'ANetBBS v1.0.0 -- Full Release!\n'
-                with tempfile.NamedTemporaryFile() as src:
-                    src.write(data)
-                    src.flush()
-                    tf.add(src.name, arcname='ANetBBS-v1.0.0/FILE_ID.DIZ')
+                member = tarfile.TarInfo('ANetBBS-v1.0.0/FILE_ID.DIZ')
+                member.size = len(data)
+                tf.addfile(member, BytesIO(data))
             desc = extract_archive_description(path)
             self.assertIn('ANetBBS v1.0.0 -- Full Release!', desc)
         finally:
@@ -131,16 +131,16 @@ class ArchiveIntegrityPureTests(unittest.TestCase):
         finally:
             os.remove(path)
 
-    def test_rar_without_library_installed_fails_open(self):
-        """rarfile is a soft dependency, not installed in this checkout --
-        confirm a .rar upload isn't blocked just because we can't test it."""
+    def test_rar_without_optional_decoder_remains_uploadable(self):
         from anetbbs.features.archive_meta import test_archive_integrity
         with tempfile.NamedTemporaryFile(suffix='.rar', delete=False) as f:
             f.write(b'Rar!\x1a\x07\x01\x00' + b'\x00' * 100)  # not a real rar, just the magic
             path = f.name
         try:
-            result = test_archive_integrity(path)
+            with patch('anetbbs.features.archive_meta.shutil.which', return_value=None):
+                result = test_archive_integrity(path)
             self.assertTrue(result.ok)
+            self.assertIn('not tested', result.message)
         finally:
             os.remove(path)
 
@@ -151,10 +151,7 @@ class ArchiveIntegrityUploadPathTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._orig_db_uri = cfg_mod.TestingConfig.SQLALCHEMY_DATABASE_URI
-        cls._tmp_db = str(Path(__file__).resolve().parent / '.archive_integrity_test.db')
-        if os.path.exists(cls._tmp_db):
-            os.remove(cls._tmp_db)
-        cfg_mod.TestingConfig.SQLALCHEMY_DATABASE_URI = f'sqlite:///{cls._tmp_db}'
+        cfg_mod.TestingConfig.SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
         os.environ['FLASK_ENV'] = 'testing'
 
         from anetbbs.web_app import create_app
@@ -168,10 +165,6 @@ class ArchiveIntegrityUploadPathTests(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cfg_mod.TestingConfig.SQLALCHEMY_DATABASE_URI = cls._orig_db_uri
-        for suffix in ('', '-wal', '-shm'):
-            path = cls._tmp_db + suffix
-            if os.path.exists(path):
-                os.remove(path)
 
     def _client(self):
         from anetbbs.models import db, User

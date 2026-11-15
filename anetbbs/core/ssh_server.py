@@ -217,6 +217,9 @@ _PASSWORD_CACHE = {}
 _PUBKEY_USER_CACHE = {}
 
 
+_SSH_CONNECTIONS = {}
+
+
 class _BBSSshServer(asyncssh.SSHServer):
     """Accepts all connections. We capture both the SSH username AND the
     SSH password the client sent and stash them on the connection object
@@ -232,9 +235,22 @@ class _BBSSshServer(asyncssh.SSHServer):
     def connection_made(self, conn):
         self._conn = conn
         peer = conn.get_extra_info('peername')
+        self._admitted_ip = None
+        ip = peer[0] if peer else ''
+        if sum(_SSH_CONNECTIONS.values()) >= 256 or _SSH_CONNECTIONS.get(ip, 0) >= 16:
+            conn.close()
+            return
+        self._admitted_ip = ip
+        _SSH_CONNECTIONS[ip] = _SSH_CONNECTIONS.get(ip, 0) + 1
         logger.info('SSH connection from %s', peer)
 
     def connection_lost(self, exc):
+        ip = getattr(self, '_admitted_ip', None)
+        if ip is not None:
+            _SSH_CONNECTIONS[ip] -= 1
+            if not _SSH_CONNECTIONS[ip]:
+                del _SSH_CONNECTIONS[ip]
+            self._admitted_ip = None
         # Real live gap: this used to log at DEBUG only, so the actual
         # reason a connection ended (a clean client-initiated close vs.
         # asyncssh's own keepalive giving up on an unresponsive client)
@@ -377,6 +393,7 @@ async def start_ssh_server(host, port, key_file, bbs_config):
         server_host_keys=[key_path, ed25519_key_path],
         process_factory=_make_process_handler(bbs_config),
         encoding=None,
+        login_timeout=60,
         x11_forwarding=False,
         agent_forwarding=False,
         # Real live report: a session idle for 30+ minutes over a mobile

@@ -589,15 +589,14 @@ if __name__ == "__main__":
         try:
             import ssl
 
-            context = ssl.create_default_context()
+            context = ssl.create_default_context(cafile=globals().get("tls_ca_file"))
             if nocertcheck:
                 context.check_hostname = False
                 context.verify_mode = ssl.CERT_NONE
             port = sslport
-        except:
-            logger("! Unable to use SSL, reverting to plain\n")
-            usessl = 0
-            port = plainport
+        except (ImportError, OSError, ValueError) as exc:
+            logger("! Unable to initialize TLS: %s\n" % exc)
+            sys.exit(1)
 
     check_startup()
     checkpid(1)

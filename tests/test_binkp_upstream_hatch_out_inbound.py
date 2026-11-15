@@ -141,6 +141,7 @@ class _FakeEchomailNetwork:
         self.binkp_password = binkp_password
         self.our_address = our_address
         self.hub_identity_id = hub_identity_id
+        self.is_active = True
         self.name = name
 
 
@@ -211,6 +212,8 @@ class UpstreamHubInboundHatchOutTests(unittest.TestCase):
                  patch.object(HatchQueue, 'peer_address', _FakeColumn('peer_address')), \
                  patch.object(HatchQueue, 'status', _FakeColumn('status')), \
                  patch.object(db, 'init_app', lambda app: None), \
+                 patch.object(mod, '_verify_peer_credentials',\
+                              lambda _source, _peer, *args: mod._verify_binkp_password(*args)), \
                  patch.object(db, 'session', recording_session), \
                  patch.object(tosser_mod, 'get_pending_netmail_for_network',
                              lambda net_id, include_hold=False: []), \

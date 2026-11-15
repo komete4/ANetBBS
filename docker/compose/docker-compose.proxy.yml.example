@@ -5,7 +5,7 @@
 # web service with Caddy for automatic HTTPS (simplest option for a
 # single-domain BBS). If you're already running nginx/Traefik/Caddy on
 # the host for other sites, skip this and point your existing proxy at
-# the `web` container's published port (5000) instead.
+# the `web-proxy` container's published port (5000) instead.
 #
 # Usage:
 #   cp docker-compose.proxy.yml.example docker-compose.proxy.yml
@@ -13,12 +13,7 @@
 #   docker compose -f docker-compose.yml -f docker-compose.proxy.yml up -d
 
 services:
-  # Note: this overlay ADDS Caddy alongside web's existing :5000
-  # publish rather than trying to remove it (Compose's merge behavior
-  # for `ports:` across multiple -f files isn't worth relying on here).
-  # If you want web reachable ONLY through Caddy, delete web's
-  # "5000:5000" line from docker-compose.yml directly instead of
-  # overriding it here.
+  # External browsers connect over HTTPS through Caddy.
   caddy:
     image: caddy:2-alpine
     ports:
@@ -29,7 +24,7 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      - web
+      - web-proxy
     restart: unless-stopped
 
 volumes:
@@ -40,5 +35,5 @@ volumes:
 # file, this is just for reference):
 #
 #   your-bbs-domain.example.com {
-#       reverse_proxy web:5000
+#       reverse_proxy web-proxy:5000
 #   }

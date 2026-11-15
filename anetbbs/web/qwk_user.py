@@ -18,7 +18,9 @@ from flask_login import login_required, current_user
 
 from ..models import (db, EchomailMessage, EchoArea, EchomailLastRead)
 from ..features.access_control import evaluate_access
-from ..echomail.zip_safety import MAX_MEMBER_UNCOMPRESSED, ZipBombError
+from ..echomail.qwk import (_clean_body, _iter_qwk_records, _read_capped,
+                            _read_qwk_member, MAX_QWK_PACKET_SIZE)
+from ..echomail.zip_safety import ZipBombError
 
 
 qwk_user_bp = Blueprint('qwk_user', __name__, url_prefix='/qwk')
@@ -224,7 +226,11 @@ def upload():
     if not upload or not upload.filename:
         flash('No .REP file selected.', 'danger')
         return redirect(url_for('qwk_user.index'))
-    raw = upload.read()
+    try:
+        raw = _read_capped(upload.stream, MAX_QWK_PACKET_SIZE, 'user REP')
+    except ValueError:
+        flash('REP packet exceeds the size limit.', 'danger')
+        return redirect(url_for('qwk_user.index'))
     if not raw or len(raw) < 200:
         flash('REP packet looks empty/invalid.', 'danger')
         return redirect(url_for('qwk_user.index'))
@@ -236,25 +242,10 @@ def upload():
             if not target:
                 flash('No MESSAGES.DAT in the REP.', 'danger')
                 return redirect(url_for('qwk_user.index'))
-            # Real gap found in a security/performance audit: z.read()
-            # here had no cap on the DECLARED uncompressed size, letting
-            # a small, highly-compressed REP expand to gigabytes in
-            # memory the instant it's read (a zip bomb) -- reachable by
-            # any logged-in user with QWK access, not admin-only.
-            # Checking ZipInfo.file_size (free, no decompression cost)
-            # before z.read() is what actually prevents the bomb from
-            # ever being decompressed. Same shared cap already used by
-            # every other ZIP-extraction site in this codebase (see
-            # echomail/zip_safety.py's own docstring for the incident
-            # that established this pattern).
-            info = z.getinfo(target)
-            if info.file_size > MAX_MEMBER_UNCOMPRESSED:
-                raise ZipBombError(
-                    f'{target!r} declares {info.file_size} bytes uncompressed '
-                    f'(cap {MAX_MEMBER_UNCOMPRESSED}) -- refusing to extract')
-            data = z.read(target)
-    except ZipBombError:
-        flash('REP packet rejected: declared size too large.', 'danger')
+            data = _read_qwk_member(z, target)
+            records = list(_iter_qwk_records(data))
+    except ZipBombError as exc:
+        flash(f'REP packet rejected: {exc}.', 'danger')
         return redirect(url_for('qwk_user.index'))
     except Exception as exc:
         flash(f'Could not unzip: {exc}', 'danger')
@@ -265,23 +256,13 @@ def upload():
         flash('Truncated REP packet.', 'danger')
         return redirect(url_for('qwk_user.index'))
 
-    pos = 128
     imported = 0
     # Load area list once outside the loop — conf_num is a 1-based index
     # into the same ordered, access-filtered list _build_qwk_blob used
     # when producing the packet (see _qwk_accessible_areas()'s own
     # docstring for why this must match, not just filter is_active).
     areas = _qwk_accessible_areas(current_user)
-    while pos + 128 <= len(data):
-        header = data[pos:pos + 128]
-        pos += 128
-        try:
-            num_blocks = int(header[116:122].decode('ascii', errors='replace').strip() or '1')
-        except ValueError:
-            num_blocks = 1
-        body_blocks = max(0, num_blocks - 1)
-        body = data[pos:pos + body_blocks * 128]
-        pos += body_blocks * 128
+    for header, body in records:
         try:
             conf_num = struct.unpack('<H', header[123:125])[0]
         except struct.error:
@@ -308,7 +289,6 @@ def upload():
             # visible junk text at the top of the message instead of
             # setting reply_id. Reuses the same _clean_body() helper
             # rather than re-implementing the same parsing a third time.
-            from ..echomail.qwk import _clean_body
             _cleaned = _clean_body(body_text)
             body_text = _cleaned['body']
             reply_id = _cleaned['reply_id']

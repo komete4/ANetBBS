@@ -16,20 +16,20 @@ Architecture:
 Each browser tab gets its own outbound TCP socket; bytes flow both ways
 through the socketio namespace `/term`.
 """
-import logging
+import json
 import os
 import socket
 import ssl as ssl_module
 import threading
+import time
 
-from flask import Blueprint, abort, current_app, render_template, request
+from flask import Blueprint, abort, current_app, render_template, request, session
 from flask_login import login_required, current_user
-from flask_socketio import emit
+from flask_socketio import disconnect, emit
 
 from ..core.net_safety import resolve_safe_destination as _resolve_safe_destination_impl
+from ..models import User, UserSession, db
 
-
-logger = logging.getLogger(__name__)
 
 term_bp = Blueprint('web_terminal', __name__, url_prefix='/terminal')
 
@@ -90,13 +90,37 @@ class _TermSession:
     """One browser tab's terminal — spawned greenthread reads from the
     outbound socket and forwards bytes to the user via socketio."""
 
-    def __init__(self, sid, host, port, use_ssl=False):
+    def __init__(self, sid, host, port, use_ssl=False, *, app=None,
+                 user_id=None, auth_version=None, presence_id=None,
+                 presence_key=None):
         self.sid = sid
         self.host = host
         self.port = port
         self.use_ssl = use_ssl
+        self.app = app
+        self.user_id = user_id
+        self.auth_version = auth_version
+        self.presence_id = presence_id
+        self.presence_key = presence_key
         self.sock = None
         self.connected = False
+
+    def authorized(self):
+        # A fresh app context reads committed state even when logout,
+        # credential changes or a kick happened in a different process.
+        if (self.app is None or not self.app.config.get('WEB_TERMINAL_ENABLED', True)
+                or self.presence_id is None):
+            return False
+        with self.app.app_context():
+            user = db.session.get(User, self.user_id)
+            if (not user or not user.is_active or user.is_locked
+                    or (not user.is_verified and not user.is_admin)
+                    or user.auth_version != self.auth_version):
+                return False
+            presence = db.session.get(UserSession, self.presence_id)
+            return bool(presence and presence.user_id == self.user_id
+                        and presence.session_key == self.presence_key
+                        and not presence.kick_requested)
 
     def open(self):
         # _resolve_safe_destination() (see its own docstring) is the
@@ -108,42 +132,49 @@ class _TermSession:
         if error:
             self._emit('term_error', {'message': error})
             return False
+        sock = None
         try:
             sock = socket.socket(family, socket.SOCK_STREAM)
             sock.settimeout(15)
             sock.connect(sockaddr)
             if self.use_ssl:
                 ctx = ssl_module.create_default_context()
-                # Many BBSes use self-signed certs; relax verification.
-                ctx.check_hostname = False
-                ctx.verify_mode = ssl_module.CERT_NONE
+                ca_files = json.loads(self.app.config['WEB_TERMINAL_TLS_CA_FILES'])
+                if not isinstance(ca_files, dict):
+                    raise ValueError('WEB_TERMINAL_TLS_CA_FILES must be a JSON object')
+                ca_file = ca_files.get(f'{self.host.lower()}:{self.port}')
+                if ca_file:
+                    ctx.load_verify_locations(cafile=ca_file)
                 sock = ctx.wrap_socket(sock, server_hostname=self.host)
             self.sock = sock
             self.connected = True
             return True
-        except (OSError, ssl_module.SSLError) as exc:
+        except (OSError, TypeError, ValueError) as exc:
+            if sock is not None:
+                sock.close()
             self._emit('term_error', {'message': f'Connect failed: {exc}'})
             return False
 
     def write(self, data):
-        if self.sock is None or not self.connected:
+        sock = self.sock
+        if sock is None or not self.connected:
             return
         if isinstance(data, str):
             data = data.encode('utf-8', errors='replace')
         try:
-            self.sock.sendall(data)
+            sock.sendall(data)
         except OSError as exc:
             self._emit('term_error', {'message': f'Write failed: {exc}'})
             self.connected = False
 
     def close(self):
-        if self.sock is not None:
+        sock, self.sock = self.sock, None
+        self.connected = False
+        if sock is not None:
             try:
-                self.sock.close()
+                sock.close()
             except OSError:
                 pass
-        self.connected = False
-        self.sock = None
 
     def run(self):
         """Read loop — push everything we receive back to the browser as
@@ -155,15 +186,20 @@ class _TermSession:
         sent FIN, exception = error."""
         try:
             if self.sock is not None:
-                self.sock.settimeout(20)
+                self.sock.settimeout(3)
         except OSError:
             pass
 
-        import time as _time
-        last_keepalive = _time.monotonic()
+        last_keepalive = time.monotonic()
+        next_auth_check = last_keepalive
 
         try:
             while self.connected:
+                now = time.monotonic()
+                if now >= next_auth_check:
+                    if not self.authorized():
+                        break
+                    next_auth_check = now + 3
                 sock = self.sock  # snapshot so close()-racing can't None it mid-call
                 if sock is None:
                     break
@@ -173,6 +209,11 @@ class _TermSession:
                     chunk = None  # idle — fall through to keepalive
                 except OSError:
                     break
+                now = time.monotonic()
+                if now >= next_auth_check:
+                    if not self.authorized():
+                        break
+                    next_auth_check = now + 3
                 if chunk is not None:
                     if not chunk:
                         break  # remote closed cleanly
@@ -181,13 +222,11 @@ class _TermSession:
                     except Exception:
                         text = chunk.decode('utf-8', errors='replace')
                     self._emit('term_output', {'data': text})
-                now = _time.monotonic()
                 if now - last_keepalive >= 20:
                     self._emit('term_keepalive', {'t': now})
                     last_keepalive = now
         finally:
-            self.connected = False
-            self._emit('term_disconnected', {})
+            self.close()
             with _lock:
                 # Real gap found in a security/performance audit: a
                 # blind pop(self.sid) here can clobber a NEWER session
@@ -202,6 +241,11 @@ class _TermSession:
                 # session.
                 if _sessions.get(self.sid) is self:
                     _sessions.pop(self.sid, None)
+                    notify = True
+                else:
+                    notify = False
+            if notify:
+                self._emit('term_disconnected', {})
 
     def _emit(self, event, payload):
         from ..web_app import socketio
@@ -243,7 +287,8 @@ def index():
 def register_socketio_handlers(socketio):
     @socketio.on('connect', namespace='/term')
     def on_connect():
-        if not getattr(current_user, 'is_authenticated', False):
+        if (not current_app.config['WEB_TERMINAL_ENABLED']
+                or not current_user.is_authenticated):
             return False
 
     @socketio.on('disconnect', namespace='/term')
@@ -256,22 +301,50 @@ def register_socketio_handlers(socketio):
 
     @socketio.on('term_open', namespace='/term')
     def on_open(data):
-        if not getattr(current_user, 'is_authenticated', False):
+        if (not current_app.config['WEB_TERMINAL_ENABLED']
+                or not current_user.is_authenticated):
             return False
         sid = request.sid
+        if not isinstance(data, dict) or not isinstance(data.get('host', ''), str):
+            return
         host = (data.get('host') or 'localhost').strip()
-        port = int(data.get('port') or 23)
+        try:
+            port = int(data.get('port') or 23)
+        except (TypeError, ValueError):
+            emit('term_error', {'message': 'Invalid terminal port.'})
+            return
+        if not 1 <= port <= 65535:
+            emit('term_error', {'message': 'Invalid terminal port.'})
+            return
         use_ssl = bool(data.get('use_ssl'))
+        presence_key = session.get('presence_session_key')
+        presence = (UserSession.query.filter_by(
+            user_id=current_user.id, session_key=presence_key,
+        ).first() if presence_key else None)
+        if presence is None or presence.kick_requested:
+            emit('term_error', {'message': 'Reload the web terminal and sign in again.'})
+            disconnect()
+            return
+
+        sess = _TermSession(
+            sid, host, port, use_ssl, app=current_app._get_current_object(),
+            user_id=current_user.id, auth_version=current_user.auth_version,
+            presence_id=presence.id, presence_key=presence.session_key,
+        )
         with _lock:
             existing = _sessions.get(sid)
+            _sessions[sid] = sess
         if existing:
             existing.close()
 
-        sess = _TermSession(sid, host, port, use_ssl)
-        if not sess.open():
-            return
+        opened = sess.authorized() and sess.open() and sess.authorized()
         with _lock:
-            _sessions[sid] = sess
+            still_current = _sessions.get(sid) is sess
+            if still_current and not opened:
+                _sessions.pop(sid)
+        if not opened or not still_current:
+            sess.close()
+            return
         socketio.start_background_task(sess.run)
         emit('term_connected', {'host': host, 'port': port, 'use_ssl': use_ssl})
 
@@ -282,7 +355,12 @@ def register_socketio_handlers(socketio):
             sess = _sessions.get(sid)
         if not sess:
             return
-        sess.write(data.get('data') or '')
+        if not sess.authorized():
+            emit('term_disconnected', {})
+            disconnect()
+            return
+        if isinstance(data, dict) and isinstance(data.get('data'), str):
+            sess.write(data['data'])
 
     @socketio.on('term_close', namespace='/term')
     def on_close():

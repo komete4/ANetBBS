@@ -27,6 +27,8 @@ from flask_login import login_required, current_user
 
 from ..models import db, FileArea, TicFile, SharedFileLink, UserActivity
 from ..features.archive_meta import extract_archive_description
+from ..features.file_publish import (UploadRejected, is_staging_path,
+                                     save_new_upload)
 from ..features.access_control import evaluate_access
 from ..features.rate_limit import rate_limit, _user_or_ip
 from .list_pagination import ListPagination
@@ -493,7 +495,8 @@ def download(area_id, filename):
     # download/thumbnail/share 404s -- not a security hole, but worth
     # the same realpath() on both sides for consistency).
     full = os.path.realpath(os.path.join(area.storage_path, filename))
-    if not full.startswith(os.path.realpath(area.storage_path) + os.sep):
+    if (is_staging_path(filename) or is_staging_path(full)
+            or not full.startswith(os.path.realpath(area.storage_path) + os.sep)):
         abort(404)
     if not os.path.isfile(full):
         abort(404)
@@ -606,7 +609,8 @@ def thumbnail(area_id, filename):
 
     src = os.path.realpath(os.path.join(area.storage_path, filename))
     # Defense against path traversal — confirm src is inside storage_path.
-    if not src.startswith(os.path.realpath(area.storage_path) + os.sep):
+    if (is_staging_path(filename) or is_staging_path(src)
+            or not src.startswith(os.path.realpath(area.storage_path) + os.sep)):
         abort(404)
     if not os.path.isfile(src):
         abort(404)
@@ -681,6 +685,8 @@ def upload(area_id):
     area = FileArea.query.get_or_404(area_id)
     if not _visible_to(current_user, area):
         abort(403)
+    if not evaluate_access(current_user, area.min_write_level):
+        abort(403)
 
     perm = (area.upload_permission or 'users').lower()
     if perm == 'none':
@@ -743,7 +749,8 @@ def upload(area_id):
             # timing.
             import secrets as _secrets
             qpath = os.path.join(qdir, f'{_secrets.token_hex(8)}-{safe_name}')
-            upload.save(qpath)
+            with open(qpath, 'xb') as staged:
+                upload.save(staged)
             entry = FileQueueEntry(
                 file_area_id=area.id,
                 user_id=current_user.id,
@@ -758,38 +765,7 @@ def upload(area_id):
             return redirect(url_for('file_areas.view_area', area_id=area.id))
 
         dest = os.path.join(area.storage_path, safe_name)
-        upload.save(dest)
-
-        # Virus scan (optional — silently skipped if clamscan isn't installed).
-        try:
-            from ..features.virus_scan import scan_path
-            result = scan_path(dest)
-            if result.infected:
-                try:
-                    os.remove(dest)
-                except OSError:
-                    pass
-                flash(f'Upload rejected: virus detected ({result.signature}).',
-                      'danger')
-                return redirect(url_for('file_areas.view_area', area_id=area.id))
-        except Exception:
-            current_app.logger.exception('virus scan crashed; allowing upload')
-
-        # Archive integrity test (optional — silently skipped for formats
-        # with no test API, or a missing optional library).
-        try:
-            from ..features.archive_meta import test_archive_integrity
-            result = test_archive_integrity(dest)
-            if not result.ok:
-                try:
-                    os.remove(dest)
-                except OSError:
-                    pass
-                flash(f'Upload rejected: corrupt archive ({result.message}).',
-                      'danger')
-                return redirect(url_for('file_areas.view_area', area_id=area.id))
-        except Exception:
-            current_app.logger.exception('archive integrity test crashed; allowing upload')
+        save_new_upload(upload, dest)
 
         # Duplicate-content notice (not a block -- see _check_and_record_dupe).
         dupe_of = _check_and_record_dupe(area, dest, safe_name)
@@ -818,8 +794,13 @@ def upload(area_id):
                   'warning')
         else:
             flash(f'Uploaded {safe_name}.', 'success')
-    except OSError as exc:
-        flash(f'Save failed: {exc}', 'danger')
+    except FileExistsError:
+        flash('A file with that name already exists.', 'danger')
+    except UploadRejected as exc:
+        flash(f'Upload rejected: {exc}', 'danger')
+    except OSError:
+        current_app.logger.exception('File area upload failed')
+        flash('The upload could not be saved.', 'danger')
     return redirect(url_for('file_areas.view_area', area_id=area.id))
 
 
@@ -868,7 +849,8 @@ def create_share(area_id, filename):
     # download/thumbnail/share 404s -- not a security hole, but worth
     # the same realpath() on both sides for consistency).
     full = os.path.realpath(os.path.join(area.storage_path, filename))
-    if not full.startswith(os.path.realpath(area.storage_path) + os.sep):
+    if (is_staging_path(filename) or is_staging_path(full)
+            or not full.startswith(os.path.realpath(area.storage_path) + os.sep)):
         flash('File not found.', 'danger')
         return redirect(url_for('file_areas.view_area', area_id=area.id))
     if not os.path.isfile(full):
@@ -911,7 +893,8 @@ def fetch_shared(token):
     # from ever being stored, but re-check here too in case a
     # SharedFileLink row predates that fix.
     fpath = os.path.realpath(os.path.join(area.storage_path, link.filename))
-    if not fpath.startswith(os.path.realpath(area.storage_path) + os.sep):
+    if (is_staging_path(link.filename) or is_staging_path(fpath)
+            or not fpath.startswith(os.path.realpath(area.storage_path) + os.sep)):
         abort(404)
     if not os.path.isfile(fpath):
         abort(404)
@@ -1012,7 +995,8 @@ def manage_delete(area_id):
     # download/thumbnail/share 404s -- not a security hole, but worth
     # the same realpath() on both sides for consistency).
     full = os.path.realpath(os.path.join(area.storage_path, filename))
-    if not full.startswith(os.path.realpath(area.storage_path) + os.sep):
+    if (is_staging_path(filename) or is_staging_path(full)
+            or not full.startswith(os.path.realpath(area.storage_path) + os.sep)):
         flash('Invalid path.', 'danger')
         return redirect(url_for('file_areas.manage_files', area_id=area.id))
     if not os.path.isfile(full):
@@ -1061,7 +1045,8 @@ def manage_desc(area_id):
     # download/thumbnail/share 404s -- not a security hole, but worth
     # the same realpath() on both sides for consistency).
     full = os.path.realpath(os.path.join(area.storage_path, filename))
-    if not full.startswith(os.path.realpath(area.storage_path) + os.sep):
+    if (is_staging_path(filename) or is_staging_path(full)
+            or not full.startswith(os.path.realpath(area.storage_path) + os.sep)):
         flash('Invalid path.', 'danger')
         return redirect(url_for('file_areas.manage_files', area_id=area.id))
     if not os.path.isfile(full):
@@ -1113,35 +1098,7 @@ def manage_upload(area_id):
     try:
         os.makedirs(area.storage_path, exist_ok=True)
         dest = os.path.join(area.storage_path, safe_name)
-        f.save(dest)
-
-        # This route had neither a virus scan nor an archive-integrity
-        # test before -- adding both together while touching it, same
-        # reject pattern used by upload()/smart_upload() above.
-        try:
-            from ..features.virus_scan import scan_path
-            vr = scan_path(dest)
-            if vr.infected:
-                try:
-                    os.remove(dest)
-                except OSError:
-                    pass
-                flash(f'Upload rejected: virus detected ({vr.signature}).', 'danger')
-                return redirect(url_for('file_areas.manage_files', area_id=area.id))
-        except Exception:
-            current_app.logger.exception('virus scan crashed; allowing upload')
-        try:
-            from ..features.archive_meta import test_archive_integrity
-            ar = test_archive_integrity(dest)
-            if not ar.ok:
-                try:
-                    os.remove(dest)
-                except OSError:
-                    pass
-                flash(f'Upload rejected: corrupt archive ({ar.message}).', 'danger')
-                return redirect(url_for('file_areas.manage_files', area_id=area.id))
-        except Exception:
-            current_app.logger.exception('archive integrity test crashed; allowing upload')
+        save_new_upload(f, dest)
 
         dupe_of = _check_and_record_dupe(area, dest, safe_name)
 
@@ -1165,8 +1122,13 @@ def manage_upload(area_id):
                   'warning')
         else:
             flash(f'Uploaded {safe_name}.', 'success')
-    except OSError as exc:
-        flash(f'Upload failed: {exc}', 'danger')
+    except FileExistsError:
+        flash('A file with that name already exists.', 'danger')
+    except UploadRejected as exc:
+        flash(f'Upload rejected: {exc}', 'danger')
+    except OSError:
+        current_app.logger.exception('File area upload failed')
+        flash('The upload could not be saved.', 'danger')
     return redirect(url_for('file_areas.manage_files', area_id=area.id))
 
 
@@ -1219,6 +1181,10 @@ def smart_upload():
             flash('No matching file area — pick one manually.', 'danger')
             return redirect(url_for('file_areas.smart_upload'))
 
+        if not evaluate_access(current_user, target.min_write_level):
+            flash('You do not have permission to upload to this area.', 'danger')
+            return redirect(url_for('file_areas.smart_upload'))
+
         perm = (target.upload_permission or 'users').lower()
         if perm == 'none':
             flash('Uploads are disabled for that area.', 'danger')
@@ -1226,6 +1192,10 @@ def smart_upload():
         if perm == 'sysop' and not getattr(current_user, 'is_admin', False):
             flash('Only sysops can upload to that area.', 'danger')
             return redirect(url_for('file_areas.smart_upload'))
+
+        if target.password:
+            flash('Use the area upload form for password-protected areas.', 'danger')
+            return redirect(url_for('file_areas.view_area', area_id=target.id))
 
         try:
             safe = os.path.basename(upload.filename)
@@ -1259,7 +1229,8 @@ def smart_upload():
                 # instead of a 1-second-resolution timestamp avoids a
                 # same-second same-filename collision in quarantine.
                 qpath = os.path.join(qdir, f'{_secrets.token_hex(8)}-{safe}')
-                upload.save(qpath)
+                with open(qpath, 'xb') as staged:
+                    upload.save(staged)
                 entry = FileQueueEntry(
                     file_area_id=target.id,
                     user_id=current_user.id,
@@ -1277,35 +1248,7 @@ def smart_upload():
 
             os.makedirs(target.storage_path, exist_ok=True)
             dest = os.path.join(target.storage_path, safe)
-            upload.save(dest)
-            # Optional virus scan
-            try:
-                from ..features.virus_scan import scan_path
-                r = scan_path(dest)
-                if r.infected:
-                    try: os.remove(dest)
-                    except OSError: pass
-                    flash(f'Rejected: virus ({r.signature}).', 'danger')
-                    return redirect(url_for('file_areas.smart_upload'))
-            except Exception:
-                # Real gap found in a security/performance audit: this
-                # is smart_upload()'s own copy of upload()'s virus-scan
-                # block, which already logs this exact failure -- this
-                # copy was silently swallowing it instead. Same fail-
-                # open policy, now with the same trace on failure.
-                current_app.logger.exception('virus scan crashed; allowing upload')
-            # Optional archive integrity test
-            try:
-                from ..features.archive_meta import test_archive_integrity
-                ar = test_archive_integrity(dest)
-                if not ar.ok:
-                    try: os.remove(dest)
-                    except OSError: pass
-                    flash(f'Rejected: corrupt archive ({ar.message}).', 'danger')
-                    return redirect(url_for('file_areas.smart_upload'))
-            except Exception:
-                # Same gap and fix as the virus-scan block just above.
-                current_app.logger.exception('archive integrity test crashed; allowing upload')
+            save_new_upload(upload, dest)
             dupe_of = _check_and_record_dupe(target, dest, safe)
             _hatch_if_network_area(target, dest, safe,
                                    request.form.get('description'),
@@ -1317,7 +1260,12 @@ def smart_upload():
             else:
                 flash(f'Uploaded {safe} to {target.tag}.', 'success')
             return redirect(url_for('file_areas.view_area', area_id=target.id))
-        except OSError as exc:
-            flash(f'Save failed: {exc}', 'danger')
+        except FileExistsError:
+            flash('A file with that name already exists.', 'danger')
+        except UploadRejected as exc:
+            flash(f'Upload rejected: {exc}', 'danger')
+        except OSError:
+            current_app.logger.exception('File area upload failed')
+            flash('The upload could not be saved.', 'danger')
 
     return render_template('file_areas/smart_upload.html', areas=visible_areas)

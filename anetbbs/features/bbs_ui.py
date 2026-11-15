@@ -1260,12 +1260,12 @@ class BBSMenuUI:
         with _app().app_context():
             entries = BbsDirectoryEntry.query.order_by(BbsDirectoryEntry.name).all()
             all_rows = [{
-                'hostname': e.hostname, 'name': e.name or e.hostname,
-                'sysop': e.sysop or '', 'location': e.location or '',
-                'software': e.software or '',
-                'software_version': e.software_version or '',
+                'hostname': _strip_untrusted(e.hostname), 'name': _strip_untrusted(e.name or e.hostname),
+                'sysop': _strip_untrusted(e.sysop or ''), 'location': _strip_untrusted(e.location or ''),
+                'software': _strip_untrusted(e.software or ''),
+                'software_version': _strip_untrusted(e.software_version or ''),
                 'systat_port': e.systat_port or 11, 'msp_port': e.msp_port or 18,
-                'notes': e.notes or '', 'source': e.source or '',
+                'notes': _strip_untrusted(e.notes or ''), 'source': _strip_untrusted(e.source or ''),
                 # Eastern display, not raw UTC -- same shared conversion
                 # every other timestamp in this file already goes
                 # through (see fmt_eastern's own import at the top).
@@ -3018,6 +3018,7 @@ class BBSMenuUI:
         import uuid, mimetypes, shutil as _shutil
         from werkzeug.utils import secure_filename
         from ..features.archive_meta import extract_archive_description
+        from .file_publish import publish_received_upload
 
         opts = []
         labels = {'zmodem': 'Z=ZMODEM', 'ymodem': 'Y=YMODEM', 'xmodem': 'X=XMODEM'}
@@ -3091,7 +3092,7 @@ class BBSMenuUI:
                             f"\r\nSkipped {raw_orig_name!r}: invalid filename.\r\n")
                         continue
                     dest = os.path.join(target_dir, safe_name)
-                    _shutil.move(tmp_path, dest)
+                    publish_received_upload(tmp_path, dest)
                     saved.append(orig_name)
                 else:
                     ext = orig_name.rsplit('.', 1)[-1].lower() \
@@ -3099,7 +3100,7 @@ class BBSMenuUI:
                     stored = f"{uuid.uuid4().hex}.{ext}" if ext \
                              else uuid.uuid4().hex
                     dest = os.path.join(uploads_dir, stored)
-                    _shutil.move(tmp_path, dest)
+                    publish_received_upload(tmp_path, dest)
                     size = os.path.getsize(dest)
                     mime = mimetypes.guess_type(orig_name)[0] \
                            or 'application/octet-stream'
@@ -5406,7 +5407,6 @@ BBSMenuUI.edit_profile = _edit_profile
 
 async def _change_password(self):
     from anetbbs.models import db, User
-    from werkzeug.security import check_password_hash
     cur = await self.session.read_password("\r\nCurrent password: ")
     new1 = await self.session.read_password("New password: ")
     new2 = await self.session.read_password("Confirm new: ")
@@ -5416,7 +5416,7 @@ async def _change_password(self):
         return
     with _app().app_context():
         u = User.query.get(self.session.user['id'])
-        if not u or not check_password_hash(u.password_hash, cur or ''):
+        if not u or not u.check_password(cur or ''):
             await self.session.write("\r\nCurrent password incorrect.\r\n")
             await self.session.read_line("Press Enter...")
             return
@@ -6440,6 +6440,7 @@ BBSMenuUI.sysop_wall = _sysop_wall
 
 async def _sysop_file_queue(self):
     from anetbbs.models import db, FileQueueEntry, FileArea
+    from anetbbs.features.file_publish import UploadRejected, approve_queued_upload
     from .ansi_ui import FG, RESET
     import os as _os
 
@@ -6471,13 +6472,10 @@ async def _sysop_file_queue(self):
                 return
             try:
                 _os.makedirs(area.storage_path, exist_ok=True)
-                safe_name = _os.path.basename(entry.filename)
-                dest = _os.path.join(area.storage_path, safe_name)
-                if _os.path.exists(dest):
-                    base, ext = _os.path.splitext(safe_name)
-                    dest = _os.path.join(area.storage_path, f'{base}-{entry.id}{ext}')
-                _os.rename(entry.quarantine_path, dest)
-            except OSError as exc:
+                dest = approve_queued_upload(entry.quarantine_path, area.storage_path,
+                                             entry.filename, entry.id)
+                safe_name = _os.path.basename(dest)
+            except (OSError, UploadRejected) as exc:
                 await ui.session.write(f"\r\n{FG['red']}Approve failed: {exc}{RESET}\r\n")
                 await ui.session.read_line("Press Enter...")
                 return
@@ -6485,6 +6483,10 @@ async def _sysop_file_queue(self):
             entry.reviewed_by_id = ui.session.user.get('id')
             entry.reviewed_at = datetime.utcnow()
             db.session.commit()
+            try:
+                _os.unlink(entry.quarantine_path)
+            except OSError:
+                logger.exception('Failed to delete approved quarantine file')
             if area.network_id is not None:
                 try:
                     from anetbbs.echomail.tic import hatch_local_file

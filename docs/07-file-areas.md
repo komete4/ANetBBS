@@ -62,21 +62,29 @@ walkthrough.
 ## FTP access
 
 When `FTP_ENABLED=true` in `.env` (or via **Admin → Settings**), the
-ANetBBS FTP server publishes every active `FileArea` as a top-level
-directory. Three views are served from the same port:
+ANetBBS FTP server lists permitted `FileArea` directories at the top
+level. Each directory name includes the area ID and the URL-encoded tag.
+Update saved FTP paths after upgrading. Three views use the same port:
 
 - **Anonymous** (`anonymous` / blank password) — read-only, sees only
-  active areas with `is_sysop_only=false`. Earns you the FTN nodelist
+  active areas with public access level and `is_sysop_only=false`. Earns you the FTN nodelist
   `IFC` flag once advertised.
-- **Authenticated users** — same login as web / telnet / SSH. Read
-  everything not sysop-only, upload subject to each area's
-  `upload_permission` (`none` / `users` / `sysop`).
-- **Sysop** — read + write everything, including `is_sysop_only` areas.
+- **Authenticated users** — same login as web / telnet / SSH. An area's
+  access level governs listing and download. Its upload permission and
+  write level govern uploads. Use the web form for password-protected
+  areas. Users can rename or delete their own FTP uploads recorded after
+  the upgrade.
+- **Sysop** — can read and manage files in active areas, including
+  `is_sysop_only` areas. An area's upload permission still applies.
 
-Uploads via FTP create the same `FileUpload` row a web upload would,
-so they show up in the web file-area browser as well. Per-area
-`upload_permission` is enforced post-write: a denied upload is
-deleted from disk and the violation is logged.
+The server checks permissions before receiving a file, scans it in a
+private staging directory and publishes it without replacing any
+existing file. Use a new filename when the requested name already exists.
+Start failed uploads again from the beginning. FTP downloads still support
+resume. Uploads use `UPLOAD_MAX_SIZE` per file, `FTP_SESSION_UPLOAD_MAX_BYTES`
+per session and `FTP_DAILY_UPLOAD_MAX_BYTES` per account per UTC day.
+The daily counter resets when the FTP service restarts. Transfers pause
+with an error if they would cross `FTP_MIN_FREE_BYTES`.
 
 Ports to open on the firewall: `21/tcp` (control) and the configured
 `FTP_PASV_PORTS` range (default `40000-40050`, data channels). See
@@ -117,13 +125,12 @@ When on:
 
 Two checks run automatically on every upload, before it's accepted:
 
-- **Archive integrity test** — zip/tar/7z/rar archives are opened and
-  verified; a corrupt archive is rejected outright instead of sitting
-  in the file base as a broken download. Capped against decompression
-  bombs — an archive that claims a wildly disproportionate uncompressed
-  size for its compressed size is rejected during this same check
-  rather than being fully inflated first, closing a real
-  disk-exhaustion gap found in a security audit.
+- **Archive integrity test** — ZIP and TAR are checked directly. On Linux,
+  7z, RAR and LHA inspection and automatic description extraction require
+  `bsdtar` and `prlimit` (the `libarchive-tools` and `util-linux` packages on
+  Debian). The decoder has memory, CPU, output and elapsed-time limits.
+  When either tool is unavailable, these formats can still be uploaded
+  and downloaded without automatic inspection or descriptions.
 - **Content-hash dedup check** — a SHA-256 hash of the file's content
   (not its filename) is compared against everything already in the
   file base. A near-identical re-upload under a different name gets

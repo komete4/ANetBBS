@@ -160,6 +160,9 @@ class Config:
     # Where to assemble the virtual FTP tree (symlinks to each FileArea's
     # storage_path). Rebuilt on every server start.
     FTP_ROOT_DIR = os.environ.get('FTP_ROOT_DIR', 'data/ftp_root')
+    FTP_SESSION_UPLOAD_MAX_BYTES = int(os.environ.get('FTP_SESSION_UPLOAD_MAX_BYTES', '0'))
+    FTP_DAILY_UPLOAD_MAX_BYTES = int(os.environ.get('FTP_DAILY_UPLOAD_MAX_BYTES', '0'))
+    FTP_MIN_FREE_BYTES = int(os.environ.get('FTP_MIN_FREE_BYTES', str(64 * 1024 * 1024)))
     # Banner shown on connect — replace at will.
     FTP_BANNER = os.environ.get('FTP_BANNER', 'ANetBBS FTP — file areas')
 
@@ -229,6 +232,7 @@ class Config:
     # Web Server
     WEB_HOST = os.environ.get('WEB_HOST', '0.0.0.0')
     WEB_PORT = int(os.environ.get('WEB_PORT', '5000'))
+    WEB_TERMINAL_TLS_CA_FILES = os.environ.get('WEB_TERMINAL_TLS_CA_FILES', '{}')
 
     # Static asset caching -- real gap found in a security/performance
     # audit: Flask's own default (no SEND_FILE_MAX_AGE_DEFAULT set) sends
@@ -355,7 +359,7 @@ class Config:
     BBS_NODES = max(1, min(100, int(os.environ.get('BBS_NODES', '8'))))
     # Idle disconnect for terminal menus (seconds). 0 = never idle out.
     # IRC/MRC are web features and unaffected.
-    IDLE_TIMEOUT_SECONDS = int(os.environ.get('IDLE_TIMEOUT_SECONDS', '1800'))
+    IDLE_TIMEOUT_SECONDS = int(os.environ.get('IDLE_TIMEOUT_SECONDS') or '1800')
     # ClamAV scan timeout (seconds) — how long anetbbs/features/virus_scan.py's
     # scan_path() waits for `clamscan` on one file before giving up. On
     # timeout the file passes through as clean (fail-open, same as a

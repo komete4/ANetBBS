@@ -46,6 +46,9 @@ def _run_block(block_text, extra_env_lines):
         config_path = Path(tmp) / 'config.json'
         script = (
             'set -e\n'
+            'SERVICE_USER=anetbbs-test\n'
+            'runuser() { [[ "$1 $2 $3 $4" == "-u $SERVICE_USER -m --" ]]; '
+            'shift 4; "$@"; }\n'
             + extra_env_lines
             + f'\nMRC_CONFIG_FILE="{config_path}"\n'
             f'MRC_BRIDGE_CONFIG="{config_path}"\n'
