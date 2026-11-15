@@ -439,6 +439,9 @@ class GameSession(db.Model):
     # the index via its leftmost column.
     __table_args__ = (
         db.Index('ix_game_sessions_game_id_status', 'game_id', 'status'),
+        db.Index('ix_game_sessions_active_node', 'game_id', 'node_number', unique=True,
+                 sqlite_where=db.text("status = 'active'"),
+                 postgresql_where=db.text("status = 'active'")),
     )
 
     def __repr__(self):
@@ -642,6 +645,7 @@ class FileUpload(db.Model):
     # same file_area_id scope (anetbbs/features/file_dedup.py). Nullable:
     # rows created before this column existed simply never match.
     content_hash = db.Column(db.String(64), index=True)
+    ftp_file_identity = db.Column(db.String(128))
 
     uploader = db.relationship('User', backref='uploads', lazy=True)
     file_area = db.relationship('FileArea')
@@ -884,6 +888,16 @@ class EchomailPollLog(db.Model):
 
     def __repr__(self):
         return f'<EchomailPollLog network={self.network_id} status={self.status}>'
+
+
+class ServiceRateBucket(db.Model):
+    """Short-lived counters shared by processes that use the BBS database."""
+
+    __tablename__ = 'service_rate_buckets'
+
+    key = db.Column(db.String(160), primary_key=True)
+    hits = db.Column(db.Integer, nullable=False)
+    expires_at = db.Column(db.BigInteger, nullable=False, index=True)
 
 
 # ---------------------------------------------------------------------------
@@ -1348,16 +1362,25 @@ class PasswordResetToken(db.Model):
         return (self.used_at is None and datetime.utcnow() < self.expires_at
                 and self.user is not None and self.user.auth_version == self.auth_version)
 
+    @staticmethod
+    def lock_account(session, user_id, auth_version):
+        """Serialize issuance and consumption with password rotation."""
+        return session.query(User).filter_by(
+            id=user_id, auth_version=auth_version, is_active=True,
+        ).update({User.auth_version: User.auth_version}, synchronize_session=False) == 1
+
     def apply_password(self, password):
         """Replace the password only if this token's generation is still current."""
         password_hash = generate_password_hash(password)
+        session = object_session(self)
+        if not self.lock_account(session, self.user_id, self.auth_version):
+            return False
         now = datetime.utcnow()
         token_is_current = select(PasswordResetToken.id).where(
             PasswordResetToken.id == self.id,
             PasswordResetToken.used_at.is_(None),
             PasswordResetToken.expires_at > now,
         ).exists()
-        session = object_session(self)
         # Update the account, not just the token, so two links for the same
         # account cannot win together. The caller commits both writes at once.
         updated = session.query(User).filter_by(

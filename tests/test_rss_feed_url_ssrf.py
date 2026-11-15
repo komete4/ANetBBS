@@ -142,7 +142,7 @@ class RssFeedUrlSsrfTests(unittest.TestCase):
         from anetbbs.models import RssFeed
         url = 'https://example.com/feed.xml'
         feed_id = self._make_feed(url)
-        fake_result = mock.Mock(returncode=0, stdout=b'<rss></rss>', stderr=b'')
+        body = b'<rss></rss>'
         # _import_one_feed() does `from ..core.net_safety import
         # resolve_safe_destination` as a LOCAL import at call time, so
         # patching the real source attribute (not a module-level name
@@ -151,15 +151,16 @@ class RssFeedUrlSsrfTests(unittest.TestCase):
         # working regardless of where `import feedparser` happens to run.
         with mock.patch('anetbbs.core.net_safety.resolve_safe_destination',
                         return_value=(2, ('93.184.216.34', 443), None)) as mock_resolve, \
-             mock.patch('subprocess.run', return_value=fake_result) as mock_run, \
+             mock.patch.object(poller_mod, '_curl_feed_response',
+                               return_value=(200, None, body)) as fetch, \
              mock.patch('feedparser.parse') as mock_parse:
             mock_parse.return_value = mock.Mock(bozo=False, entries=[], feed={})
             poller_mod._import_one_feed(self.app, feed_id)
         mock_resolve.assert_called_once()
-        mock_run.assert_called_once()
+        fetch.assert_called_once()
         mock_parse.assert_called_once()
         called_bytes = mock_parse.call_args[0][0]
-        self.assertEqual(called_bytes, fake_result.stdout,
+        self.assertEqual(called_bytes, body,
                          'feedparser must receive the already-fetched bytes, '
                          'not a URL it would re-resolve itself')
         with self.app.app_context():
@@ -179,19 +180,16 @@ class RssFeedUrlSsrfTests(unittest.TestCase):
         import anetbbs.rss.poller as poller_mod
         url = 'https://example.com/rebind-check-feed.xml'
         feed_id = self._make_feed(url)
-        fake_result = mock.Mock(returncode=0, stdout=b'<rss></rss>', stderr=b'')
+        body = b'<rss></rss>'
         with mock.patch('anetbbs.core.net_safety.resolve_safe_destination',
                         return_value=(2, ('93.184.216.34', 443), None)), \
-             mock.patch('subprocess.run', return_value=fake_result) as mock_run, \
+             mock.patch.object(poller_mod, '_curl_feed_response',
+                               return_value=(200, None, body)) as fetch, \
              mock.patch('feedparser.parse',
                         return_value=mock.Mock(bozo=False, entries=[], feed={})):
             poller_mod._import_one_feed(self.app, feed_id)
-        args = mock_run.call_args[0][0]
-        self.assertIn('--resolve', args)
-        resolve_idx = args.index('--resolve')
-        self.assertEqual(args[resolve_idx + 1], 'example.com:443:93.184.216.34',
-                         'curl must be pinned to the exact address '
-                         'resolve_safe_destination() already validated')
+        self.assertEqual(fetch.call_args.args[:4],
+                         (url, 'example.com', 443, '93.184.216.34'))
 
 
 if __name__ == '__main__':

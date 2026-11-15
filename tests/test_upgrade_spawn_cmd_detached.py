@@ -73,7 +73,7 @@ class SpawnUpgradeCommandShapeTests(unittest.TestCase):
              patch.object(upgrades.subprocess, 'Popen', side_effect=_fake_popen), \
              patch('builtins.open', MagicMock()):
             mock_threading.Thread = _SyncThread
-            upgrades._spawn_upgrade('/opt/anetbbs/deploy/run_upgrade.sh',
+            upgrades._spawn_upgrade('/usr/local/libexec/anetbbs/run_upgrade.sh',
                                     'v1.1.58',
                                     'https://example.com/ANetBBS-v1.1.58.tar.gz',
                                     'a' * 64, label='upgrade')
@@ -85,7 +85,7 @@ class SpawnUpgradeCommandShapeTests(unittest.TestCase):
         # Detachment is entirely deploy/run_upgrade.sh's own problem now.
         cmd = self._capture_cmd()
         self.assertEqual(cmd, [
-            'sudo', '-n', '/opt/anetbbs/deploy/run_upgrade.sh',
+            'sudo', '-n', '/usr/local/libexec/anetbbs/run_upgrade.sh',
             'v1.1.58', 'https://example.com/ANetBBS-v1.1.58.tar.gz',
             'a' * 64,
         ])
@@ -133,7 +133,7 @@ class SudoersGrantMatchesSpawnCommandTests(unittest.TestCase):
         # future change ever reintroduces a flag here, it has reopened
         # exactly the class of bug this test exists to catch.
         line = self._upgrade_line().strip().rstrip(',').strip()
-        self.assertTrue(line.endswith('/deploy/run_upgrade.sh *'), line)
+        self.assertTrue(line.endswith('/usr/local/libexec/anetbbs/run_upgrade.sh *'), line)
         self.assertNotIn('systemd-run', line)
         self.assertNotIn('--', line)
 

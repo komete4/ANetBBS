@@ -5,13 +5,19 @@ Pulls FILE_ID.DIZ if present (the BBS-standard short description, max
 ~10 lines × 45 chars), then falls back to README.* / DESCRIPT.ION /
 .txt files in the root of the archive.
 
-Supports zip, tar (gzipped, bzipped, xz), 7z, rar, lha/lzh — but only
-when the corresponding library or external tool is available. Returns
-an empty string if nothing useful was found, never raises.
+Extracts descriptions from ZIP and TAR. On Linux, it also supports
+7z, RAR and LHA with bsdtar and prlimit. Returns an empty string when
+no description is available.
 """
 import logging
 import os
+import selectors
+import shutil
+import signal
+import subprocess
+import sys
 import tarfile
+import time
 import zipfile
 from collections import namedtuple
 
@@ -60,6 +66,60 @@ MAX_DESCRIPTION_BYTES = 4096
 # for (or, for zip, at all avoiding) the decompression.
 MAX_ARCHIVE_UNCOMPRESSED_BYTES = 1024 * 1024 * 1024  # 1GiB
 
+_OPTIONAL_ARCHIVE_SUFFIXES = ('.7z', '.rar', '.lzh', '.lha')
+_DECODER_SECONDS = 10
+_MAX_LISTING_BYTES = 1024 * 1024
+_MAX_TAR_MEMBERS = 10_000
+
+
+class _DecoderLimit(ValueError):
+    pass
+
+
+def _bounded_archive_command(path, mode, max_bytes, match=None, retain=True):
+    """Read bounded output from a resource-limited libarchive subprocess."""
+    if sys.platform != 'linux':
+        return None
+    bsdtar = shutil.which('bsdtar')
+    prlimit = shutil.which('prlimit')
+    if not bsdtar or not prlimit:
+        return None
+    args = [prlimit, '--as=536870912', '--cpu=5:6', '--core=0', '--', bsdtar,
+            mode, '-f', os.path.abspath(path)]
+    if match is not None:
+        args.extend(('--', match))
+    deadline = time.monotonic() + _DECODER_SECONDS
+    with subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                          stderr=subprocess.DEVNULL, start_new_session=True) as proc:
+        try:
+            output = bytearray()
+            remaining_bytes = max_bytes
+            with selectors.DefaultSelector() as ready:
+                ready.register(proc.stdout, selectors.EVENT_READ)
+                while True:
+                    remaining_time = deadline - time.monotonic()
+                    if remaining_time <= 0 or not ready.select(remaining_time):
+                        raise _DecoderLimit('Archive inspection exceeded its time limit.')
+                    chunk = os.read(proc.stdout.fileno(), min(65536, remaining_bytes + 1))
+                    if not chunk:
+                        break
+                    remaining_bytes -= len(chunk)
+                    if remaining_bytes < 0:
+                        raise _DecoderLimit('Archive inspection exceeded its output limit.')
+                    if retain:
+                        output.extend(chunk)
+            if proc.wait(timeout=max(0, deadline - time.monotonic())):
+                raise _DecoderLimit('Archive decoder failed or exceeded its resource limits.')
+            return bytes(output)
+        except subprocess.TimeoutExpired as exc:
+            raise _DecoderLimit('Archive inspection exceeded its time limit.') from exc
+        finally:
+            if proc.poll() is None:
+                try:
+                    os.killpg(proc.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+
 
 def extract_archive_description(path):
     """Return a description string pulled from the archive at *path*.
@@ -71,18 +131,23 @@ def extract_archive_description(path):
         return ''
     name_lower = path.lower()
     try:
+        if name_lower.endswith(_OPTIONAL_ARCHIVE_SUFFIXES):
+            listing = _bounded_archive_command(path, '-t', _MAX_LISTING_BYTES)
+            if not listing:
+                return ''
+            match = _find_match(listing.decode('utf-8', errors='replace').splitlines())
+            if match:
+                data = _bounded_archive_command(path, '-xO', MAX_DESCRIPTION_BYTES, match)
+                return _decode(data, match)
+            return ''
         if zipfile.is_zipfile(path):
             return _extract_from_zip(path)
         if tarfile.is_tarfile(path) or name_lower.endswith(
                 ('.tar', '.tar.gz', '.tgz', '.tar.bz2', '.tbz2',
                  '.tar.xz', '.txz')):
             return _extract_from_tar(path)
-        if name_lower.endswith('.7z'):
-            return _extract_from_7z(path)
-        if name_lower.endswith('.rar'):
-            return _extract_from_rar(path)
-        if name_lower.endswith(('.lzh', '.lha')):
-            return _extract_from_lha(path)
+    except _DecoderLimit:
+        return ''
     except Exception:
         logger.exception('archive description extraction failed for %s', path)
     return ''
@@ -93,28 +158,27 @@ def test_archive_integrity(path):
 
     Returns an ArchiveTestResult. `ok=True` covers three distinct cases a
     caller should treat the same way (let the upload through): the
-    archive tested clean, the format has no test API to run at all (lha),
-    or the format's optional library isn't installed (7z/rar) -- fail
-    open on anything we can't actually check, same philosophy as
-    virus_scan.py ("better to allow than to silently swallow uploads on
-    a misconfig"). Only a *confirmed* bad archive gets `ok=False`.
+    archive tested clean, the format is excluded from automatic inspection,
+    or the file is not a recognized archive.
     """
     if not os.path.isfile(path):
         return ArchiveTestResult(True, 'file not found')
     name_lower = path.lower()
     try:
+        if name_lower.endswith(_OPTIONAL_ARCHIVE_SUFFIXES):
+            output = _bounded_archive_command(
+                path, '-xO', MAX_ARCHIVE_UNCOMPRESSED_BYTES, retain=False)
+            if output is None:
+                return ArchiveTestResult(True, 'not tested (bounded decoder not available)')
+            return ArchiveTestResult(True, 'clean')
         if zipfile.is_zipfile(path):
             return _test_zip(path)
         if tarfile.is_tarfile(path) or name_lower.endswith(
                 ('.tar', '.tar.gz', '.tgz', '.tar.bz2', '.tbz2',
                  '.tar.xz', '.txz')):
             return _test_tar(path)
-        if name_lower.endswith('.7z'):
-            return _test_7z(path)
-        if name_lower.endswith('.rar'):
-            return _test_rar(path)
-        if name_lower.endswith(('.lzh', '.lha')):
-            return ArchiveTestResult(True, 'not tested (lha has no test API)')
+    except _DecoderLimit as exc:
+        return ArchiveTestResult(False, str(exc))
     except Exception as exc:
         logger.exception('archive integrity test crashed for %s', path)
         return ArchiveTestResult(True, f'test crashed, allowing through: {exc}')
@@ -140,28 +204,11 @@ def _test_zip(path):
 
 
 def _test_tar(path):
-    """tar has no CRC/testzip()-equivalent -- best-effort by reading
-    every regular-file member through to completion.
-
-    Each member's declared header size is what actually bounds how many
-    bytes extractfile().read() can produce for it (tar has no separate
-    "claims one size, contains another" trick the way a hand-crafted zip
-    central directory could) -- so a running total against that same
-    declared size, checked before each member's read-through, is a
-    complete bound on the decompression-bomb risk in the loop below.
-    """
-    total = 0
-    with tarfile.open(path, 'r:*') as tf:
-        for member in tf.getmembers():
+    """Check declared sizes as TAR headers arrive, before reading member data."""
+    with tarfile.open(path, 'r|*') as tf:
+        for member in _bounded_tar_members(tf):
             if not member.isfile():
                 continue
-            total += member.size
-            if total > MAX_ARCHIVE_UNCOMPRESSED_BYTES:
-                return ArchiveTestResult(
-                    False,
-                    f'archive declares over {MAX_ARCHIVE_UNCOMPRESSED_BYTES:,} '
-                    f'bytes uncompressed -- refusing to test, possible '
-                    f'decompression bomb')
             fh = tf.extractfile(member)
             if fh is None:
                 continue
@@ -173,29 +220,17 @@ def _test_tar(path):
     return ArchiveTestResult(True, 'clean (best-effort read-through, tar has no CRC test)')
 
 
-def _test_7z(path):
-    try:
-        import py7zr
-    except ImportError:
-        return ArchiveTestResult(True, 'not tested (py7zr not installed)')
-    try:
-        with py7zr.SevenZipFile(path, 'r') as zf:
-            zf.test()
-    except Exception as exc:
-        return ArchiveTestResult(False, f'corrupt: {exc}')
-    return ArchiveTestResult(True, 'clean')
-
-
-def _test_rar(path):
-    try:
-        import rarfile
-    except ImportError:
-        return ArchiveTestResult(True, 'not tested (rarfile not installed)')
-    with rarfile.RarFile(path) as rf:
-        bad = rf.testrar()
-    if bad is not None:
-        return ArchiveTestResult(False, f'corrupt member: {bad}')
-    return ArchiveTestResult(True, 'clean')
+def _bounded_tar_members(tf):
+    total = 0
+    for count, member in enumerate(tf, 1):
+        total += max(0, member.size)
+        if total > MAX_ARCHIVE_UNCOMPRESSED_BYTES:
+            raise _DecoderLimit(
+                f'archive declares over {MAX_ARCHIVE_UNCOMPRESSED_BYTES:,} '
+                'bytes uncompressed -- refusing to test, possible decompression bomb')
+        if count > _MAX_TAR_MEMBERS:
+            raise _DecoderLimit('Archive contains too many entries to inspect.')
+        yield member
 
 
 # ---------------------------------------------------------------------------
@@ -214,75 +249,21 @@ def _extract_from_zip(path):
 
 
 def _extract_from_tar(path):
-    with tarfile.open(path, 'r:*') as tf:
-        names = tf.getnames()
-        match = _find_match(names)
-        if not match:
-            return ''
-        member = tf.getmember(match)
-        if not member.isfile():
-            return ''
-        fh = tf.extractfile(member)
-        if fh is None:
-            return ''
-        data = fh.read(MAX_DESCRIPTION_BYTES + 1)
-    return _decode(data, match)
-
-
-def _extract_from_7z(path):
-    try:
-        import py7zr
-    except ImportError:
-        logger.debug('py7zr not installed; skipping 7z description extract')
-        return ''
-    with py7zr.SevenZipFile(path, 'r') as zf:
-        names = zf.getnames()
-        match = _find_match(names)
-        if not match:
-            return ''
-        extracted = zf.read(targets=[match])
-        bio = extracted.get(match)
-        if bio is None:
-            return ''
-        data = bio.read(MAX_DESCRIPTION_BYTES + 1)
-    return _decode(data, match)
-
-
-def _extract_from_rar(path):
-    try:
-        import rarfile
-    except ImportError:
-        logger.debug('rarfile not installed; skipping rar description extract')
-        return ''
-    with rarfile.RarFile(path) as rf:
-        names = rf.namelist()
-        match = _find_match(names)
-        if not match:
-            return ''
-        with rf.open(match) as fh:
-            data = fh.read(MAX_DESCRIPTION_BYTES + 1)
-    return _decode(data, match)
-
-
-def _extract_from_lha(path):
-    """LHA (.lzh) needs the external 'lha' tool — call it via subprocess
-    rather than pulling in a hard dependency."""
-    import shutil
-    import subprocess
-    if not shutil.which('lha'):
-        return ''
-    try:
-        listing = subprocess.run(['lha', 'lq', path],
-                                  capture_output=True, text=True, timeout=5)
-        names = [l.strip().split()[-1] for l in listing.stdout.splitlines() if l.strip()]
-        match = _find_match(names)
-        if not match:
-            return ''
-        result = subprocess.run(['lha', 'pq', path, match],
-                                  capture_output=True, timeout=5)
-        return _decode(result.stdout[:MAX_DESCRIPTION_BYTES + 1], match)
-    except Exception:
-        return ''
+    best = None
+    data = b''
+    with tarfile.open(path, 'r|*') as tf:
+        for member in _bounded_tar_members(tf):
+            if not member.isfile():
+                continue
+            candidates = [member.name] if best is None else [best, member.name]
+            if _find_match(candidates) != member.name:
+                continue
+            fh = tf.extractfile(member)
+            if fh is not None:
+                with fh:
+                    data = fh.read(MAX_DESCRIPTION_BYTES + 1)
+                best = member.name
+    return _decode(data, best) if best else ''
 
 
 # ---------------------------------------------------------------------------

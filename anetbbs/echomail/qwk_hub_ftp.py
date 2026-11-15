@@ -308,14 +308,16 @@ def process_rep_upload(node_id: int, rep_path: str, app) -> int:
 
     Returns count of messages imported.
     """
-    from ..echomail.qwk import _parse_messages_dat, _parse_control_dat
+    from ..echomail.qwk import (_parse_messages_dat, _parse_control_dat,
+                                _read_qwk_member, _read_capped,
+                                MAX_QWK_PACKET_SIZE)
     from ..echomail.tosser import toss_message
 
     count = 0
     try:
         with open(rep_path, 'rb') as f:
-            rep_bytes = f.read()
-    except OSError as exc:
+            rep_bytes = _read_capped(f, MAX_QWK_PACKET_SIZE, 'FTP REP')
+    except (OSError, ValueError) as exc:
         logger.warning('QWK FTP REP read error: %s', exc)
         return 0
 
@@ -360,8 +362,9 @@ def process_rep_upload(node_id: int, rep_path: str, app) -> int:
                             _name, rep_path)
                         return 0
 
-                msg_data = zf.read(msg_file)
-                ctrl_data = zf.read(ctrl_file).decode('cp437', errors='replace') \
+                msg_data = _read_qwk_member(zf, msg_file)
+                ctrl_data = _read_qwk_member(zf, ctrl_file, 1024 * 1024).decode(
+                    'cp437', errors='replace') \
                     if ctrl_file else ''
 
             ctrl = _parse_control_dat(ctrl_data) if ctrl_data else {}

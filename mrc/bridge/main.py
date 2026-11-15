@@ -559,13 +559,9 @@ class MRCConnection:
 
         logger.info(f"Connecting to MRC server {host}:{port} (SSL: {use_ssl})")
 
-        ssl_context = None
-        if use_ssl:
-            ssl_context = ssl.create_default_context()
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode    = ssl.CERT_NONE
-
         try:
+            ssl_context = (ssl.create_default_context(cafile=self.config.get("tls_ca_file") or None)
+                           if use_ssl else None)
             coro = asyncio.open_connection(host, port, ssl=ssl_context)
             self.reader, self.writer = await asyncio.wait_for(coro, timeout=timeout_s)
 

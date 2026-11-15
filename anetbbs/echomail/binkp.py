@@ -45,6 +45,26 @@ CMD_NAMES = {
     CMD_BSY: 'BSY', CMD_GET: 'GET', CMD_SKIP: 'SKIP',
 }
 
+
+def _format_command_for_log(direction, cmd, body):
+    """Format wire commands without ever recording a credential."""
+    name = CMD_NAMES.get(cmd, str(cmd)) if cmd is not None else '?'
+    if cmd == CMD_PWD:
+        body = '[redacted]'
+    elif body:
+        body = body[:512].replace('\r', '\\r').replace('\n', '\\n')
+    return f'{direction} CMD {name}' + (f': {body}' if body else '')
+
+
+def _usable_binkp_secret(secret):
+    """A shared secret must have an unambiguous legacy wire encoding."""
+    if not secret or not secret.strip() or secret.strip() == '-':
+        return False
+    if secret != secret.strip() or any(ord(char) < 32 or ord(char) > 255
+                                       for char in secret):
+        return False
+    return True
+
 # ArcMail 0.60 / FTS-0006 bundle extension: first 2 letters of the day
 # of week the bundle was created, keyed by datetime.weekday() (Mon=0).
 # Verified against the real, published FTSC document (WaZOO Filename
@@ -242,6 +262,7 @@ def _sanitize_inbound_filename(raw: str) -> str:
     name if sanitizing leaves nothing usable."""
     import os as _os
     name = _os.path.basename((raw or '').strip().replace('\\', '/'))
+    name = re.sub(r'[\x00-\x1f\x7f:]', '_', name)
     name = name.lstrip('.').strip()
     if not name:
         name = 'unnamed.bin'
@@ -719,7 +740,7 @@ def _build_ftn_packet(messages, our_addr: str, hub_addr: str,
     return header + body + b'\x00\x00'
 
 
-def _parse_ftn_packet(data: bytes):
+def _parse_ftn_packet(data: bytes, max_messages=None):
     """
     Parse an FTS-0001 Type-2+ .pkt file.
     Returns a list of dicts with message fields.
@@ -730,6 +751,8 @@ def _parse_ftn_packet(data: bytes):
 
     pos = FTN_PKT_HEADER_SIZE
     while pos < len(data) - 1:
+        if max_messages is not None and len(messages) >= max_messages:
+            break
         if data[pos:pos+2] == b'\x00\x00':
             break  # end of packet
         if data[pos:pos+2] != MSG_TYPE_2:
@@ -962,7 +985,9 @@ class BinkPClient:
                  transcript: list = None, packet_password: str = '',
                  default_crash: bool = False, default_hold: bool = False,
                  default_direct: bool = False, compress_outbound: bool = False,
-                 freq_requests: list = None):
+                 freq_requests: list = None, file_echo_network_id=None,
+                 file_echo_node_id=None, file_echo_data_dir=None,
+                 netmail_only=False):
         self.host = host
         self.port = port
         self.our_address = our_address
@@ -982,6 +1007,10 @@ class BinkPClient:
         # peer -- sent as a .REQ file alongside our normal outbound
         # batch. See _send_freq_requests().
         self.freq_requests = freq_requests or []
+        self.file_echo_network_id = file_echo_network_id
+        self.file_echo_node_id = file_echo_node_id
+        self.file_echo_data_dir = file_echo_data_dir
+        self.netmail_only = netmail_only
         # Per FSP-1028 the FTN domain must match [a-z0-9_~-]+, ≤8 chars.
         # Strip illegal chars from a human-readable network name.
         import re as _re
@@ -1026,6 +1055,8 @@ class BinkPClient:
     def _log_transcript(self, line: str):
         ts = datetime.utcnow().strftime('%H:%M:%S.%f')[:-3]
         self._transcript.append(f'{ts} {line}')
+        if len(self._transcript) > 1000:
+            del self._transcript[:500]
 
     # ------------------------------------------------------------------
     # Public API
@@ -1049,7 +1080,6 @@ class BinkPClient:
                       'hatch_failures' (list of (item, message) tuples for
                       hatch items that were attempted but not acked).
         """
-        import os as _os
         result = {'received': [], 'sent': 0, 'hatched_ids': [], 'hatch_failures': [],
                   'outbound_dir_sent': 0, 'outbound_dir_failures': [],
                   'freq_sent_ids': [], 'freq_failed_ids': []}
@@ -1057,8 +1087,12 @@ class BinkPClient:
         # most distros so anything stashed vanished on restart. Computed
         # once here since _wait_got()/_send_messages() may now also need
         # to stash an interleaved file, not just _receive_messages().
-        self._inbound_dir = _os.environ.get('BINKP_INBOUND_DIR') or _os.path.join(
-            (data_dir or 'data'), 'binkp', 'inbound')
+        self._inbound_dir = None
+        if self.file_echo_network_id is not None:
+            from .tic import peer_inbound_dir
+            self._inbound_dir = peer_inbound_dir(
+                self.file_echo_data_dir or data_dir,
+                self.file_echo_network_id, self.file_echo_node_id)
         # self.hub_address is the peer we're actually dialing -- an
         # upstream hub (poller.py's _run_client) or a downstream node
         # (poller.py's _run_node_client both construct this class the
@@ -1076,8 +1110,9 @@ class BinkPClient:
             if hatch_items:
                 result['hatched_ids'], result['hatch_failures'] = \
                     self._send_hatch(hatch_items)
-            result['outbound_dir_sent'], result['outbound_dir_failures'] = \
-                self._send_outbound_dir_files()
+            if not self.netmail_only:
+                result['outbound_dir_sent'], result['outbound_dir_failures'] = \
+                    self._send_outbound_dir_files()
             result['freq_sent_ids'], result['freq_failed_ids'] = \
                 self._send_freq_requests()
             result['received'] = self._receive_messages(data_dir)
@@ -1310,10 +1345,11 @@ class BinkPClient:
         """Dispatch a fully-received file. Returns a list of parsed
         messages (may be empty for non-mail content like TICs)."""
         import io as _io
-        import os as _os
         import zipfile as _zipfile
         from .zip_safety import iter_safe_members, ZipBombError
 
+        if self.netmail_only:
+            return []
         self._debug_manifest(fname, buf)
         from .freq import is_req_filename, process_inbound_req
         if is_req_filename(fname):
@@ -1368,11 +1404,11 @@ class BinkPClient:
             # (e.g. a nodelist .zip delivered via TIC). Fall through to
             # write it to inbound so the TIC scanner can find it.
         # Anything else → file for TIC scanner
+        if self.file_echo_network_id is None or not inbound_dir:
+            return []
         try:
-            safe_name = _sanitize_inbound_filename(fname)
-            _os.makedirs(inbound_dir, exist_ok=True)
-            with open(_os.path.join(inbound_dir, safe_name), 'wb') as fh:
-                fh.write(buf)
+            from .tic import stash_inbound_file
+            safe_name = stash_inbound_file(inbound_dir, fname, buf)
             logger.info(
                 'BinkP: stored unrecognised file %s (%d bytes) in %s '
                 '— neither ZIP nor FTS-0001 packet, scanning for TIC',
@@ -1424,7 +1460,8 @@ class BinkPClient:
                 # tells the DATA-frame branch below to discard bytes as
                 # they arrive instead of buffering them, in case the
                 # hub ignores our M_SKIP and sends the data anyway.
-                if candidate_size < 0 or candidate_size > MAX_INBOUND_FILE_SIZE:
+                if (self.netmail_only or candidate_size < 0
+                        or candidate_size > MAX_INBOUND_FILE_SIZE):
                     logger.warning(
                         "BinkP: refusing oversized/invalid file offer %r "
                         "(declared %s bytes, max %d) -- sending SKIP",
@@ -1592,8 +1629,7 @@ class BinkPClient:
         self._log_transcript('DISCONNECT')
 
     def _send_cmd(self, cmd: int, text: str = ''):
-        name = CMD_NAMES.get(cmd, str(cmd))
-        self._log_transcript(f'>> CMD {name}' + (f': {text}' if text else ''))
+        self._log_transcript(_format_command_for_log('>>', cmd, text))
         self._sock.sendall(_build_cmd(cmd, text))
 
     def _send_data(self, data: bytes):
@@ -1610,10 +1646,9 @@ class BinkPClient:
         _send_messages, _receive_messages, _wait_got)."""
         is_cmd, data = _recv_frame(self._sock)
         if is_cmd:
-            cmd = data[0]
-            text = data[1:].decode('latin-1', errors='replace')
-            name = CMD_NAMES.get(cmd, str(cmd))
-            self._log_transcript(f'<< CMD {name}' + (f': {text}' if text else ''))
+            cmd = data[0] if data else None
+            body = data[1:].decode('latin-1', errors='replace')
+            self._log_transcript(_format_command_for_log('<<', cmd, body))
         else:
             self._log_transcript(f'<< DATA: {len(data)} bytes')
         return is_cmd, data
@@ -2152,12 +2187,13 @@ class BinkPClient:
 
         # Run TIC scan on anything we stashed during this batch.
         import os as _os
-        inbound_dir = self._inbound_dir or _os.path.join(
-            (data_dir or 'data'), 'binkp', 'inbound')
+        inbound_dir = self._inbound_dir
         try:
-            if _os.path.isdir(inbound_dir):
+            if inbound_dir and _os.path.isdir(inbound_dir):
                 from .tic import scan_inbound
-                n = scan_inbound(inbound_dir)
+                n = scan_inbound(
+                    inbound_dir, network_id=self.file_echo_network_id,
+                    node_id=self.file_echo_node_id)
                 if n:
                     logger.info('BinkP: TIC scanner processed %d files', n)
         except Exception:

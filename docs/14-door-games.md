@@ -166,11 +166,12 @@ listing and an aggregate count on the stats page
 
 ## Per-node scratch directories
 
-Every active terminal node gets its own scratch directory under
-`<install>/data/temp/nodeN/` (where N is 1..`BBS_NODES`). They're
-auto-created on app boot. This is where the BBS writes the drop file
-for each door launch, so two callers running the same door on
-different nodes don't fight over `DOOR.SYS` or `DOOR32.SYS`.
+Each launched door gets a private scratch directory. The launcher's
+`%P` points to it. DOSEMU2 uses a directory under the service's
+`/tmp` because its drive and COM1 settings require paths without spaces.
+Other doors use `<install>/data/temp/`.
+Legacy drop-file paths under the original node directory are mapped
+to the private directory for that launch.
 
 You don't have to think about this — the per-node dir just exists. You
 reference it via the `%P` token (Mystic style) or the runner's working
@@ -301,26 +302,27 @@ absolute path under `data/` instead.
 ## DOS emulator drive layout
 
 `door_dos` (DOSBox) and `door_dosemu` (dosemu2) mount the same three
-roles — game dir, FOSSIL bundle, per-node scratch — but at
-**different drive letters**, because dosemu2's FreeDOS boot layer
-(FDPP) reserves `C:`–`F:` for itself before any of your mounts land,
-while DOSBox's `mount` command puts your drives exactly where you
-tell it to.
+roles at different drive letters. DOSEMU2 explicitly assigns
+`G:`–`I:` and maps FDPP's boot resources afterward to retain the
+same door drive letters across DOSEMU2 installations.
 
 | Role | `door_dos` (DOSBox) | `door_dosemu` (dosemu2) | Host path |
 |------|----------------------|---------------------------|-----------|
 | Game working dir  | `C:` | `H:` | `Game.working_directory` (or dir of `executable_path` if blank) |
 | FOSSIL bundle      | `D:` | `G:` | `anetbbs/games/dos_runtime/` (read-only) |
-| Per-node scratch   | `E:` | `I:` | `<install>/data/temp/nodeN/` — drop file goes here, isolated per node |
+| Session scratch   | `E:` | `I:` | Private directory created for each launch |
 
 **Drop file path differs by emulator.** In **LORDCFG**, **TWCFG**,
 etc., point the dropfile path at `E:\` for a DOSBox (`door_dos`) game,
 or `I:\` for a dosemu2 (`door_dosemu`) game. The BBS writes the drop
-file to the right host path automatically
-(`<install>/data/temp/nodeN/DOOR.SYS`); each emulator's generated
-autoexec/batch step copies it from the scratch drive into the game
-drive before launch, so the door finds it in its own working
-directory either way. Multi-node Just Works.
+file to the private scratch directory and publishes the standard
+filename in the game directory for doors that expect it there. This
+requires exclusive access to the shared directory while the emulator
+runs, so a second launch using the same directory must wait for the
+first player to finish. Games using different directories can still
+run concurrently. Save files and scores stay in their original
+directory. Use `%P` for new configurations to avoid sharing drop files
+outside the game directory.
 
 **FOSSIL loading also differs.** DOSBox always loads `BNU.COM` on
 COM1 via its autoexec, unconditionally. dosemu2 only loads a FOSSIL

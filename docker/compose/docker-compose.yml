@@ -8,7 +8,7 @@
 # property that already makes 5 separate systemd processes sharing one
 # SQLite file safe on bare metal today. See docs/22-containers.md
 # before deploying -- especially the docker.sock trust-boundary
-# warning on the web service and the MRC_BRIDGE_HOST gotcha.
+# warning on the web service and the authenticated MRC proxy.
 #
 # Quick start (see docs/22-containers.md for the full walkthrough):
 #   cp .env.docker.example .env            # fill in SECRET_KEY, BBS_NAME, etc.
@@ -17,6 +17,7 @@
 #                                           # nothing to build unless you're
 #                                           # testing a local source change
 #   cp mrc-bridge-config.json.example mrc-bridge-config.json
+#   # Place anetbbs.proxy.conf alongside docker-compose.yml.
 #   docker compose up -d
 #
 # Enable rlogin/FTP by uncommenting their `ports:` lines below AND
@@ -65,7 +66,6 @@ services:
     # hand instead of clicking the panel button.
     cap_add: ["NET_BIND_SERVICE"]
     ports:
-      - "5000:5000"
       - "18:18"
       - "11:11/udp"
     volumes:
@@ -81,6 +81,19 @@ services:
       start_period: 15s
     restart: unless-stopped
 
+  # Browser MRC and the web app share one origin. The bridge itself is
+  # reachable only by containers, and the WebSocket is authenticated here.
+  web-proxy:
+    image: nginx:alpine
+    ports:
+      - "127.0.0.1:5000:5000"
+    volumes:
+      - ./anetbbs.proxy.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - web
+      - mrc-bridge
+    restart: unless-stopped
+
   terminal:
     image: *anetbbs-image
     # `python -m anetbbs.main`, not the bare `anetbbs` console-script:
@@ -94,7 +107,10 @@ services:
     # Docker daemon.
     command: ["/usr/local/bin/entrypoint.sh", "python", "-m", "anetbbs.main"]
     env_file: [.env]
-    environment: *anetbbs-db-env
+    environment:
+      <<: *anetbbs-db-env
+      MRC_BRIDGE_HOST: mrc-bridge
+      MRC_BRIDGE_PORT: "8080"
     ports:
       - "2233:2233"
       - "2234:2234"
@@ -128,9 +144,8 @@ services:
     # service as well as these environment variables.
     env_file: [.env]
     environment: *anetbbs-db-env
-    ports:
-      - "8080:8080"
-      # - "5010:5010"  # native umrc-client -- see the top-of-file note
+    # ports:
+    #   - "5010:5010"  # native umrc-client -- see the top-of-file note
     volumes:
       - anetbbs_data:/app/data
       - anetbbs_mrc_data:/app/mrc/bridge/data

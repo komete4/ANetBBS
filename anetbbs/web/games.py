@@ -480,7 +480,7 @@ def handle_start_game(data):
     socketio.start_background_task(_drain_queue)
 
     from ..games.door_runner import (launch_door_game, launch_rlogin_session,
-                                     launch_telnet_session, _build_command)
+                                     launch_telnet_session, preview_door_command)
 
     # door_rlogin / door_telnet have no local subprocess — skip the
     # _build_command validation (it's DOS-door specific) and use the
@@ -509,7 +509,7 @@ def handle_start_game(data):
     # Validate config first — surface launch errors as a game_error event so
     # the browser shows them instead of silently doing nothing.
     try:
-        cmd, cwd = _build_command(game, 1, bbs_name)
+        cmd, _ = preview_door_command(game, bbs_name)
     except Exception as exc:
         import traceback as _tb
         logger.error('_build_command failed for game %s (type=%s): %s\n%s',
@@ -523,7 +523,7 @@ def handle_start_game(data):
     sid_box[0] = session_id
 
     if session_id is None:
-        emit('game_error', {'message': 'All game nodes are currently in use. '
+        emit('game_error', {'message': 'Game nodes or the game directory may be in use. '
                                        'Please try again later.'})
         return
 

@@ -42,6 +42,42 @@ QWK_BLOCK_SIZE = 128        # Data is in 128-byte blocks
 # Dove-Net packets are routinely well under a few MB; this cap is
 # generous headroom while still bounding the worst case.
 MAX_QWK_PACKET_SIZE = int(os.environ.get('QWK_MAX_PACKET_SIZE', 100 * 1024 * 1024))
+MAX_QWK_RECORDS = 10_000
+MAX_QWK_MESSAGES_BYTES = 32 * 1024 * 1024
+
+
+def _read_qwk_member(zf, name, max_bytes=MAX_QWK_MESSAGES_BYTES):
+    info = zf.getinfo(name)
+    if info.file_size > max_bytes:
+        raise ZipBombError('QWK packet member exceeds the byte budget')
+    with zf.open(info) as member:
+        content = member.read(max_bytes + 1)
+    if len(content) > max_bytes:
+        raise ZipBombError('QWK packet member exceeds the byte budget')
+    return content
+
+
+def _iter_qwk_records(data):
+    """Walk message records within a fixed decoded-size and work budget."""
+    if len(data) > MAX_QWK_MESSAGES_BYTES:
+        raise ZipBombError('QWK message member exceeds the byte budget')
+    pos = QWK_HEADER_SIZE
+    records = 0
+    while pos + QWK_HEADER_SIZE <= len(data):
+        records += 1
+        if records > MAX_QWK_RECORDS:
+            raise ZipBombError('QWK message member exceeds the record budget')
+        header = data[pos:pos + QWK_HEADER_SIZE]
+        pos += QWK_HEADER_SIZE
+        try:
+            blocks = int(header[116:122].decode('ascii').strip() or '1')
+        except ValueError:
+            blocks = 1
+        if not 1 <= blocks <= 50_000:
+            blocks = 1
+        end = pos + (blocks - 1) * QWK_BLOCK_SIZE
+        yield header, data[pos:end]
+        pos = end
 
 
 def _read_capped(fileobj, max_size, source_desc):
@@ -213,12 +249,7 @@ def _parse_messages_dat(data: bytes, conferences: dict):
     welcome_block = data[:QWK_HEADER_SIZE]
     welcome_id = welcome_block.rstrip(b'\x00 ').decode('ascii', errors='replace')
     logger.info('QWK hub sys_id from welcoming block: %r', welcome_id)
-    pos = QWK_HEADER_SIZE
-
-    while pos + QWK_HEADER_SIZE <= len(data):
-        block = data[pos:pos + QWK_HEADER_SIZE]
-        pos += QWK_HEADER_SIZE
-
+    for block, body_raw in _iter_qwk_records(data):
         # Status flag: ' '/'-' = public echomail, '*'/'+' = private netmail
         status_byte = block[0:1]
         is_private = status_byte in (b'*', b'+')
@@ -234,12 +265,6 @@ def _parse_messages_dat(data: bytes, conferences: dict):
             ref_num = int(ref_num_str) if ref_num_str else 0
         except Exception:
             ref_num = 0
-        # bytes 116..121 — number of message blocks (6-char ASCII!), includes header
-        try:
-            num_chunks_str = block[116:122].decode('ascii', errors='replace').strip()
-            num_chunks = int(num_chunks_str) if num_chunks_str else 1
-        except Exception:
-            num_chunks = 1
         # bytes 123..124 — conference number (binary, little-endian uint16)
         try:
             conf_num = struct.unpack('<H', block[123:125])[0]
@@ -248,16 +273,6 @@ def _parse_messages_dat(data: bytes, conferences: dict):
 
         # byte 122 — active flag: 0xE1=active, 0xE2=killed/deleted
         active_flag = block[122]
-
-        # Sanity guard against malformed packets — never read >50k blocks
-        if num_chunks < 1 or num_chunks > 50000:
-            num_chunks = 1
-
-        # num_chunks includes the header block; body is (num_chunks - 1) blocks
-        body_blocks = max(num_chunks - 1, 0)
-        body_size = body_blocks * QWK_BLOCK_SIZE
-        body_raw = data[pos:pos + body_size]
-        pos += body_size
 
         if active_flag == 0xE2:
             logger.debug("QWK: skipping killed message %s in conf %s", msg_num, conf_num)
@@ -765,8 +780,9 @@ class QWKClient:
                             f'(cap {MAX_MEMBER_UNCOMPRESSED}) -- refusing '
                             'to extract')
 
-                control_data = zf.read(control_name).decode('latin-1', errors='replace')
-                messages_data = zf.read(messages_name)
+                control_data = _read_qwk_member(zf, control_name, 1024 * 1024).decode(
+                    'latin-1', errors='replace')
+                messages_data = _read_qwk_member(zf, messages_name)
 
             info = _parse_control_dat(control_data)
             logger.info('QWK CONTROL.DAT bbs=%r conferences=%r',

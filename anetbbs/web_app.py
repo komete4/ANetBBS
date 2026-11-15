@@ -85,7 +85,7 @@ def create_app(config_name=None):
     # directly reachable from the internet.
     if app.config.get('TRUST_PROXY_HEADERS'):
         from werkzeug.middleware.proxy_fix import ProxyFix
-        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
     # ANETBBS_SCHEMA_MIGRATE_ONLY=1 marks this process as a one-shot CLI
     # command (a schema migration, or a standalone tool like anetbbs-cfg)
@@ -819,6 +819,11 @@ def create_app(config_name=None):
     with app.app_context():
         db.create_all()
         _lightweight_migrate(app)
+        try:
+            from .echomail.transcript import redact_stored_transcripts
+            redact_stored_transcripts(db.engine)
+        except Exception:
+            app.logger.error('Could not redact stored BinkP transcripts')
         # Authentication must not silently continue with a missing security
         # column when an existing database could not be migrated.
         from sqlalchemy import inspect as _inspect
@@ -1305,6 +1310,7 @@ def _lightweight_migrate(app):
     _ensure_column('users', 'theme_id', 'INTEGER')
     # FileUpload: is_public defaulted to True in Python but old rows have NULL.
     _ensure_column('file_uploads', 'is_public', 'BOOLEAN NOT NULL DEFAULT 1')
+    _ensure_column('file_uploads', 'ftp_file_identity', 'VARCHAR(128)')
     try:
         with db.engine.connect() as _conn:
             _conn.execute(db.text(
@@ -1487,6 +1493,17 @@ def _lightweight_migrate(app):
     _ensure_index('game_scores', 'ix_game_scores_game_id', 'game_id')
     _ensure_index('game_sessions', 'ix_game_sessions_game_id_status',
                   'game_id, status')
+    with engine.begin() as conn:
+        conn.execute(_sa.text("""
+            UPDATE game_sessions SET status = 'timeout', ended_at = CURRENT_TIMESTAMP
+            WHERE status = 'active' AND id NOT IN (
+                SELECT MIN(id) FROM game_sessions WHERE status = 'active'
+                GROUP BY game_id, node_number)
+        """))
+        conn.execute(_sa.text("""
+            CREATE UNIQUE INDEX IF NOT EXISTS ix_game_sessions_active_node
+            ON game_sessions (game_id, node_number) WHERE status = 'active'
+        """))
 
     # Postcard.created_by_id -- real gap found in a systematic FK/index
     # audit: web/postcards.py's "my postcards" listing filters directly

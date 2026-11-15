@@ -95,6 +95,13 @@ if [[ ! -f "$ENV_FILE" ]]; then
     exit 1
 fi
 
+install -d -o root -g root -m 0700 /var/lib/anetbbs || exit 1
+exec 9>/var/lib/anetbbs/update.lock
+if ! flock -n 9; then
+    fail "Another ANetBBS update is already running."
+    exit 1
+fi
+
 # Snapshot which optional services are CURRENTLY active before we stop anything.
 # update.sh only restarts optional services (mrc-bridge, finger, binkp) if
 # they were running before the update — this prevents force-starting a
@@ -153,6 +160,12 @@ if [ -z "$SERVICE_USER" ]; then
     SERVICE_USER=$(stat -c '%U' "$INSTALL_DIR" 2>/dev/null || echo "anetbbs")
 fi
 VENV_DIR="$INSTALL_DIR/venv"
+
+if [[ ! "$SERVICE_USER" =~ ^[a-zA-Z_][a-zA-Z0-9_.-]*$ ]] ||
+   [[ "$(id -u "$SERVICE_USER" 2>/dev/null)" =~ ^(0|)$ ]]; then
+    fail "Cannot determine a non-root ANetBBS service account."
+    exit 1
+fi
 
 # Real gap found in a security audit: every generated unit below sets
 # ProtectHome=yes (systemd hides /home, /root, and /run/user from the
@@ -267,14 +280,11 @@ _check_free_space "$INSTALL_DIR" "install filesystem"
 # it's on the same filesystem the disk-space check above just verified
 # has room. It also survives a reboot, unlike /tmp on distros that
 # clear it at boot.
-BACKUP_DIR="$INSTALL_DIR/data/backups/anetbbs-backup-$(date +%Y%m%d%H%M%S)"
-# mkdir -p alone leaves this world-readable (default umask) until the
-# chmod 0700 that used to run at the very end of this step -- a window
-# during which .env.bak (SECRET_KEY, DB creds) sat readable by any local
-# user while the rest of the backup (DB, code snapshot, units) was still
-# being written. Lock it down at creation instead of after the fact.
-mkdir -p -m 0700 "$BACKUP_DIR"
-chmod 0700 "$BACKUP_DIR"
+BACKUP_NAME="anetbbs-backup-$(date +%Y%m%d%H%M%S)"
+BACKUP_WORK=$(mktemp -d /var/lib/anetbbs/backup.XXXXXX) || exit 1
+trap 'rm -rf -- "$BACKUP_WORK"' EXIT
+BACKUP_DIR="$BACKUP_WORK/$BACKUP_NAME"
+mkdir -m 0700 -- "$BACKUP_DIR" || exit 1
 
 # Every backup step below is now checked -- a failure here (near-certainly
 # meaning the disk filled up despite the check above, e.g. a concurrent
@@ -348,7 +358,7 @@ backup_sqlite() {
     fi
     if command -v python3 >/dev/null 2>&1; then
         local _integrity
-        _integrity=$(SRC="$src" DST="$dst" python3 << 'PYBACKUPEOF' 2>/dev/null
+        _integrity=$(SRC="$src" DST="$dst" /usr/bin/python3 -I << 'PYBACKUPEOF' 2>/dev/null
 import os, sqlite3
 src_conn = sqlite3.connect(os.environ['SRC'])
 dst_conn = sqlite3.connect(os.environ['DST'])
@@ -428,40 +438,7 @@ to_version = $NEW_VERSION
 service_user = $SERVICE_USER
 install_dir = $INSTALL_DIR
 MEOF
-# Backup dir + everything inside is owned by root at this point (we
-# ran via sudo). The /admin/backups/ UI runs as the service user and
-# needs to be able to delete these without invoking a helper. Chown
-# the whole tree so plain os.unlink() / shutil.rmtree() from the web
-# service works.
-chown -R "$SERVICE_USER":"$SERVICE_USER" "$BACKUP_DIR" 2>/dev/null || true
-chmod 0700 "$BACKUP_DIR" 2>/dev/null || true
-
-ok "Backup stored at $BACKUP_DIR (was $OLD_VERSION → $NEW_VERSION)"
-
-# Prune old backups -- keep the 3 most recent (including the one just
-# created). Real-world incident: backups were never auto-deleted by
-# design ("we don't trust ourselves to GC them automatically"), and a
-# sysop who wasn't watching accumulated a dozen of them, silently
-# eating disk space until an update ran the filesystem to zero and
-# corrupted the install. Unbounded accumulation is a worse default than
-# bounded retention -- 3 covers "I need to roll back one or two
-# versions" without growing forever. Sorted by name, which sorts
-# chronologically since the timestamp format is YYYYMMDDHHMMSS.
-mapfile -t _all_backups < <(ls -1d "$INSTALL_DIR/data/backups/anetbbs-backup-"* 2>/dev/null | sort)
-# `head -n -3` ("all but the last 3 lines") is a GNU coreutils
-# extension -- BusyBox head (Alpine's default) doesn't accept a
-# negative count and errors, which silently emptied _old_backups on
-# those hosts and defeated this whole retention safety feature.
-# Bash array slicing does the same "drop the last N" job without
-# depending on any external tool's specific flag support.
-_old_backups=()
-if (( ${#_all_backups[@]} > 3 )); then
-    _old_backups=("${_all_backups[@]:0:${#_all_backups[@]}-3}")
-fi
-for _old in "${_old_backups[@]:-}"; do
-    [[ -n "$_old" && -d "$_old" ]] || continue
-    rm -rf "$_old" && info "Pruned old backup: $_old"
-done
+ok "Protected update snapshot created (was $OLD_VERSION → $NEW_VERSION)"
 
 # ─── Step 3: Stop services ─────────────────────────────────────────────────────
 step "Step 3/8: Stopping services"
@@ -607,7 +584,7 @@ if [[ "$SOURCE_DIR" == "$INSTALL_DIR" ]]; then
     if [[ -d "$INSTALL_DIR/.git" ]]; then
         info "Updating via git pull..."
         cd "$INSTALL_DIR"
-        if sudo -u "$SERVICE_USER" git pull --ff-only 2>/dev/null || git pull --ff-only 2>/dev/null; then
+        if runuser -u "$SERVICE_USER" -- git pull --ff-only 2>/dev/null; then
             ok "git pull succeeded"
         else
             warn "git pull failed — files may already be up to date or have local changes"
@@ -712,19 +689,19 @@ else
 
             if [[ ! -d "$dst_door" ]]; then
                 # Brand-new door — install everything.
-                cp -a "$src_door" "$dst_door"
+                runuser -u "$SERVICE_USER" -- cp -a "$src_door" "$dst_door"
                 ok "Installed new door: doors/$door_name"
                 # cp -a already preserves the source tarball's own
                 # executable bits, so this is a defensive top-up, not
                 # the primary mechanism -- low risk either way.
                 find "$dst_door" -maxdepth 1 -type f | while IFS= read -r f; do
                     if [[ "$HAVE_FILE_CMD" -eq 1 ]]; then
-                        file "$f" 2>/dev/null | grep -qiE 'ELF|executable' && chmod 755 "$f" 2>/dev/null || true
+                        file "$f" 2>/dev/null | grep -qiE 'ELF|executable' && runuser -u "$SERVICE_USER" -- chmod 755 "$f" 2>/dev/null || true
                     else
-                        [[ "$(basename "$f")" != *.* ]] && chmod 755 "$f" 2>/dev/null || true
+                        [[ "$(basename "$f")" != *.* ]] && runuser -u "$SERVICE_USER" -- chmod 755 "$f" 2>/dev/null || true
                     fi
                 done
-                find "$dst_door" -maxdepth 2 -name "*.sh" -exec chmod 755 {} \; 2>/dev/null || true
+                runuser -u "$SERVICE_USER" -- find "$dst_door" -maxdepth 2 -type f -name "*.sh" -exec chmod 755 {} \; 2>/dev/null || true
             else
                 # Door already installed — check each bundled file for changes.
                 door_changed=0
@@ -761,8 +738,8 @@ else
                             dst_arch="unknown"
                         fi
                         if [[ -z "$src_arch" || "$src_arch" == "$dst_arch" ]]; then
-                            cp "$src_file" "$dst_file"
-                            chmod 755 "$dst_file" 2>/dev/null || true
+                            runuser -u "$SERVICE_USER" -- cp --remove-destination "$src_file" "$dst_file"
+                            runuser -u "$SERVICE_USER" -- chmod 755 "$dst_file" 2>/dev/null || true
                             ok "Updated doors/$door_name/$fname"
                             door_changed=1
                         else
@@ -771,8 +748,8 @@ else
                         fi
                     else
                         # Non-binary (scripts, configs, etc.) — always update.
-                        cp "$src_file" "$dst_file"
-                        [[ "$fname" == *.sh ]] && chmod 755 "$dst_file" 2>/dev/null || true
+                        runuser -u "$SERVICE_USER" -- cp --remove-destination "$src_file" "$dst_file"
+                        [[ "$fname" == *.sh ]] && runuser -u "$SERVICE_USER" -- chmod 755 "$dst_file" 2>/dev/null || true
                         ok "Updated doors/$door_name/$fname"
                         door_changed=1
                     fi
@@ -807,8 +784,7 @@ if [[ ! -d "$VENV_DIR" ]]; then
 else
     info "Running pip install -e ..."
     cd "$INSTALL_DIR"
-    if sudo -u "$SERVICE_USER" "$VENV_DIR/bin/pip" install -e "$INSTALL_DIR" --quiet 2>/dev/null || \
-       "$VENV_DIR/bin/pip" install -e "$INSTALL_DIR" --quiet 2>/dev/null; then
+    if runuser -u "$SERVICE_USER" -- "$VENV_DIR/bin/pip" install -e "$INSTALL_DIR" --quiet 2>/dev/null; then
         ok "Python dependencies updated (aiohttp + others pulled in via setup.py)"
     else
         warn "pip install failed — dependencies may be out of date"
@@ -823,11 +799,12 @@ else
     # on a fresh install or an explicit `anetbbs-upgrade` run, so a sysop
     # never hits "command not found" for a script that pip clearly just
     # installed. Idempotent + silent on installs with nothing new to add.
-    if [[ -x "$VENV_DIR/bin/anetbbs-symlinks" ]]; then
-        "$VENV_DIR/bin/anetbbs-symlinks" "$INSTALL_DIR" >/dev/null 2>&1 && \
-            ok "Refreshed /usr/local/bin/ command shortcuts" || \
-            warn "Could not refresh /usr/local/bin/ shortcuts (non-fatal — use \$VENV_DIR/bin/<command> directly)"
-    fi
+    for shortcut in anetbbs anetbbs-web anetbbs-install anetbbs-upgrade \
+            anetbbs-symlinks anetbbs-cleanup anetbbs-cfg anetbbs-monitor; do
+        if [[ -x "$VENV_DIR/bin/$shortcut" ]]; then
+            ln -sfnT -- "$VENV_DIR/bin/$shortcut" "/usr/local/bin/$shortcut"
+        fi
+    done
 
     # ── Python 3.13 eventlet safety fix ──────────────────────────────────────
     # eventlet < 0.38.0 crashes on Python 3.13 with:
@@ -853,19 +830,8 @@ else
         _evt_fixed=false
         if sudo -u "$SERVICE_USER" "$VENV_DIR/bin/pip" install --force-reinstall --no-cache-dir --no-binary eventlet "eventlet>=0.40.3" --quiet 2>/dev/null; then
             _evt_fixed=true
-        elif "$VENV_DIR/bin/pip" install --force-reinstall --no-cache-dir --no-binary eventlet "eventlet>=0.40.3" --quiet 2>/dev/null; then
-            _evt_fixed=true
-        fi
-        if [[ "$_evt_fixed" == "true" ]]; then
-            ok "eventlet rebuilt from source — Python 3.13 compatible"
         else
-            warn "eventlet source rebuild failed — trying relaxed version constraint..."
-            if "$VENV_DIR/bin/pip" install --force-reinstall --no-cache-dir --no-binary eventlet "eventlet>=0.40.3" --quiet 2>/dev/null; then
-                ok "eventlet rebuilt (newer version) — Python 3.13 compatible"
-            else
-                warn "eventlet fix failed — web service will crash on Python 3.13"
-                warn "Manual fix: sudo $VENV_DIR/bin/pip install --force-reinstall --no-cache-dir --no-binary eventlet 'eventlet>=0.40.3'"
-            fi
+            warn "eventlet fix failed — web service may fail to start"
         fi
     fi
     # ─────────────────────────────────────────────────────────────────────────
@@ -876,7 +842,7 @@ else
     # boxes without prebuilt wheels for the running Python — and the
     # web service is stopped for that entire window. Quick import
     # probes detect a working install in <100 ms and skip the rebuild.
-    if "$VENV_DIR/bin/python" -c "import bcrypt; bcrypt.hashpw(b'x', bcrypt.gensalt())" >/dev/null 2>&1; then
+    if runuser -u "$SERVICE_USER" -- "$VENV_DIR/bin/python" -c "import bcrypt; bcrypt.hashpw(b'x', bcrypt.gensalt())" >/dev/null 2>&1; then
         ok "bcrypt imports + hashes cleanly — skipping reinstall"
     else
         info "bcrypt broken — running the nuke-and-reinstall recovery path..."
@@ -885,35 +851,35 @@ else
         # 0.3.2, which the original setup.py wrongly listed) put it
         # there. Leftover _bcrypt.so → "cannot import name '__author__'
         # from 'bcrypt._bcrypt'". Nuke explicitly first.
-        SITE_PKGS=$("$VENV_DIR/bin/python" -c "import sys; print([p for p in sys.path if 'site-packages' in p][0])")
-        sudo -u "$SERVICE_USER" "$VENV_DIR/bin/pip" uninstall -y bcrypt python-bcrypt 2>/dev/null || \
-        "$VENV_DIR/bin/pip" uninstall -y bcrypt python-bcrypt 2>/dev/null || true
-        rm -rf "$SITE_PKGS/bcrypt" "$SITE_PKGS/bcrypt-"*.dist-info "$SITE_PKGS/python_bcrypt"* "$SITE_PKGS/_bcrypt"*
-        sudo -u "$SERVICE_USER" "$VENV_DIR/bin/pip" install --no-cache-dir --quiet bcrypt 2>/dev/null || \
-        "$VENV_DIR/bin/pip" install --no-cache-dir --quiet bcrypt 2>/dev/null || \
-        warn "bcrypt reinstall failed"
+        SITE_PKGS=$(runuser -u "$SERVICE_USER" -- "$VENV_DIR/bin/python" -c "import sys; print([p for p in sys.path if 'site-packages' in p][0])")
+        runuser -u "$SERVICE_USER" -- "$VENV_DIR/bin/pip" uninstall -y bcrypt python-bcrypt 2>/dev/null || true
+        if [[ "$SITE_PKGS" == "$VENV_DIR"/lib/python*/site-packages ]]; then
+            runuser -u "$SERVICE_USER" -- find "$SITE_PKGS" -maxdepth 1 \
+                \( -name 'bcrypt' -o -name 'bcrypt-*.dist-info' -o -name 'python_bcrypt*' -o -name '_bcrypt*' \) \
+                -exec rm -rf -- {} + 2>/dev/null || true
+        fi
+        runuser -u "$SERVICE_USER" -- "$VENV_DIR/bin/pip" install --no-cache-dir --quiet bcrypt 2>/dev/null ||
+            warn "bcrypt reinstall failed"
         ok "bcrypt reinstalled clean"
     fi
 
-    if "$VENV_DIR/bin/python" -c "from cryptography.fernet import Fernet; Fernet.generate_key()" >/dev/null 2>&1; then
+    if runuser -u "$SERVICE_USER" -- "$VENV_DIR/bin/python" -c "from cryptography.fernet import Fernet; Fernet.generate_key()" >/dev/null 2>&1; then
         ok "cryptography imports cleanly — skipping reinstall"
     else
         info "cryptography broken — force-reinstalling..."
-        sudo -u "$SERVICE_USER" "$VENV_DIR/bin/pip" install \
-            --force-reinstall --no-deps --no-cache-dir --quiet cryptography 2>/dev/null || \
-        "$VENV_DIR/bin/pip" install \
+        runuser -u "$SERVICE_USER" -- "$VENV_DIR/bin/pip" install \
             --force-reinstall --no-deps --no-cache-dir --quiet cryptography 2>/dev/null || true
     fi
 
     # Wipe any __pycache__ that pip-as-root may have written so the service user
     # can regenerate them on first import.
     find "$INSTALL_DIR" -name __pycache__ -type d -exec rm -rf {} + 2>/dev/null || true
-    chown -R "$SERVICE_USER":"$SERVICE_USER" "$INSTALL_DIR" 2>/dev/null || true
+    chown -hR "$SERVICE_USER":"$SERVICE_USER" "$INSTALL_DIR" 2>/dev/null || true
 
     # Verify the new package imports cleanly — catches stray legacy paths shadowing it.
     # Show the actual error if it fails so we can fix the root cause.
     info "Verifying anetbbs package imports..."
-    IMPORT_ERR=$(cd /tmp && "$VENV_DIR/bin/python" -c "from anetbbs.main import main; from anetbbs.web_app import create_app; from anetbbs.core.ssh_server import start_ssh_server; print('OK')" 2>&1)
+    IMPORT_ERR=$(cd / && runuser -u "$SERVICE_USER" -- "$VENV_DIR/bin/python" -c "from anetbbs.main import main; from anetbbs.web_app import create_app; from anetbbs.core.ssh_server import start_ssh_server; print('OK')" 2>&1)
     if echo "$IMPORT_ERR" | grep -q "^OK$"; then
         ok "Package imports verified"
     else
@@ -931,7 +897,7 @@ if [[ -f "$SOURCE_DIR/.env.example" ]]; then
     while IFS='=' read -r key value; do
         [[ "$key" =~ ^#.*$ || -z "$key" ]] && continue
         if [[ -z "${EXISTING_ENV[$key]+x}" ]]; then
-            echo "${key}=${value}" >> "$ENV_FILE"
+            runuser -u "$SERVICE_USER" -- /bin/sh -c 'printf "%s\n" "$1" >> "$2"' sh "${key}=${value}" "$ENV_FILE"
             info "Added new config key: $key"
             NEW_ENV_KEYS_ADDED=$(( NEW_ENV_KEYS_ADDED + 1 ))
         fi
@@ -961,6 +927,18 @@ if ! grep -q '^TRUST_PROXY_HEADERS=' "$ENV_FILE" 2>/dev/null; then
 fi
 
 # ─── Step 7: Update database schema (non-destructive) ─────────────────────────
+# Recover the canonical origin for sites managed by the installer.
+if [[ -z "${EXISTING_ENV[PUBLIC_BASE_URL]:-}" && -z "${EXISTING_ENV[BBS_DOMAIN]:-}" &&
+      -f "$NGINX_AVAIL" ]]; then
+    mapfile -t _origins < <(awk '$1 == "server_name" && NF == 2 { sub(/;$/, "", $2); print $2 }' "$NGINX_AVAIL" | sort -u)
+    if [[ "${#_origins[@]}" -eq 1 && "${_origins[0]}" =~ ^[A-Za-z0-9][A-Za-z0-9.-]*$ ]]; then
+        _public_scheme=http
+        if grep -Eq '^ *listen +443([ ;]|$)' "$NGINX_AVAIL"; then _public_scheme=https; fi
+        runuser -u "$SERVICE_USER" -- /bin/sh -c \
+            'printf "%s\n" "$1" >> "$2"' sh "PUBLIC_BASE_URL=$_public_scheme://${_origins[0]}" "$ENV_FILE"
+    fi
+fi
+
 step "Step 7/8: Updating database schema"
 
 if [[ ! -d "$VENV_DIR" ]]; then
@@ -979,7 +957,7 @@ else
           || "$DB_SECRET_KEY" == "dev-secret-key-change-in-production" \
           || "$DB_SECRET_KEY" == "your-secret-key-here" ]]; then
         info "  No real SECRET_KEY in .env — generating one and writing it"
-        DB_SECRET_KEY=$("$VENV_DIR/bin/python" -c \
+        DB_SECRET_KEY=$(/usr/bin/python3 -I -c \
             'import secrets; print(secrets.token_urlsafe(48))')
         # Lock down permissions BEFORE writing the new key, not just
         # after -- sed -i normally preserves an existing file's mode,
@@ -990,14 +968,14 @@ else
         # approach as the backup-dir lock-at-creation fix above, means
         # the SECRET_KEY is never briefly sitting in a world-readable
         # file either way.
-        chmod 600 "$ENV_FILE" 2>/dev/null || true
+        runuser -u "$SERVICE_USER" -- chmod 600 "$ENV_FILE" 2>/dev/null || true
         # Strip any prior SECRET_KEY line, then append the new one.
         if grep -q '^SECRET_KEY=' "$ENV_FILE"; then
-            sed -i 's|^SECRET_KEY=.*|SECRET_KEY='"$DB_SECRET_KEY"'|' "$ENV_FILE"
+            runuser -u "$SERVICE_USER" -- sed -i 's|^SECRET_KEY=.*|SECRET_KEY='"$DB_SECRET_KEY"'|' "$ENV_FILE"
         else
-            echo "SECRET_KEY=$DB_SECRET_KEY" >> "$ENV_FILE"
+            runuser -u "$SERVICE_USER" -- /bin/sh -c 'printf "%s\n" "$1" >> "$2"' sh "SECRET_KEY=$DB_SECRET_KEY" "$ENV_FILE"
         fi
-        chmod 600 "$ENV_FILE"
+        runuser -u "$SERVICE_USER" -- chmod 600 "$ENV_FILE"
         ok "  SECRET_KEY written to $ENV_FILE (mode 0600)"
     fi
     DB_URL="${EXISTING_ENV[DATABASE_URL]:-sqlite:///${INSTALL_DIR}/data/anetbbs.db}"
@@ -1090,94 +1068,10 @@ with app.app_context():
         conn.commit()
         conn.close()
     db.create_all()
+    from anetbbs.echomail.transcript import redact_stored_transcripts
+    redact_stored_transcripts(db.engine)
     print('SCHEMA_OK')
 DBEOF
-        DB_UPDATED=true
-    elif INSTALL_DIR="$INSTALL_DIR" \
-        DB_URL="$DB_URL" \
-        DB_SECRET_KEY="$DB_SECRET_KEY" \
-        ENV_FILE="$ENV_FILE" \
-        "$VENV_DIR/bin/python" << 'DBEOF2' 2>/dev/null; then
-import os, sys, sqlite3
-install_dir = os.environ['INSTALL_DIR']
-sys.path.insert(0, install_dir)
-os.chdir(install_dir)
-os.environ['FLASK_ENV'] = 'production'
-os.environ['DATABASE_URL'] = os.environ['DB_URL']
-os.environ['SECRET_KEY'] = os.environ['DB_SECRET_KEY']
-
-from dotenv import load_dotenv
-load_dotenv(os.environ['ENV_FILE'])
-
-# Same real ALTER TABLE migration as the sudo path above -- real gap
-# found in an audit: this fallback (only reached when `sudo` itself
-# is missing, e.g. a minimal Docker image running as root with no
-# sudo binary installed at all) previously used create_app() +
-# db.create_all() only, which NEVER alters existing tables, so any
-# column added to an existing table in the new version's models was
-# silently never added to the live database here -- while the script
-# still printed "Database schema updated". Build a minimal app
-# context directly (skipping create_app()'s own _create_default_data()
-# call, which the sudo path's own comment already notes would crash
-# against tables still missing the new columns this script is about
-# to add) rather than reduce functionality just because sudo is gone.
-from flask import Flask
-from anetbbs.models import db
-from anetbbs.config import get_config
-
-app = Flask(__name__)
-app.config.from_object(get_config('production'))
-db.init_app(app)
-
-def sqlite_type(col):
-    from sqlalchemy.types import Integer, String, Text, Boolean, DateTime, Date, Float, LargeBinary
-    t = col.type
-    if isinstance(t, Integer): return "INTEGER"
-    if isinstance(t, Boolean): return "BOOLEAN"
-    if isinstance(t, (DateTime, Date)): return "DATETIME"
-    if isinstance(t, Float): return "FLOAT"
-    if isinstance(t, LargeBinary): return "BLOB"
-    return "TEXT"
-
-with app.app_context():
-    db_url = app.config['SQLALCHEMY_DATABASE_URI']
-    db_path = db_url.replace('sqlite:///', '').replace('sqlite:////', '/')
-    if not db_path.startswith('/'):
-        db_path = '/' + db_path
-    if os.path.exists(db_path):
-        conn = sqlite3.connect(db_path)
-        cur = conn.cursor()
-        cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        existing_tables = {row[0] for row in cur.fetchall()}
-        for table_name, table in db.metadata.tables.items():
-            if table_name not in existing_tables:
-                continue
-            cur.execute(f"PRAGMA table_info({table_name})")
-            existing_cols = {row[1] for row in cur.fetchall()}
-            for col in table.columns:
-                if col.name in existing_cols:
-                    continue
-                sql_type = sqlite_type(col)
-                null_clause = "" if col.nullable else " NOT NULL"
-                default_clause = ""
-                if col.default is not None and getattr(col.default, 'arg', None) is not None:
-                    d = col.default.arg
-                    if isinstance(d, bool):
-                        default_clause = f" DEFAULT {1 if d else 0}"
-                    elif isinstance(d, (int, float)):
-                        default_clause = f" DEFAULT {d}"
-                    elif isinstance(d, str):
-                        default_clause = f" DEFAULT '{d}'"
-                try:
-                    cur.execute(f"ALTER TABLE {table_name} ADD COLUMN {col.name} {sql_type}{null_clause}{default_clause}")
-                    print(f"  + {table_name}.{col.name}")
-                except sqlite3.OperationalError:
-                    pass
-        conn.commit()
-        conn.close()
-    db.create_all()
-    print('SCHEMA_OK')
-DBEOF2
         DB_UPDATED=true
     fi
     if $DB_UPDATED; then
@@ -1185,7 +1079,7 @@ DBEOF2
     else
         warn "Could not update database schema"
     fi
-    chown -R "$SERVICE_USER":"$SERVICE_USER" "$INSTALL_DIR/data" 2>/dev/null || true
+    chown -hR "$SERVICE_USER":"$SERVICE_USER" "$INSTALL_DIR/data" 2>/dev/null || true
 fi
 
 # ─── Update systemd services (add new ones) ────────────────────────────────────
@@ -1214,7 +1108,7 @@ if [[ ! -f /etc/systemd/system/anetbbs-web.service ]]; then
     WEB_PORT_VAL=""
 
     # Step 1: explicit env value wins.
-    if [[ -n "${EXISTING_ENV[WEB_PORT]:-}" ]]; then
+    if [[ "${EXISTING_ENV[WEB_PORT]:-}" =~ ^[0-9]{1,5}$ ]]; then
         WEB_PORT_VAL="${EXISTING_ENV[WEB_PORT]}"
         info "  WEB_PORT=$WEB_PORT_VAL (from .env)"
     fi
@@ -1270,12 +1164,12 @@ if [[ ! -f /etc/systemd/system/anetbbs-web.service ]]; then
         info "  WEB_PORT=$WEB_PORT_VAL (chosen default; will write to .env)"
         # Persist so subsequent upgrades don't repeat the discovery dance.
         if ! grep -qE '^WEB_PORT=' "$ENV_FILE" 2>/dev/null; then
-            echo "WEB_PORT=$WEB_PORT_VAL" >> "$ENV_FILE"
+            runuser -u "$SERVICE_USER" -- /bin/sh -c 'printf "%s\n" "$1" >> "$2"' sh "WEB_PORT=$WEB_PORT_VAL" "$ENV_FILE"
         fi
     fi
 
     mkdir -p "$INSTALL_DIR/logs"
-    chown -R "$SERVICE_USER":"$SERVICE_USER" "$INSTALL_DIR/logs" 2>/dev/null || true
+    chown -hR "$SERVICE_USER":"$SERVICE_USER" "$INSTALL_DIR/logs" 2>/dev/null || true
     cat > /etc/systemd/system/anetbbs-web.service << SVCEOF
 [Unit]
 Description=ANetBBS Web Application (eventlet WSGI)
@@ -1447,7 +1341,7 @@ fi
 FTP_ROOT_DIR_GUESS="$INSTALL_DIR/data/ftp_root"
 if [[ -d "$FTP_ROOT_DIR_GUESS" ]]; then
     info "Ensuring $FTP_ROOT_DIR_GUESS is owned by $SERVICE_USER..."
-    chown -R "$SERVICE_USER":"$SERVICE_USER" "$FTP_ROOT_DIR_GUESS" 2>/dev/null && \
+    chown -hR "$SERVICE_USER":"$SERVICE_USER" "$FTP_ROOT_DIR_GUESS" 2>/dev/null && \
         ok "ftp_root ownership normalised" || \
         warn "ftp_root chown failed — FTP listener may stay down"
 fi
@@ -1814,7 +1708,7 @@ rm -f /etc/systemd/system/anetbbs-web.service.d/20-nonewprivileges-override.conf
 # Ensure MRC bridge config.json exists
 if [[ ! -f "$MRC_BRIDGE_CONFIG" ]]; then
     info "Generating MRC bridge config.json ..."
-    mkdir -p "$INSTALL_DIR/mrc/bridge"
+    runuser -u "$SERVICE_USER" -- mkdir -p "$INSTALL_DIR/mrc/bridge"
     BBS_NAME="${EXISTING_ENV[BBS_NAME]:-ANetBBS}"
     BBS_DESCRIPTION="${EXISTING_ENV[BBS_DESCRIPTION]:-}"
     # Sysop username and the domain a sysop entered at install time were
@@ -1865,7 +1759,7 @@ if [[ ! -f "$MRC_BRIDGE_CONFIG" ]]; then
         MRC_LISTEN_PORT="$MRC_LISTEN_PORT" \
         MRC_DATA_DIR="$INSTALL_DIR/data/mrc" \
         MRC_BRIDGE_CONFIG="$MRC_BRIDGE_CONFIG" \
-        python3 << 'MRCPYEOF'
+        runuser -u "$SERVICE_USER" -m -- /usr/bin/python3 -I << 'MRCPYEOF'
 import json
 import os
 
@@ -1896,14 +1790,13 @@ with open(os.environ['MRC_BRIDGE_CONFIG'], 'w') as f:
     json.dump(config, f, indent=2)
     f.write('\n')
 MRCPYEOF
-    chown "$SERVICE_USER":"$SERVICE_USER" "$MRC_BRIDGE_CONFIG"
-    chmod 640 "$MRC_BRIDGE_CONFIG"
+    runuser -u "$SERVICE_USER" -- chmod 640 "$MRC_BRIDGE_CONFIG"
     ok "MRC bridge config.json generated"
 fi
 
 # Ensure data/mrc directory exists
 mkdir -p "$INSTALL_DIR/data/mrc"
-chown -R "$SERVICE_USER":"$SERVICE_USER" "$INSTALL_DIR/data/mrc" 2>/dev/null || true
+chown -hR "$SERVICE_USER":"$SERVICE_USER" "$INSTALL_DIR/data/mrc" 2>/dev/null || true
 
 # Ensure data/text/ and data/text/menus/ exist for file-based ANSI overrides
 mkdir -p "$INSTALL_DIR/data/text/menus"
@@ -1917,7 +1810,7 @@ if [[ -d "$_SCREENS_SRC" ]]; then
         [[ -f "$_f" ]] || continue
         _dest="$INSTALL_DIR/data/text/$(basename "$_f")"
         if [[ ! -f "$_dest" ]]; then
-            cp "$_f" "$_dest"
+            runuser -u "$SERVICE_USER" -- cp --remove-destination "$_f" "$_dest"
             info "  seeded data/text/$(basename "$_f")"
         fi
     done
@@ -1926,14 +1819,14 @@ if [[ -d "$_SCREENS_SRC" ]]; then
             [[ -f "$_f" ]] || continue
             _dest="$INSTALL_DIR/data/text/menus/$(basename "$_f")"
             if [[ ! -f "$_dest" ]]; then
-                cp "$_f" "$_dest"
+                runuser -u "$SERVICE_USER" -- cp --remove-destination "$_f" "$_dest"
                 info "  seeded data/text/menus/$(basename "$_f")"
             fi
         done
     fi
 fi
 
-chown -R "$SERVICE_USER":"$SERVICE_USER" "$INSTALL_DIR/data/text" 2>/dev/null || true
+chown -hR "$SERVICE_USER":"$SERVICE_USER" "$INSTALL_DIR/data/text" 2>/dev/null || true
 
 # Ensure data/mods/ (and its text/, text/menus/, and core/
 # subdirectories) exist -- the sysop's own file-override tree,
@@ -1955,13 +1848,18 @@ chown -R "$SERVICE_USER":"$SERVICE_USER" "$INSTALL_DIR/data/text" 2>/dev/null ||
 # default, which is the opposite of the intent.
 mkdir -p "$INSTALL_DIR/data/mods/text/menus"
 mkdir -p "$INSTALL_DIR/data/mods/core"
-chown -R "$SERVICE_USER":"$SERVICE_USER" "$INSTALL_DIR/data/mods" 2>/dev/null || true
+chown -hR "$SERVICE_USER":"$SERVICE_USER" "$INSTALL_DIR/data/mods" 2>/dev/null || true
 
 # Refresh /etc/sudoers.d/anetbbs so the Service Control Center can run
 # systemctl + journalctl against the current unit names. We rewrite it
 # every update because past releases shipped a stale list (anetbbs-telnet,
 # anetbbs-ssh, anetbbs-rlogin — none of which exist post-merge), which
 # left the panel showing "permission denied" on Restart buttons.
+PRIVILEGED_DIR=/usr/local/libexec/anetbbs
+install -d -o root -g root -m 0755 "$PRIVILEGED_DIR" "$PRIVILEGED_DIR/releases" || exit 1
+for helper in run_upgrade.sh run_restore.sh; do
+    install -o root -g root -m 0755 -T "$SOURCE_DIR/deploy/$helper" "$PRIVILEGED_DIR/$helper" || exit 1
+done
 SUDOERS_SRC="$SOURCE_DIR/deploy/sudoers.anetbbs"
 SUDOERS_DST="/etc/sudoers.d/anetbbs"
 if [[ -f "$SUDOERS_SRC" ]]; then
@@ -1979,19 +1877,7 @@ if [[ -f "$SUDOERS_SRC" ]]; then
              "anetbbs-web.service exists, or check INSTALL_DIR ownership."
     else
         info "Refreshing $SUDOERS_DST from deploy/sudoers.anetbbs (user: $SERVICE_USER)..."
-        # Substitute placeholders so the sudoers grants:
-        #   - run as the actual SERVICE_USER (not the template's '__SERVICE_USER__')
-        #   - reference the real upgrade wrapper path ($INSTALL_DIR/deploy/run_upgrade.sh,
-        #     not the template's /opt/anetbbs/ placeholder)
-        UPGRADE_WRAPPER="$INSTALL_DIR/deploy/run_upgrade.sh"
-        RESTORE_WRAPPER="$INSTALL_DIR/deploy/run_restore.sh"
-        # Substitute both deploy paths plus the user placeholder. Without
-        # the -g flag each sed only hits its first match; we need every
-        # /opt/anetbbs/deploy/* line to land on the real install path.
-        sed -e "s/^__SERVICE_USER__ /$SERVICE_USER /" \
-            -e "s|/opt/anetbbs/deploy/run_upgrade.sh|$UPGRADE_WRAPPER|g" \
-            -e "s|/opt/anetbbs/deploy/run_restore.sh|$RESTORE_WRAPPER|g" \
-            "$SUDOERS_SRC" > "$SUDOERS_DST.tmp"
+        sed -e "s/^__SERVICE_USER__ /$SERVICE_USER /" "$SUDOERS_SRC" > "$SUDOERS_DST.tmp"
         # Real gap found in a security/performance audit: the plain `sed
         # ... > file` redirection above creates $SUDOERS_DST.tmp at the
         # ambient umask (typically 644, world-readable) -- it then sits
@@ -2039,7 +1925,10 @@ if [[ -f "$SUDOERS_SRC" ]]; then
                 ok "sudoers refreshed (SCC restart + Check-for-Updates auto-install will work)"
             else
                 rm -f "$SUDOERS_DST.tmp" "$SUDOERS_DST.tmp2"
-                warn "sudoers syntax check failed — leaving $SUDOERS_DST unchanged"
+                if grep -Eq '/deploy/run_(upgrade|restore)[.]sh' "$SUDOERS_DST" 2>/dev/null; then
+                    rm -f -- "$SUDOERS_DST"
+                fi
+                warn "sudoers syntax check failed — review $SUDOERS_DST before using the control panel"
                 warn "  visudo says: ${VISUDO_ERR:-<no output>}"
             fi
         fi
@@ -2053,23 +1942,24 @@ fi
 GALLERY_SCRIPT_SRC="$SOURCE_DIR/deploy/anet-gallery.sh"
 GALLERY_SCRIPT_DST="$INSTALL_DIR/anet-gallery.sh"
 if [[ -f "$GALLERY_SCRIPT_SRC" && ! -f "$GALLERY_SCRIPT_DST" ]]; then
-    sed "s|__INSTALL_DIR__|$INSTALL_DIR|g" "$GALLERY_SCRIPT_SRC" > "$GALLERY_SCRIPT_DST"
-    chmod 0755 "$GALLERY_SCRIPT_DST"
-    chown "$SERVICE_USER":"$SERVICE_USER" "$GALLERY_SCRIPT_DST" 2>/dev/null || true
+    sed "s|__INSTALL_DIR__|$INSTALL_DIR|g" "$GALLERY_SCRIPT_SRC" |
+        runuser -u "$SERVICE_USER" -- tee "$GALLERY_SCRIPT_DST" >/dev/null
+    runuser -u "$SERVICE_USER" -- chmod 0755 "$GALLERY_SCRIPT_DST"
     ok "Terminal gallery viewer installed: $GALLERY_SCRIPT_DST"
 fi
 
 # Drop a sentinel /etc/anetbbs.install so the privileged upgrade wrapper
 # (and any other future root helper) can discover the install root
 # without hardcoding a path. Sources cleanly with `. /etc/anetbbs.install`.
-cat > /etc/anetbbs.install <<EOF
-# Written by update.sh — used by deploy/run_upgrade.sh to locate the
-# install root when invoked under sudo. Do not edit by hand; rerun
-# install.sh or update.sh to refresh.
-INSTALL_DIR=$INSTALL_DIR
-SERVICE_USER=$SERVICE_USER
-EOF
-chmod 0644 /etc/anetbbs.install
+TRUSTED_REGISTRY="${ANETBBS_TRUSTED_REGISTRY:-}"
+if [[ -z "$TRUSTED_REGISTRY" && -f /etc/anetbbs.install ]]; then
+    TRUSTED_REGISTRY=$(bash -c '. /etc/anetbbs.install; printf "%s" "${REGISTRY_URL:-}"')
+fi
+SENTINEL_TMP=$(mktemp /etc/anetbbs.install.XXXXXX) || exit 1
+printf 'INSTALL_DIR=%q\nSERVICE_USER=%q\nREGISTRY_URL=%q\n' \
+    "$INSTALL_DIR" "$SERVICE_USER" "${TRUSTED_REGISTRY:-https://bbs.a-net.fyi}" > "$SENTINEL_TMP"
+install -o root -g root -m 0644 -T "$SENTINEL_TMP" /etc/anetbbs.install || exit 1
+rm -f -- "$SENTINEL_TMP"
 
 # Ensure deploy/ wrappers are executable. Tarballs built from FAT
 # source trees lose the +x bit, so we set it explicitly post-extract.
@@ -2130,7 +2020,7 @@ if [[ -f "$NGINX_AVAIL" ]]; then
     # own octets first, since head -1 takes whichever numeric group
     # comes first in the string, not the actual port.
     CURRENT_MRC_PORT="$(grep -oE '127\.0\.0\.1:[0-9]+/ws;' "$NGINX_AVAIL" 2>/dev/null | head -1 | grep -oE ':[0-9]+/ws;' | grep -oE '[0-9]+')" || true
-    if [[ -n "$REAL_MRC_PORT" && -n "$CURRENT_MRC_PORT" && "$CURRENT_MRC_PORT" != "$REAL_MRC_PORT" ]]; then
+    if [[ "$REAL_MRC_PORT" =~ ^[0-9]{1,5}$ && -n "$CURRENT_MRC_PORT" && "$CURRENT_MRC_PORT" != "$REAL_MRC_PORT" ]]; then
         info "Patching nginx: MRC bridge proxy port $CURRENT_MRC_PORT → $REAL_MRC_PORT (matching the bridge's actual listen port)"
         sed -i "s|127.0.0.1:${CURRENT_MRC_PORT}/ws;|127.0.0.1:${REAL_MRC_PORT}/ws;|g" "$NGINX_AVAIL"
         NGINX_CHANGED=true
@@ -2176,7 +2066,7 @@ if [[ -f "$NGINX_AVAIL" ]]; then
         # combined with a trailing &&/|| line-continuation on the same
         # statement is a known bash-version-sensitive edge case; the
         # `; then ... else ... fi` form avoids it entirely.
-        if NGINX_AVAIL="$NGINX_AVAIL" INSTALL_DIR="$INSTALL_DIR" python3 << 'STATICPYEOF' 2>/dev/null; then
+        if NGINX_AVAIL="$NGINX_AVAIL" INSTALL_DIR="$INSTALL_DIR" /usr/bin/python3 -I << 'STATICPYEOF' 2>/dev/null; then
 import os
 nginx_avail = os.environ['NGINX_AVAIL']
 install_dir = os.environ['INSTALL_DIR']
@@ -2225,17 +2115,21 @@ STATICPYEOF
         # -- see its comment for why the chained `&& \ ... || \` form is
         # a confirmed-live bug, not just a style preference.
         if NGINX_AVAIL="$NGINX_AVAIL" REAL_WEB_PORT="$REAL_WEB_PORT" REAL_MRC_PORT="$REAL_MRC_PORT" \
-            python3 << 'MRCWSPYEOF' 2>/dev/null; then
+            /usr/bin/python3 -I << 'MRCWSPYEOF' 2>/dev/null; then
 import os
 nginx_avail = os.environ['NGINX_AVAIL']
-real_web_port = os.environ['REAL_WEB_PORT']
-real_mrc_port = os.environ['REAL_MRC_PORT']
+real_web_port = int(os.environ['REAL_WEB_PORT'])
+real_mrc_port = int(os.environ['REAL_MRC_PORT'])
+if not (0 < real_web_port <= 65535 and 0 < real_mrc_port <= 65535):
+    raise SystemExit('invalid nginx upstream port')
 mrc_block = (
     "\n    location = /mrc-auth-check {\n"
     "        internal;\n"
     f"        proxy_pass http://127.0.0.1:{real_web_port}/mrc/auth-check;\n"
     "        proxy_pass_request_body off;\n"
     "        proxy_set_header Content-Length \"\";\n"
+    "        proxy_set_header Host $host;\n"
+    "        proxy_set_header X-Forwarded-Host \"\";\n"
     "        proxy_set_header X-Original-URI $request_uri;\n"
     "        proxy_set_header Cookie $http_cookie;\n"
     "    }\n"
@@ -2290,7 +2184,7 @@ MRCWSPYEOF
             # python3 -c string, matching this file's own standing
             # discipline for this bug class rather than judging each
             # site's current exploitability case by case.
-            if NGINX_AVAIL="$NGINX_AVAIL" NGINX_WS_LOC="$NGINX_WS_LOC" python3 << 'WSHDRPYEOF' 2>/dev/null | grep -q patched
+            if NGINX_AVAIL="$NGINX_AVAIL" NGINX_WS_LOC="$NGINX_WS_LOC" /usr/bin/python3 -I << 'WSHDRPYEOF' 2>/dev/null | grep -q patched
 import os, re
 loc = os.environ['NGINX_WS_LOC']
 path = os.environ['NGINX_AVAIL']
@@ -2571,8 +2465,8 @@ if [[ "${CRITICAL_FAILED:-false}" == "true" ]]; then
         warn "anetbbs-web crashed: eventlet wheel missing start_joinable_thread (piwheels aarch64 issue)"
         info "Attempting auto-fix: rebuilding eventlet from source..."
         _evt_retry=false
-        if sudo -u "$SERVICE_USER" "$VENV_DIR/bin/pip" install --force-reinstall --no-cache-dir --no-binary eventlet "eventlet>=0.40.3" --quiet 2>/dev/null || \
-           "$VENV_DIR/bin/pip" install --force-reinstall --no-cache-dir --no-binary eventlet "eventlet>=0.40.3" --quiet 2>/dev/null; then
+        if runuser -u "$SERVICE_USER" -- "$VENV_DIR/bin/pip" install \
+                --force-reinstall --no-cache-dir --no-binary eventlet "eventlet>=0.40.3" --quiet 2>/dev/null; then
             _evt_retry=true
         fi
         if [[ "$_evt_retry" == "true" ]]; then
@@ -2595,7 +2489,7 @@ if [[ "${CRITICAL_FAILED:-false}" == "true" ]]; then
         fi
     else
         warn "Critical service failed to start. Rolling back from backup..."
-        cp "$BACKUP_DIR/.env.bak" "$ENV_FILE"
+        install -o "$SERVICE_USER" -g "$SERVICE_USER" -m 0600 -T "$BACKUP_DIR/.env.bak" "$ENV_FILE"
         # Restore both DBs, same "don't try to guess which is real"
         # reasoning as the backup step above -- DATABASE_URL decides
         # which file Step 7's migration actually touched, and restoring
@@ -2603,8 +2497,8 @@ if [[ "${CRITICAL_FAILED:-false}" == "true" ]]; then
         # anetbbs.db.bak here left anetbbs_dev.db (when that's the one
         # DATABASE_URL actually pointed at) stuck in its post-migration
         # state with no rollback -- a real gap found in a pre-release audit.
-        [[ -f "$BACKUP_DIR/anetbbs.db.bak" ]] && cp "$BACKUP_DIR/anetbbs.db.bak" "$DB_FILE"
-        [[ -f "$BACKUP_DIR/anetbbs_dev.db.bak" ]] && cp "$BACKUP_DIR/anetbbs_dev.db.bak" "$INSTALL_DIR/data/anetbbs_dev.db"
+        [[ -f "$BACKUP_DIR/anetbbs.db.bak" ]] && install -o "$SERVICE_USER" -g "$SERVICE_USER" -m 0600 -T "$BACKUP_DIR/anetbbs.db.bak" "$DB_FILE"
+        [[ -f "$BACKUP_DIR/anetbbs_dev.db.bak" ]] && install -o "$SERVICE_USER" -g "$SERVICE_USER" -m 0600 -T "$BACKUP_DIR/anetbbs_dev.db.bak" "$INSTALL_DIR/data/anetbbs_dev.db"
         if [[ -d "$BACKUP_DIR/code" ]]; then
             info "Restoring application code from pre-update snapshot..."
             # --delete removes anything the failed update added that wasn't
@@ -2644,6 +2538,22 @@ fi
 echo ""
 echo -e "${BOLD}${CYAN}  Update Complete!${NC}"
 echo ""
+# Export the backup for the web panel as the service user. The root copy
+# stays private until this update has finished using it.
+BACKUP_DEST="$INSTALL_DIR/data/backups/$BACKUP_NAME"
+if runuser -u "$SERVICE_USER" -- mkdir -p -- "$INSTALL_DIR/data/backups" &&
+   tar -C "$BACKUP_WORK" -cf - "$BACKUP_NAME" |
+       runuser -u "$SERVICE_USER" -- tar -C "$INSTALL_DIR/data/backups" -xf -; then
+    runuser -u "$SERVICE_USER" -- find "$INSTALL_DIR/data/backups" \
+        -mindepth 1 -maxdepth 1 -type d -name 'anetbbs-backup-*' -printf '%f\n' |
+        sort -r | tail -n +4 | while IFS= read -r old; do
+            runuser -u "$SERVICE_USER" -- rm -rf -- "$INSTALL_DIR/data/backups/$old"
+        done
+    BACKUP_DIR="$BACKUP_DEST"
+else
+    warn "Could not publish the snapshot to the Backups panel."
+    trap - EXIT
+fi
 echo -e "  Backup stored at: ${DIM}$BACKUP_DIR${NC}"
 echo -e "  ${BOLD}Useful Commands:${NC}"
 echo -e "  ${DIM}sudo systemctl status anetbbs-web anetbbs anetbbs-mrc-bridge${NC}"

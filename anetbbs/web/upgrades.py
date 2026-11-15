@@ -18,7 +18,7 @@ Two halves living in the same module:
   sha256 it publishes matches.
 
 Security note: the install endpoint shells out to
-``sudo /opt/anetbbs/deploy/run_upgrade.sh <version>`` (path resolved at
+``sudo /usr/local/libexec/anetbbs/run_upgrade.sh`` (arguments resolved at
 runtime to whatever ``INSTALL_DIR`` is on this box). The sudoers file
 shipped in ``deploy/sudoers.anetbbs`` grants the service user
 passwordless execution of *only* that script with a strict version
@@ -147,11 +147,11 @@ def _sha256_of(path: str) -> Optional[str]:
         return None
 
 
-def _scan_releases(cfg):
+def _scan_releases(cfg, directory=None):
     """Return [{version, name, size, mtime, path}, ...] sorted newest-first
     by parsed version (NOT mtime — file mtimes are unreliable after rsync).
     """
-    base = _downloads_dir(cfg)
+    base = directory if directory is not None else _downloads_dir(cfg)
     if not base:
         return []
     out = []
@@ -184,7 +184,7 @@ def _scan_releases(cfg):
     return out
 
 
-def _latest_payload(req) -> Optional[dict]:
+def _latest_payload() -> Optional[dict]:
     """Build the public JSON body for the newest tarball."""
     cfg = current_app.config
     rows = _scan_releases(cfg)
@@ -194,8 +194,12 @@ def _latest_payload(req) -> Optional[dict]:
     sha = _sha256_of(top['path'])
     # Build absolute URL pointing at our existing /downloads/ route so
     # peers can pull the tarball without needing direct fs access.
-    url = (req.host_url.rstrip('/')
-           + url_for('downloads.serve', filename=top['name']))
+    from .auth import _password_recovery_origin
+    path = url_for('downloads.serve', filename=top['name'])
+    try:
+        url = _password_recovery_origin() + path
+    except ValueError:
+        url = path
     return {
         'version': top['version'],
         'name': top['name'],
@@ -229,7 +233,7 @@ def releases_latest():
 
     404 with `{"detail": "no releases"}` when the directory is empty.
     """
-    p = _latest_payload(request)
+    p = _latest_payload()
     if not p:
         return jsonify({'detail': 'no releases'}), 404
     return jsonify(p)
@@ -292,7 +296,7 @@ def _local_releases(cfg):
     the rollback drawer. We only show OLDER-than-current ones since
     rolling forward is what /install does. Format mtime here so the
     template doesn't need a custom Jinja filter."""
-    rows = _scan_releases(cfg)
+    rows = _scan_releases(cfg, '/usr/local/libexec/anetbbs/releases')
     cur = _parse_version(VERSION)
     if cur:
         rows = [r for r in rows if r['parsed'] < cur]
@@ -417,54 +421,8 @@ def build_upgrade_cmd(wrapper: str, target: str, url: str, sha256: str) -> list:
     return [wrapper, target, url, sha256]
 
 
-def _patch_wrapper_if_needed(wrapper: str) -> None:
-    """Patch run_upgrade.sh in-place if it still has an outdated version
-    regex that would reject a version string a NEWER release actually
-    uses. Two historical steps chained here, applied in order (each is
-    a no-op if its `old` pattern isn't present, so this is safe to run
-    against a wrapper already on any of the three generations):
-
-    1. alpha-only -> alpha+beta (from when beta version strings were
-       introduced).
-    2. alpha+beta-only -> alpha+beta+stable (from the v1.0.0 milestone,
-       which introduced a plain `vX.Y.Z` stable-release form alongside
-       the existing `vX.Y[ab]Z.NN` beta/alpha form).
-
-    Silently no-ops on any error so a failed patch never blocks the
-    upgrade attempt -- worst case the live wrapper stays one generation
-    behind and the upgrade fails with a clear regex-mismatch message
-    the sysop can act on, same as before this self-heal existed at all.
-    """
-    try:
-        with open(wrapper, 'r', encoding='utf-8') as f:
-            src = f.read()
-        steps = [
-            (r'^v[0-9]+\.[0-9]+a[0-9]+\.[0-9]+$',
-             r'^v[0-9]+\.[0-9]+[ab][0-9]+\.[0-9]+$'),
-            (r'^v[0-9]+\.[0-9]+[ab][0-9]+\.[0-9]+$',
-             r'^v[0-9]+\.[0-9]+([ab][0-9]+\.[0-9]+|\.[0-9]+)$'),
-        ]
-        changed = False
-        for old, new in steps:
-            if old in src:
-                src = src.replace(old, new)
-                changed = True
-        if changed:
-            with open(wrapper, 'w', encoding='utf-8') as f:
-                f.write(src)
-    except Exception:
-        pass
-
-
 def _wrapper_path(cfg) -> str:
-    """Resolve deploy/run_upgrade.sh relative to the install root.
-    INSTALL_DIR config wins; otherwise derive from this file's location."""
-    install_dir = cfg.get('INSTALL_DIR') or ''
-    if not install_dir:
-        # anetbbs/web/upgrades.py → install root is two-parents up
-        install_dir = os.path.dirname(os.path.dirname(
-            os.path.dirname(os.path.abspath(__file__))))
-    return os.path.join(install_dir, 'deploy', 'run_upgrade.sh')
+    return '/usr/local/libexec/anetbbs/run_upgrade.sh'
 
 
 @upgrades_admin_bp.route('/install', methods=['POST'])
@@ -520,7 +478,6 @@ def install():
     # request doesn't get killed when update.sh restarts gunicorn.
     _reset_upgrade_log()
 
-    _patch_wrapper_if_needed(wrapper)
     _spawn_upgrade(wrapper, target, url, sha256, label='upgrade')
     return jsonify({'ok': True,
                     'log_url': url_for('upgrades_admin.log_tail')})
@@ -676,21 +633,15 @@ def _spawn_upgrade(wrapper: str, target: str, url: str, sha256: str,
 @upgrades_admin_bp.route('/rollback', methods=['POST'])
 @login_required
 def rollback():
-    """Reinstall an older tarball that lives in our local data/releases/.
-
-    Unlike /install, this skips the upstream check entirely — the
-    "trust" comes from the file already being on disk (the sysop put
-    it there). Same privileged wrapper runs the actual upgrade, same
-    sha256 verification path (we compute the sha here and pass it).
-    """
+    """Reinstall an older release staged by the system administrator."""
     _require_admin()
     cfg = current_app.config
     target = (request.form.get('version') or '').strip()
     if not _parse_version(target):
         return jsonify({'ok': False, 'error': 'bad version'}), 400
 
-    # Locate a matching tarball among the local releases.
-    rows = _scan_releases(cfg)
+    # Locate a matching tarball among the root-staged releases.
+    rows = _scan_releases(cfg, '/usr/local/libexec/anetbbs/releases')
     match = next((r for r in rows if r['version'] == target), None)
     if not match:
         return jsonify({'ok': False,
@@ -708,11 +659,8 @@ def rollback():
     sha = _sha256_of(match['path']) or ''
     if not re.fullmatch(r'[0-9a-fA-F]{64}', sha):
         return jsonify({'ok': False, 'error': 'cannot compute sha256'}), 500
-    # Local URL routed through our own /downloads/ — the wrapper uses
-    # curl, which is happy with 127.0.0.1, and we don't have to grant
-    # the wrapper raw file-read access outside its sudoers.
-    url = (request.host_url.rstrip('/')
-           + url_for('downloads.serve', filename=match['name']))
+    # The root helper reads only separately staged, root-controlled archives.
+    url = 'local'
 
     wrapper = _wrapper_path(cfg)
     if not os.path.isfile(wrapper):

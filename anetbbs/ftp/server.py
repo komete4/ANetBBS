@@ -17,13 +17,23 @@ This module is `serve_forever`-style, intended to run inside the main
 `anetbbs.service` process — the entry point `run()` is started in a
 daemon thread by `anetbbs.main` when `FTP_ENABLED=true`.
 """
+import errno
 import hmac
 import logging
 import os
+import shutil
+import time
+from urllib.parse import quote
+from uuid import uuid4
 
 from pyftpdlib.authorizers import DummyAuthorizer, AuthenticationFailed
 from pyftpdlib.filesystems import AbstractedFS
-from pyftpdlib.handlers import FTPHandler
+from pyftpdlib.handlers import DTPHandler, FTPHandler
+
+from ..features.access_control import evaluate_access
+from ..features.file_publish import (UploadRejected, check_staged_upload,
+                                     file_identity, is_staging_path,
+                                     open_staged_upload)
 
 logger = logging.getLogger(__name__)
 
@@ -95,114 +105,81 @@ def _check_ip_and_rate_limit(app, ip):
         return False
 
 
-def _public_area_filter(area):
-    """Anonymous users see only active, non-sysop-only areas."""
-    return area.is_active and not area.is_sysop_only
-
-
-def _user_area_filter(area, include_sysop_only=False):
-    """Authenticated users see anything active that isn't sysop-only.
-    Pass `include_sysop_only=True` for the admin variant of the tree."""
-    if not area.is_active:
-        return False
-    if area.is_sysop_only and not include_sysop_only:
-        return False
-    return True
+def _can_read_area(user, area):
+    return area.is_active and evaluate_access(
+        user, area.min_access_level, is_sysop_only=area.is_sysop_only)
 
 
 class SymlinkAwareFS(AbstractedFS):
-    """Default pyftpdlib AbstractedFS resolves symlinks via os.path.realpath()
-    and then refuses any path that escapes the user's home dir. Our setup
-    is intentionally a symlink tree pointing at FileArea.storage_path
-    directories all over the filesystem — so every CWD/RETR/STOR through
-    a symlink would error with "outside the user's root directory".
-
-    We override realpath() to use abspath() instead (no symlink
-    resolution), and validpath() to compare against the abspath root.
-    Together those preserve the safety guarantee (no `..` traversal
-    above the FTP root) while letting our deliberately-placed symlinks
-    work as intended.
-
-    We also override lstat() to use os.stat() — the default behavior
-    leaks the absolute server-side path to clients via the LIST output
-    (e.g. `lrwxrwxrwx ... FILES.GAMES -> /opt/anetbbs/.../data/files/games`).
-    Resolving through the symlink makes each entry look like an
-    ordinary directory in `ls -l`.
-    """
-    def realpath(self, path):
-        return os.path.abspath(path)
+    """Allow only mapped area symlinks and paths inside their current target."""
 
     def validpath(self, path):
-        root = os.path.abspath(self.root)
-        p = os.path.abspath(path)
-        return p == root or p.startswith(root + os.sep)
+        if is_staging_path(path) or is_staging_path(os.path.realpath(path)):
+            return False
+        handler = self.cmd_channel
+        if handler._qwk_node_id is not None:
+            return super().validpath(path)
+        if os.path.abspath(path) == os.path.abspath(self.root):
+            return True
+        return handler._area_access(path) is not None
+
+    def listdir(self, path):
+        names = super().listdir(path)
+        if self.cmd_channel._qwk_node_id is not None:
+            return [name for name in names if not is_staging_path(name)]
+        if os.path.abspath(path) == os.path.abspath(self.root):
+            return self.cmd_channel._visible_area_names(names)
+        area_name = os.path.relpath(path, self.root).split(os.sep, 1)[0]
+        storage = os.path.realpath(os.path.join(self.root, area_name))
+        return [name for name in names
+                if not name.startswith('.')
+                and _in_area(storage, os.path.join(path, name))]
 
     def lstat(self, path):
-        # Resolve symlinks so clients see "drwxr-xr-x ... FILES.GAMES"
-        # instead of "lrwxrwxrwx ... FILES.GAMES -> /abs/server/path".
-        # Falls back to the real lstat if the target is broken so the
-        # listing still renders something (just with link mode bits).
-        try:
-            return os.stat(path)
-        except (OSError, ValueError):
-            return os.lstat(path)
+        # The authorized area root should appear as a directory in LIST.
+        return os.stat(path)
 
 
 def _build_symlink_tree(root_dir, areas, mode='user'):
-    """Build (or rebuild) the symlink tree under `root_dir`.
-
-    mode='anon'  → only public areas (active + not sysop-only)
-    mode='user'  → all non-sysop-only active areas
-    mode='admin' → every active area (sysop-only included)
-
-    Each `FileArea` that passes the filter becomes a symlink
-    `root_dir/<TAG>` pointing at `area.storage_path`. Re-runs are safe —
-    we wipe existing symlinks but never the targets.
-    """
+    """Return an explicit mapping of each new symlink to its file area ID."""
     os.makedirs(root_dir, exist_ok=True)
     for name in os.listdir(root_dir):
         full = os.path.join(root_dir, name)
         if os.path.islink(full):
             try:
                 os.unlink(full)
-            except PermissionError as exc:
-                # Leftover from a previous FTP run that executed as a
-                # different user — usually root, before the BBS was
-                # converted to run as the sysop's own service account.
-                # We can't remove the stale symlink but we can still operate
-                # around it (worst case the link points at a dead
-                # target). Log + continue rather than crash the whole
-                # FTP thread, which is what kept FTP silently dead
-                # for a week pre-v1.0a2.32. Fix on the sysop side:
-                # `sudo chown -R <service_user>:<group> data/ftp_root`.
-                logger.warning(
-                    'FTP: cannot remove stale symlink %s (%s) — likely '
-                    'a leftover owned by a different user. Fix with: '
-                    'sudo chown -R <service-user>:<group> %s ; then '
-                    'restart anetbbs.', full, exc, root_dir)
             except OSError as exc:
-                logger.warning('FTP: unlink %s failed: %s', full, exc)
-    linked = 0
+                logger.warning('FTP: cannot remove stale link %s: %s', full, exc)
+    mapping = {}
     for area in areas:
-        if mode == 'anon' and not _public_area_filter(area):
+        if not area.is_active:
             continue
-        if mode == 'user' and not _user_area_filter(area,
-                                                    include_sysop_only=False):
+        if mode == 'anon' and not _can_read_area(None, area):
             continue
-        if mode == 'admin' and not _user_area_filter(area,
-                                                     include_sysop_only=True):
+        if mode == 'user' and area.is_sysop_only:
             continue
         if not area.storage_path or not os.path.isdir(area.storage_path):
             continue
-        link_name = area.tag.replace('/', '_')
+        # The ID keeps case-insensitive filesystems and escaped tags unambiguous.
+        link_name = f'{area.id}-{quote(area.tag, safe=".-_")}'
         link_path = os.path.join(root_dir, link_name)
         try:
-            os.symlink(area.storage_path, link_path)
-            linked += 1
+            os.symlink(os.path.abspath(area.storage_path), link_path,
+                       target_is_directory=True)
         except OSError as exc:
-            logger.warning('FTP: could not symlink %s -> %s: %s',
-                           link_path, area.storage_path, exc)
-    return linked
+            logger.warning('FTP: could not create area link %s: %s', link_path, exc)
+        else:
+            mapping[link_name] = area.id
+    return mapping
+
+
+def _in_area(storage, path):
+    target = os.path.realpath(path)
+    try:
+        return (os.path.commonpath((storage, target)) == storage
+                and not is_staging_path(target))
+    except ValueError:
+        return False
 
 
 class AnetbbsAuthorizer(DummyAuthorizer):
@@ -214,13 +191,16 @@ class AnetbbsAuthorizer(DummyAuthorizer):
     """
 
     def __init__(self, app, anon_root, user_root, admin_root,
-                 anon_enabled=True, qwk_root=''):
+                 anon_enabled=True, qwk_root='', area_roots=None):
         super().__init__()
         self.app = app
         self.anon_root = anon_root
         self.user_root = user_root
         self.admin_root = admin_root
         self.qwk_root = qwk_root  # data/qwk-hub
+        self.area_roots = area_roots or {}
+        self.upload_day = None
+        self.upload_bytes_by_account = {}
         if anon_enabled:
             # pyftpdlib quirk: the anonymous user is registered as
             # username 'anonymous' with an empty password.
@@ -242,9 +222,10 @@ class AnetbbsAuthorizer(DummyAuthorizer):
         # register under the exact `username` parameter (what the client
         # actually sent), never a normalized/canonical form, so the two
         # lookups always agree regardless of what case anyone typed.
-        # Bind only human BBS accounts; anonymous/QWK credentials have a
-        # separate lifecycle and must not inherit a previous login token.
+        # Anonymous and QWK credentials cannot inherit a human session.
         handler._bbs_auth = None
+        handler._qwk_node_id = None
+        handler._qwk_packet_id = None
         if username == 'anonymous':
             return super().validate_authentication(username, password, handler)
 
@@ -256,11 +237,12 @@ class AnetbbsAuthorizer(DummyAuthorizer):
         if _check_ip_and_rate_limit(self.app, remote_ip):
             raise AuthenticationFailed('Too many attempts. Try again later.')
 
+        from sqlalchemy import func
         from ..models import User, QWKNode
         with self.app.app_context():
             # 1. Try BBS user.
             user = User.query.filter(
-                User.username.ilike(username),
+                func.lower(User.username) == username.lower(),
                 User.is_active.is_(True),
             ).first()
             if user is not None and user.check_password(password):
@@ -277,7 +259,7 @@ class AnetbbsAuthorizer(DummyAuthorizer):
                 if not self.app.config.get('FILE_UPLOADS_ENABLED', True):
                     perm = 'elr'
                 else:
-                    perm = 'elradfmwM' if user.is_admin else 'elradfmw'
+                    perm = 'elrdfmwMT' if user.is_admin else 'elrdfmw'
                 if self.has_user(username):
                     self.remove_user(username)
                 self.add_user(username, password=password,
@@ -294,7 +276,7 @@ class AnetbbsAuthorizer(DummyAuthorizer):
             # AreaFix passthrough), not hashable login credentials.
             node = (QWKNode.query
                     .filter_by(is_active=True)
-                    .filter(QWKNode.packet_id.ilike(username))
+                    .filter(func.lower(QWKNode.packet_id) == username.lower())
                     .first())
             if node is not None and hmac.compare_digest(node.password, password):
                 # self.qwk_root is ALREADY <DATA_DIR>/qwk-hub (set at
@@ -317,7 +299,7 @@ class AnetbbsAuthorizer(DummyAuthorizer):
                 if self.has_user(username):
                     self.remove_user(username)
                 self.add_user(username, password=password,
-                              homedir=node_home, perm='elradfmw')
+                              homedir=node_home, perm='elrdfmw')
                 return
 
             raise AuthenticationFailed('Invalid credentials.')
@@ -330,16 +312,73 @@ class AnetbbsAuthorizer(DummyAuthorizer):
         return super().get_home_dir(username)
 
 
+class _BoundedUpload:
+    def __init__(self, handler, staged, path, dest, access, replace, max_bytes):
+        self.handler = handler
+        self.staged = staged
+        self.name = staged.name
+        self.path = path
+        self.dest = dest
+        self.access = access
+        self.auth = handler._bbs_auth
+        self.replace = replace
+        self.max_bytes = max_bytes
+        self.bytes_written = 0
+        self.published = False
+
+    @property
+    def closed(self):
+        return self.staged.closed
+
+    def close(self):
+        self.staged.close()
+
+    def write(self, data):
+        if self.bytes_written + len(data) > self.max_bytes:
+            raise OSError(errno.EFBIG, 'FTP upload limit exceeded')
+        reserve = self.handler.app.config.get('FTP_MIN_FREE_BYTES', 64 * 1024 * 1024)
+        if shutil.disk_usage(os.path.dirname(self.dest)).free < reserve + len(data):
+            raise OSError(errno.ENOSPC, 'FTP storage reserve reached')
+        self.handler._consume_upload_quota(self.access, len(data))
+        written = self.staged.write(data)
+        self.bytes_written += written
+        self.handler._upload_bytes += written
+        return written
+
+
+class _PublishBeforeReply:
+    def close(self):
+        upload = self.file_obj
+        if (not self._closed and self.receive and self.transfer_finished
+                and isinstance(upload, _BoundedUpload)):
+            try:
+                upload.close()
+                if not upload.published:
+                    self.cmd_channel._publish_upload(upload)
+                    upload.published = True
+            except FileExistsError:
+                self.transfer_finished = False
+                self._resp = ('550 A file with that name already exists.', logger.info)
+            except UploadRejected as exc:
+                self.transfer_finished = False
+                self._resp = (f'550 Upload rejected: {exc}', logger.info)
+            except Exception:
+                logger.exception('FTP: could not publish staged upload')
+                self.transfer_finished = False
+                self._resp = ('451 Could not publish upload.', logger.warning)
+        return super().close()
+
+
+class _AnetbbsDTPHandler(_PublishBeforeReply, DTPHandler):
+    pass
+
+
 class AnetbbsFTPHandler(FTPHandler):
-    """Adds upload-tracking + QWK-hub integration on top of the stock
-    FTPHandler. Uploaded files get a `FileUpload` row whose `file_area_id`
-    is resolved from the parent directory's tag (which matches the
-    symlink name in the FTP root tree).  QWK node sessions additionally
-    get their packet generated on login and their .rep processed on upload.
-    """
+    """Authorize file-area access, track published uploads and provide QWK FTP."""
 
     # Wired by `run()` at startup.
     app = None
+    dtp_handler = _AnetbbsDTPHandler
 
     # Set by the authorizer during validate_authentication for QWK sessions.
     _qwk_node_id = None
@@ -347,6 +386,8 @@ class AnetbbsFTPHandler(FTPHandler):
     _bbs_auth = None
     _bbs_transfer_auth = None
     _auth_recheck = None
+    _staged_upload = None
+    _upload_bytes = 0
 
     def _cancel_auth_recheck(self):
         if self._auth_recheck is not None:
@@ -400,16 +441,7 @@ class AnetbbsFTPHandler(FTPHandler):
         if self._bbs_transfer_auth is None:
             self._cancel_auth_recheck()
 
-    def close(self):
-        self._cancel_auth_recheck()
-        self._bbs_auth = None
-        self._bbs_transfer_auth = None
-        # Base cleanup also closes passive/active data channels and files.
-        return super().close()
-
     def on_disconnect(self):
-        # TLS_FTPHandler.close() calls FTPHandler.close() directly, so this
-        # dynamic hook also cancels its timer without changing TLS behavior.
         self._cancel_auth_recheck()
         self._bbs_auth = None
         self._bbs_transfer_auth = None
@@ -443,190 +475,367 @@ class AnetbbsFTPHandler(FTPHandler):
         logger.info('FTP: login failed for %r from %s',
                     username, self.remote_ip)
 
+    def _current_bbs_user(self):
+        from ..models import db, User
+
+        if self._bbs_auth is None:
+            return None
+        user_id, auth_version = self._bbs_auth
+        user = db.session.get(User, user_id, populate_existing=True)
+        if (user is None or user.auth_version != auth_version
+                or not user.is_active or user.is_locked
+                or not (user.is_verified or user.is_admin)):
+            return None
+        return user
+
+    def _area_mapping(self):
+        return self.authorizer.area_roots.get(os.path.abspath(self.fs.root), {})
+
+    def _visible_area_names(self, names):
+        from ..models import FileArea
+
+        mapping = self._area_mapping()
+        with self.app.app_context():
+            user = self._current_bbs_user()
+            if user is None and self.username != 'anonymous':
+                return []
+            areas = {area.id: area for area in FileArea.query.filter(
+                FileArea.id.in_(mapping.values())).all() if _can_read_area(user, area)}
+            return [name for name in names if mapping.get(name) in areas
+                    and self._area_path_matches(areas[mapping[name]], name,
+                                                os.path.join(self.fs.root, name))]
+
+    def _area_path_matches(self, area, name, path):
+        if not area.storage_path:
+            return False
+        storage = os.path.realpath(area.storage_path)
+        link = os.path.join(self.fs.root, name)
+        return (os.path.islink(link) and os.path.realpath(link) == storage
+                and _in_area(storage, path))
+
+    def _area_access(self, path, *, write=False, mutate=False):
+        from ..models import db, FileArea
+
+        try:
+            relative = os.path.relpath(path, self.fs.root)
+            name, _, member = relative.partition(os.sep)
+            if relative in ('.', '..') or name == '..':
+                return None
+            if any(part.startswith('.') for part in member.split(os.sep)):
+                return None
+            area_id = self._area_mapping().get(name)
+            if area_id is None:
+                return None
+            with self.app.app_context():
+                user = self._current_bbs_user()
+                if user is None and self.username != 'anonymous':
+                    return None
+                area = db.session.get(FileArea, area_id)
+                if (area is None or not _can_read_area(user, area)
+                        or not self._area_path_matches(area, name, path)):
+                    return None
+                if write:
+                    if not self.app.config.get('FILE_UPLOADS_ENABLED', True):
+                        return None
+                    permission = (area.upload_permission or 'users').lower()
+                    if user is None or not member:
+                        return None
+                    if not (mutate and user.is_admin) and (
+                            permission not in ('users', 'sysop')
+                            or (permission == 'sysop' and not user.is_admin)
+                            or not evaluate_access(user, area.min_write_level)
+                            or (area.password and not user.is_admin)):
+                        return None
+                return area.id, user.id if user else None, bool(user and user.is_admin)
+        except Exception:
+            logger.exception('FTP: file-area policy lookup failed')
+            return None
+
+    def _upload_access(self, path):
+        if self._qwk_node_id is None:
+            return self._area_access(path, write=True)
+        if (self.fs.validpath(path) and path.upper().endswith('.REP')
+                and os.path.dirname(os.path.abspath(path)) == os.path.abspath(self.fs.root)):
+            from ..models import db, QWKNode
+            with self.app.app_context():
+                node = db.session.get(QWKNode, self._qwk_node_id)
+                if node is not None and node.is_active:
+                    return None, node.id, False
+        return None
+
+    def _start_upload(self, path, cmd):
+        if (self._staged_upload is not None or self._out_dtp_queue is not None
+                or (self.data_channel is not None and self.data_channel.file_obj is not None)):
+            self.respond('450 A data transfer is already in progress.')
+            return
+        access = self._upload_access(path)
+        if access is None:
+            self.respond('550 Upload is not permitted here.')
+            return
+        dest = os.path.join(os.path.realpath(os.path.dirname(path)), os.path.basename(path))
+        replace = self._qwk_node_id is not None
+        if (os.path.islink(dest) or (os.path.lexists(dest) and
+                (not replace or not os.path.isfile(dest)))):
+            self.respond('550 A file with that name already exists.')
+            return
+        try:
+            size = self.app.config.get('UPLOAD_MAX_SIZE', 100 * 1024 * 1024)
+            session_size = self.app.config.get('FTP_SESSION_UPLOAD_MAX_BYTES') or 4 * size
+            session_size -= self._upload_bytes
+            if session_size <= 0:
+                self.respond('552 Session upload limit reached.')
+                return
+            staged = open_staged_upload(dest)
+        except OSError:
+            logger.exception('FTP: could not stage upload')
+            self.respond('550 Could not stage upload.')
+            return
+        upload = _BoundedUpload(self, staged, path, dest, access, replace,
+                                min(size, session_size))
+        self._staged_upload = upload
+        code = 125 if self.data_channel is not None else 150
+        detail = f'FILE: {os.path.basename(path)}' if cmd == 'STOU' else 'Opening data transfer.'
+        self.respond(f'{code} {detail}')
+        if self.data_channel is None:
+            self._in_dtp_queue = (upload, cmd)
+        else:
+            self.data_channel.file_obj = upload
+            self.data_channel.enable_receiving(self._current_type, cmd)
+        return os.path.basename(path) if cmd == 'STOU' else path
+
+    def _consume_upload_quota(self, access, size):
+        day = int(time.time() // 86400)
+        state = self.authorizer
+        if state.upload_day != day:
+            state.upload_day = day
+            state.upload_bytes_by_account.clear()
+        # A QWK node ID occupies a different namespace from a BBS user ID.
+        key = (access[0] is None, access[1])
+        limit = (self.app.config.get('FTP_DAILY_UPLOAD_MAX_BYTES') or
+                 10 * self.app.config.get('UPLOAD_MAX_SIZE', 100 * 1024 * 1024))
+        total = state.upload_bytes_by_account.get(key, 0) + size
+        if total > limit:
+            raise OSError(errno.EFBIG, 'FTP daily upload limit exceeded')
+        state.upload_bytes_by_account[key] = total
+
+    def ftp_STOR(self, file, mode='w'):
+        if self._restart_position or mode != 'w':
+            self._restart_position = 0
+            self.respond('550 Upload resume and append are unavailable.')
+            return
+        return self._start_upload(file, 'STOR')
+
+    def ftp_APPE(self, file):
+        return self.ftp_STOR(file, mode='a')
+
+    def ftp_STOU(self, line):
+        if self._restart_position:
+            self._restart_position = 0
+            self.respond('550 Upload resume is unavailable.')
+            return
+        if not self.authorizer.has_perm(self.username, 'w'):
+            self.respond('550 Upload not permitted.')
+            return
+        path = self.fs.ftp2fs(line) if line else os.path.join(
+            self.fs.ftp2fs(self.fs.cwd), 'ftpd')
+        base, ext = os.path.splitext(path)
+        return self._start_upload(f'{base}-{uuid4().hex}{ext}', 'STOU')
+
+    def _publish_upload(self, upload):
+        if (self._bbs_auth != upload.auth or not self.authenticated
+                or self._upload_access(upload.path) != upload.access
+                or os.path.realpath(os.path.dirname(upload.path)) != os.path.dirname(upload.dest)):
+            raise UploadRejected('Upload permission changed.')
+        check_staged_upload(upload.name)
+        if upload.replace:
+            os.replace(upload.name, upload.dest)
+        else:
+            os.link(upload.name, upload.dest)
+            os.unlink(upload.name)
+
     def on_file_received(self, file):
-        """Called after a successful STOR."""
-        if self.app is None:
+        upload = self._staged_upload
+        if upload is None or upload.name != file:
             return
-
-        # QWK node uploaded a .rep file — process it.
-        if self._qwk_node_id is not None:
-            if file.upper().endswith('.REP'):
-                try:
-                    from ..echomail.qwk_hub_ftp import process_rep_upload
-                    process_rep_upload(self._qwk_node_id, file, self.app)
-                except Exception:
-                    logger.exception('FTP: REP processing failed for %s', file)
-            return
-
-        # Regular BBS user upload — track in FileUpload.
         try:
+            if upload.replace:
+                from ..echomail.qwk_hub_ftp import process_rep_upload
+                process_rep_upload(upload.access[1], upload.dest, self.app)
+                return
             with self.app.app_context():
-                from ..models import db, User, FileArea, FileUpload
-
-                area_tag = self._parent_area_tag(file)
-                if not area_tag:
-                    return
-
-                area = FileArea.query.filter_by(tag=area_tag).first()
-                if area is None:
-                    return
-
-                # Enforce upload permission post-hoc — pyftpdlib already
-                # wrote the file, but if policy says NO we delete it and
-                # log the violation. Anonymous gets 'elr' permission via
-                # the authorizer so anon can never reach this hook.
-                allowed = area.upload_permission
-                user = User.query.filter(
-                    User.username.ilike(self.username)).first()
-                if user is None:
-                    return
-                if allowed == 'none' or (allowed == 'sysop' and not user.is_admin):
-                    try:
-                        os.remove(file)
-                    except OSError:
-                        pass
-                    logger.warning(
-                        'FTP: rejected upload %s by %s (area %s '
-                        'permission=%s)',
-                        os.path.basename(file), user.username, area.tag, allowed)
-                    return
-
-                # Optional ClamAV scan -- the web upload routes
-                # (files.py, file_areas.py) all scan on the way in;
-                # this hook was the one path that let a file go
-                # straight to disk (and become downloadable) with no
-                # scan at all. Same fail-open posture as those routes:
-                # a missing/broken scanner never blocks a legitimate
-                # upload, only a positive match does.
-                try:
-                    from ..features.virus_scan import scan_path
-                    result = scan_path(file)
-                    if result.infected:
-                        try:
-                            os.remove(file)
-                        except OSError:
-                            pass
-                        logger.warning(
-                            'FTP: rejected upload %s by %s (virus detected: %s)',
-                            os.path.basename(file), user.username, result.signature)
-                        return
-                except Exception:
-                    logger.exception(
-                        'FTP: virus scan crashed for %s; allowing file', file)
-
-                size = 0
-                try:
-                    size = os.path.getsize(file)
-                except OSError:
-                    pass
-                up = FileUpload(
-                    uploader_id=user.id,
-                    filename=os.path.basename(file),
-                    original_filename=os.path.basename(file),
-                    file_path=file,
-                    file_size=size,
+                from ..models import db, FileArea, FileUpload
+                area_id, user_id, _ = upload.access
+                area = db.session.get(FileArea, area_id)
+                name = os.path.basename(upload.dest)
+                db.session.add(FileUpload(
+                    uploader_id=user_id, filename=name, original_filename=name,
+                    file_path=upload.dest, file_size=upload.bytes_written,
                     description='Uploaded via FTP',
-                    is_public=not area.is_sysop_only,
-                    file_area_id=area.id,
-                )
-                db.session.add(up)
+                    is_public=bool(area and _can_read_area(None, area)),
+                    file_area_id=area_id,
+                    ftp_file_identity=file_identity(upload.dest),
+                ))
                 db.session.commit()
-                logger.info(
-                    'FTP: %s uploaded %s (%d bytes) into area %s',
-                    user.username, os.path.basename(file), size, area.tag)
         except Exception:
-            logger.exception('FTP: on_file_received hook failed')
+            logger.exception('FTP: could not record successful upload')
+        finally:
+            self._clear_upload()
 
-    def _area_write_allowed(self, path):
-        """Guard for DELE/RNFR/RNTO/MKD/RMD -- pyftpdlib grants regular
-        users a flat 'elradfmw' over the whole session home dir (see
-        AnetbbsAuthorizer.validate_authentication), so without this,
-        upload_permission='none'/'sysop' areas (meant to be sysop-
-        curated/read-only for regular users) could still be deleted
-        from, renamed within, or have directories created/removed by
-        any user who could merely browse them -- on_file_received only
-        ever gated STOR. Admin sessions and QWK-node sessions (which
-        manage their own per-node hub dir, not a FileArea storage_path)
-        are exempt, same as elsewhere in this handler.
-        """
-        if self.app is None or self._qwk_node_id is not None or self.username == 'anonymous':
-            return True
+    def on_incomplete_file_received(self, file):
+        if self._staged_upload is not None and self._staged_upload.name == file:
+            self._clear_upload()
+
+    def _clear_upload(self):
+        staged = self._staged_upload
+        self._staged_upload = None
+        if staged is not None:
+            staged.close()
+            try:
+                os.unlink(staged.name)
+            except FileNotFoundError:
+                pass
+            except OSError:
+                logger.exception('FTP: could not remove staged upload')
+
+    def close(self):
+        self._cancel_auth_recheck()
+        self._bbs_auth = None
+        self._bbs_transfer_auth = None
         try:
-            with self.app.app_context():
-                from ..models import User, FileArea
-                user = User.query.filter(
-                    User.username.ilike(self.username)).first()
-                if user is None or user.is_admin:
-                    return True
-                area_tag = self._parent_area_tag(path)
-                if not area_tag:
-                    return True
-                area = FileArea.query.filter_by(tag=area_tag).first()
-                if area is None:
-                    return True
-                if area.upload_permission == 'none' or (
-                        area.upload_permission == 'sysop' and not user.is_admin):
-                    logger.warning(
-                        'FTP: blocked write op on %s by %s (area %s '
-                        'permission=%s)', path, self.username, area.tag,
-                        area.upload_permission)
-                    return False
-        except Exception:
-            logger.exception('FTP: area write-permission check failed for %s',
-                             self.username)
-            return True  # fail-open, same posture as ftp_RETR's quota check
-        return True
+            super().close()
+        finally:
+            self._clear_upload()
+
+    def flush_account(self):
+        # The library keeps established transfers on REIN/USER, and
+        # on_logout remembers their original generation. A queued
+        # upload has no open data channel and must be discarded.
+        if self._in_dtp_queue is not None:
+            self._clear_upload()
+        self._qwk_node_id = self._qwk_packet_id = None
+        super().flush_account()
+
+    def ftp_ABOR(self, line):
+        if self._staged_upload is not None and self._in_dtp_queue is not None:
+            self._in_dtp_queue = None
+            self._clear_upload()
+        return super().ftp_ABOR(line)
+
+    def process_command(self, cmd, *args, **kwargs):
+        if self._staged_upload is not None and cmd in {
+                'LIST', 'NLST', 'MLSD', 'RETR', 'STAT', 'REST'}:
+            self.respond('450 An upload is already in progress.')
+            return
+        return super().process_command(cmd, *args, **kwargs)
+
+    def _owned_upload(self, path, access):
+        from ..models import FileUpload
+
+        area_id, user_id, _ = access
+        if not os.path.isfile(path) or os.path.islink(path):
+            return None
+        file_path = os.path.realpath(path)
+        rows = FileUpload.query.filter_by(file_area_id=area_id, file_path=file_path,
+                                          ftp_file_identity=file_identity(path)).all()
+        if len(rows) == 1 and rows[0].uploader_id == user_id:
+            return rows[0]
+        return None
 
     def ftp_DELE(self, path):
-        if not self._area_write_allowed(path):
-            self.respond('550 Permission denied for this area.')
-            return
-        return super().ftp_DELE(path)
+        if self._qwk_node_id is not None:
+            return super().ftp_DELE(path)
+        access = self._area_access(path, write=True, mutate=True)
+        if access is not None:
+            with self.app.app_context():
+                from ..models import db
+                row = self._owned_upload(path, access)
+                if access[2] or row is not None:
+                    deleted = super().ftp_DELE(path)
+                    if deleted and row is not None:
+                        db.session.delete(row)
+                        db.session.commit()
+                    return deleted
+        self.respond('550 Deletion is not permitted.')
 
     def ftp_RNFR(self, path):
-        if not self._area_write_allowed(path):
-            self.respond('550 Permission denied for this area.')
-            return
-        return super().ftp_RNFR(path)
+        self._rnfr = None
+        if self._qwk_node_id is not None:
+            return super().ftp_RNFR(path)
+        access = self._area_access(path, write=True, mutate=True)
+        if access is not None:
+            with self.app.app_context():
+                if access[2] or self._owned_upload(path, access) is not None:
+                    return super().ftp_RNFR(path)
+        self.respond('550 Rename is not permitted.')
 
     def ftp_RNTO(self, path):
-        if not self._area_write_allowed(path):
-            self.respond('550 Permission denied for this area.')
+        if self._qwk_node_id is not None:
+            return super().ftp_RNTO(path)
+        source = self._rnfr
+        self._rnfr = None
+        if not source:
+            self.respond('503 Use RNFR before RNTO.')
             return
-        return super().ftp_RNTO(path)
+        access = self._area_access(source, write=True, mutate=True)
+        if access is not None and self._area_access(path, write=True, mutate=True) == access:
+            with self.app.app_context():
+                from ..models import db
+                row = self._owned_upload(source, access)
+                if (access[2] or row is not None) and not os.path.lexists(path):
+                    try:
+                        # Link the new name before removing the old one,
+                        # with no implicit overwrite even across processes.
+                        os.link(source, path)
+                        os.unlink(source)
+                    except OSError:
+                        self.respond('550 Could not rename file.')
+                        return
+                    if row is not None:
+                        row.file_path = os.path.realpath(path)
+                        row.filename = os.path.basename(path)
+                        row.original_filename = row.filename
+                        row.ftp_file_identity = file_identity(path)
+                        db.session.commit()
+                    self.respond('250 Renaming ok.')
+                    return source, path
+        self.respond('550 Rename is not permitted.')
 
     def ftp_MKD(self, path):
-        if not self._area_write_allowed(path):
-            self.respond('550 Permission denied for this area.')
-            return
-        return super().ftp_MKD(path)
+        if self._qwk_node_id is not None:
+            return super().ftp_MKD(path)
+        access = self._area_access(path, write=True, mutate=True)
+        if access and access[2]:
+            return super().ftp_MKD(path)
+        self.respond('550 Directory creation is not permitted.')
 
     def ftp_RMD(self, path):
-        if not self._area_write_allowed(path):
-            self.respond('550 Permission denied for this area.')
-            return
-        return super().ftp_RMD(path)
+        if self._qwk_node_id is not None:
+            return super().ftp_RMD(path)
+        access = self._area_access(path, write=True, mutate=True)
+        if access and access[2]:
+            return super().ftp_RMD(path)
+        self.respond('550 Directory removal is not permitted.')
+
+    def ftp_SITE_CHMOD(self, path, mode):
+        access = self._area_access(path, write=True, mutate=True)
+        if access and access[2]:
+            return super().ftp_SITE_CHMOD(path, mode)
+        self.respond('550 Changing mode is not permitted.')
+
+    def ftp_MFMT(self, path, timeval):
+        access = self._area_access(path, write=True, mutate=True)
+        if access and access[2]:
+            return super().ftp_MFMT(path, timeval)
+        self.respond('550 Changing timestamps is not permitted.')
 
     def ftp_RETR(self, file):
-        """Daily download quota (FR: Firehawke, 2026-07-24) -- checked
-        here, before the transfer starts, unlike on_file_received's
-        post-hoc upload check (a RETR can be rejected outright with a
-        clean FTP error response; a STOR has already landed on disk by
-        the time pyftpdlib calls its own post-transfer hook). Skipped
-        for anonymous logins (no local User row to attribute usage to,
-        same scope decision as web/files.py's anonymous-accessible
-        download route) and QWK node sessions (bulk offline-mail packet
-        retrieval, not the file-area leeching this feature targets).
-        `file` is already an absolute filesystem path here, same as
-        on_file_received()'s own `file` argument above."""
+        """Apply daily quota after the filesystem validates area access."""
         if (self.app is not None and self.username != 'anonymous'
                 and self._qwk_node_id is None):
             try:
                 with self.app.app_context():
-                    from ..models import User
                     from ..features.file_quota import check_quota
-                    user = User.query.filter(
-                        User.username.ilike(self.username)).first()
+                    user = self._current_bbs_user()
                     if user is not None:
                         try:
                             size = os.path.getsize(file)
@@ -648,10 +857,8 @@ class AnetbbsFTPHandler(FTPHandler):
             return
         try:
             with self.app.app_context():
-                from ..models import User
                 from ..features.file_quota import consume_quota
-                user = User.query.filter(
-                    User.username.ilike(self.username)).first()
+                user = self._current_bbs_user()
                 if user is not None:
                     try:
                         size = os.path.getsize(file)
@@ -660,23 +867,6 @@ class AnetbbsFTPHandler(FTPHandler):
                     consume_quota(user, size)
         except Exception:
             logger.exception('FTP: on_file_sent quota hook failed')
-
-    def _parent_area_tag(self, file_path):
-        """The parent directory of an uploaded file, RELATIVE to the
-        session's home dir, is the area's symlink name (== `FileArea.tag`
-        with `/` swapped to `_`). Return the original tag form so the
-        lookup matches the DB.
-        """
-        try:
-            rel = os.path.relpath(file_path, self.fs.root)
-        except ValueError:
-            return None
-        parts = rel.split(os.sep, 1)
-        if not parts or parts[0] in ('.', '..', ''):
-            return None
-        # We stored the link with `/` -> `_`; reverse for the lookup. If the
-        # original tag never had a slash this is a no-op.
-        return parts[0].replace('_', '/')
 
 
 def build_server(app, host, port, anon_enabled=True,
@@ -732,7 +922,7 @@ def build_server(app, host, port, anon_enabled=True,
         # thread with ``ImportError: cannot import name 'TLS_FTPHandler'``.
         # Catch + downgrade to plain FTP with an actionable warning.
         try:
-            from pyftpdlib.handlers import TLS_FTPHandler  # noqa: WPS433
+            from pyftpdlib.handlers import TLS_DTPHandler, TLS_FTPHandler
         except ImportError as exc:
             logger.warning(
                 'FTP: TLS_FTPHandler unavailable (%s) — pyOpenSSL is '
@@ -741,8 +931,11 @@ def build_server(app, host, port, anon_enabled=True,
                 'to enable FTPS. Falling back to plain FTP for now.',
                 exc)
         else:
-            class _TLSAnetbbsHandler(TLS_FTPHandler, AnetbbsFTPHandler):
+            class _TLSAnetbbsDTPHandler(_PublishBeforeReply, TLS_DTPHandler):
                 pass
+
+            class _TLSAnetbbsHandler(AnetbbsFTPHandler, TLS_FTPHandler):
+                dtp_handler = _TLSAnetbbsDTPHandler
             handler_cls = _TLSAnetbbsHandler
             handler_cls.certfile = tls_certfile
             handler_cls.keyfile = tls_keyfile
@@ -764,18 +957,18 @@ def build_server(app, host, port, anon_enabled=True,
     admin_root = os.path.join(root_dir, 'admin')
     with app.app_context():
         areas = FileArea.query.all()
-        n_anon = _build_symlink_tree(anon_root, areas, mode='anon')
-        n_user = _build_symlink_tree(user_root, areas, mode='user')
-        n_admin = _build_symlink_tree(admin_root, areas, mode='admin')
+        trees = {os.path.abspath(root): _build_symlink_tree(root, areas, mode)
+                 for root, mode in ((anon_root, 'anon'), (user_root, 'user'),
+                                    (admin_root, 'admin'))}
 
     logger.info('FTP: linked %d anon / %d user / %d admin visible areas',
-                n_anon, n_user, n_admin)
+                *(len(mapping) for mapping in trees.values()))
 
     qwk_root = os.path.join(app.config.get('DATA_DIR', 'data'), 'qwk-hub')
     os.makedirs(qwk_root, exist_ok=True)
     authorizer = AnetbbsAuthorizer(app, anon_root, user_root, admin_root,
                                    anon_enabled=anon_enabled,
-                                   qwk_root=qwk_root)
+                                   qwk_root=qwk_root, area_roots=trees)
     handler_cls.authorizer = authorizer
     handler_cls.abstracted_fs = SymlinkAwareFS
     handler_cls.app = app

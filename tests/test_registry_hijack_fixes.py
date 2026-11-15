@@ -186,8 +186,8 @@ class RegistryHijackFixesTests(unittest.TestCase):
 
         # "Attacker" (or anyone) re-registers the SAME host with a
         # DIFFERENT contact_email.
-        self._register(contact_email='attacker@evil.example.com',
-                       name='Hijacked BBS', sysop='attacker')
+        self._register(contact_email='new-contact@example.org',
+                       name='Real BBS', heartbeat_key=entry_before['heartbeat_key'])
 
         entry_after = self._get_entry()
         self.assertFalse(entry_after['is_verified'])
@@ -243,7 +243,8 @@ class RegistryHijackFixesTests(unittest.TestCase):
         self._mark_verified_and_approved()
         mock_send.reset_mock()
 
-        self._register(name='Real BBS (updated)')  # same contact_email
+        self._register(name='Real BBS (updated)',
+                       heartbeat_key=self._get_entry()['heartbeat_key'])
 
         entry = self._get_entry()
         self.assertTrue(entry['is_verified'])
@@ -251,22 +252,17 @@ class RegistryHijackFixesTests(unittest.TestCase):
         mock_send.assert_not_called()
 
     @patch('anetbbs.mailer.smtp_enabled', return_value=False)
-    def test_reregistration_always_issues_a_fresh_heartbeat_key(self, _mock_smtp):
-        """Self-heal path: a legitimate peer whose stored key is stale
-        (predates this fix, or the hub row was reset) must be able to
-        recover a working key just by re-registering, with no email
-        re-verification needed if contact_email is unchanged."""
+    def test_reregistration_preserves_the_authenticated_peers_key(self, _mock_smtp):
         first = self._register()
-        key1 = first.get_json()['heartbeat_key']
+        key = first.get_json()['heartbeat_key']
         self._age_last_heartbeat()
-        second = self._register()
-        key2 = second.get_json()['heartbeat_key']
-        self.assertNotEqual(key1, key2)
+        second = self._register(name='New system name', heartbeat_key=key)
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(second.get_json()['heartbeat_key'], key)
         self._age_last_heartbeat()
-        # And the NEW key actually works for a heartbeat.
-        hb = self.client.post('/registry/api/v1/heartbeat',
-                              json={'host': self.host, 'heartbeat_key': key2})
-        self.assertEqual(hb.status_code, 200)
+        response = self.client.post('/registry/api/v1/heartbeat',
+                                    json={'host': self.host, 'heartbeat_key': key})
+        self.assertEqual(response.status_code, 200)
 
 
 if __name__ == '__main__':

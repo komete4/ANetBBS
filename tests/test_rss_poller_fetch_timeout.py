@@ -76,19 +76,15 @@ class RssPollerFetchTimeoutTests(unittest.TestCase):
 
         url = 'https://example.com/feed.xml'
         feed_id = self._make_feed(url)
-        fake_result = mock.Mock(returncode=0, stdout=b'<rss></rss>', stderr=b'')
-
         with mock.patch('anetbbs.core.net_safety.resolve_safe_destination',
                         return_value=(2, ('93.184.216.34', 443), None)), \
-             mock.patch('subprocess.run', return_value=fake_result) as mock_run, \
+             mock.patch.object(poller_mod, '_curl_feed_response',
+                               return_value=(200, None, b'<rss/>')) as fetch, \
              mock.patch('feedparser.parse',
                         return_value=mock.Mock(bozo=False, entries=[], feed={})):
             poller_mod._import_one_feed(self.app, feed_id)
-
-        args = mock_run.call_args[0][0]
-        self.assertIn('--max-time', args)
-        idx = args.index('--max-time')
-        self.assertEqual(args[idx + 1], str(poller_mod._FEED_FETCH_TIMEOUT))
+        self.assertGreater(fetch.call_args.args[-1], 0)
+        self.assertLessEqual(fetch.call_args.args[-1], poller_mod._FEED_FETCH_TIMEOUT)
         with self.app.app_context():
             feed = RssFeed.query.get(feed_id)
             self.assertIsNone(feed.last_error)
@@ -98,7 +94,6 @@ class RssPollerFetchTimeoutTests(unittest.TestCase):
         fetch must fail gracefully with a clear last_error -- not raise
         an unhandled exception that would kill the poller thread and
         block every other feed behind it."""
-        import subprocess
         import anetbbs.rss.poller as poller_mod
         from anetbbs.models import RssFeed
 
@@ -107,8 +102,8 @@ class RssPollerFetchTimeoutTests(unittest.TestCase):
 
         with mock.patch('anetbbs.core.net_safety.resolve_safe_destination',
                         return_value=(2, ('93.184.216.34', 443), None)), \
-             mock.patch('subprocess.run',
-                        side_effect=subprocess.TimeoutExpired(cmd='curl', timeout=20)):
+             mock.patch.object(poller_mod, '_curl_feed_response',
+                               side_effect=TimeoutError('feed fetch timed out')):
             count = poller_mod._import_one_feed(self.app, feed_id)
 
         self.assertEqual(count, 0)

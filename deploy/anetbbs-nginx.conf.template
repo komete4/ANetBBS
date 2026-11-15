@@ -21,13 +21,14 @@ server {
     listen 80;
     server_name DOMAIN_NAME;
 
-    # Redirect all HTTP to HTTPS
-    return 301 https://$host$request_uri;
+    if ($host != DOMAIN_NAME) { return 444; }
+    return 301 https://DOMAIN_NAME$request_uri;
 }
 
 server {
     listen 443 ssl http2;
     server_name DOMAIN_NAME;
+    if ($host != DOMAIN_NAME) { return 444; }
 
     # SSL — managed by certbot (run: certbot --nginx -d DOMAIN_NAME)
     ssl_certificate     /etc/letsencrypt/live/DOMAIN_NAME/fullchain.pem;
@@ -89,6 +90,7 @@ server {
         proxy_pass_request_body off;
         proxy_set_header Content-Length "";
         proxy_set_header X-Original-URI $request_uri;
+        proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header Cookie $http_cookie;
     }
 

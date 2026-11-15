@@ -255,6 +255,7 @@ def send_netmail_direct_now(app, netmail_id: int):
                 password='',
                 transcript=transcript_lines,
                 default_crash=True,
+                netmail_only=True,
             )
             data_dir = app.config.get('ECHOMAIL_DATA_DIR', 'data')
             result = client.poll(outbound_messages=[_NetmailAdapter(nm)],
@@ -815,6 +816,9 @@ def _run_node_client(node, network, outbound_messages, app, transcript=None):
         default_direct=bool(getattr(network, 'default_direct', False)),
         compress_outbound=bool(getattr(node, 'compress_outbound', False)),
         freq_requests=pending_freqs,
+        file_echo_network_id=network.id,
+        file_echo_node_id=node.id,
+        file_echo_data_dir=app.config.get('DATA_DIR'),
     )
     # Fallback changed from '/tmp' to 'data' (bandit B108 sweep, pre-
     # release audit): config.py's ECHOMAIL_DATA_DIR is always set in
@@ -905,6 +909,8 @@ def _run_client(network, outbound_messages, app, transcript=None):
             default_direct=bool(getattr(network, 'default_direct', False)),
             compress_outbound=bool(getattr(network, 'compress_outbound', False)),
             freq_requests=pending_freqs,
+            file_echo_network_id=network.id,
+            file_echo_data_dir=app.config.get('DATA_DIR'),
         )
         data_dir = app.config.get('ECHOMAIL_DATA_DIR', 'data')
         # Pick up any pending hatch-out files for this peer (the network's

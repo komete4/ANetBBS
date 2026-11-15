@@ -669,9 +669,44 @@ def generate_bbsdev_drp(user, node_number, minutes_remaining=60, bbs_name='ANetB
     return content
 
 
+def resolve_drop_file_path(game, node_number, token_ctx=None):
+    """Resolve the configured drop file path without touching the filesystem."""
+    drop_type = (game.drop_file_type or 'none').lower()
+    if drop_type == 'none' or not game.drop_file_path:
+        return None
+
+    output_path = game.drop_file_path
+    if token_ctx is not None:
+        from .node_paths import expand_tokens
+        output_path = expand_tokens(output_path, token_ctx)
+    output_path = output_path.replace('{node}', str(node_number))
+
+    is_directory = output_path.endswith('/')
+    if not os.path.isabs(output_path):
+        from ..config import get_config
+        base = getattr(get_config(), 'BASE_DIR', None) or Path(__file__).resolve().parents[2]
+        output_path = os.path.join(base, output_path)
+    output_path = os.path.normpath(output_path)
+    if is_directory or os.path.isdir(output_path):
+        output_path = os.path.join(output_path, drop_file_name(drop_type))
+    return output_path
+
+
+def drop_file_name(drop_type):
+    return {
+        'door.sys': 'DOOR.SYS',
+        'door.sys.gap': 'DOOR.SYS',
+        'dorinfo': 'DORINFO1.DEF',
+        'door32.sys': 'DOOR32.SYS',
+        'chain.txt': 'CHAIN.TXT',
+        'sfdoors.dat': 'SFDOORS.DAT',
+        'bbsdev.drp': 'BBSDEV.DRP',
+    }.get(drop_type, 'DOOR.SYS')
+
+
 def write_drop_file(user, game, node_number, minutes_remaining=60,
                     bbs_name='ANetBBS', token_ctx=None, sysop_name=None,
-                    window_size=None):
+                    window_size=None, output_path=None):
     """
     Write the appropriate drop file for a game.
 
@@ -696,51 +731,13 @@ def write_drop_file(user, game, node_number, minutes_remaining=60,
     Returns:
         Path to the written drop file, or None if drop_file_type is 'none'
     """
-    import os
     drop_type = (game.drop_file_type or 'none').lower()
-    if drop_type == 'none' or not game.drop_file_path:
+    if drop_type == 'none':
         return None
 
-    output_path = game.drop_file_path
-
-    # Apply the BBS token vocabulary if we have a context. This is the
-    # primary supported substitution form; `{node}` below is legacy.
-    if token_ctx is not None:
-        from .node_paths import expand_tokens
-        output_path = expand_tokens(output_path, token_ctx)
-
-    # Legacy {node} placeholder support — kept for installs configured
-    # before %-tokens existed. New games should use %P (Mystic) or %f
-    # (Synchronet) instead.
-    output_path = output_path.replace('{node}', str(node_number))
-
-    # Resolve relative paths to absolute against the install dir.
-    if not os.path.isabs(output_path):
-        # Fall back to deriving the install dir from this file's own
-        # location if BASE_DIR isn't accessible (which only happens in
-        # unit tests with no app context) -- works on any install,
-        # regardless of where the sysop put it.
-        try:
-            from ..config import get_config
-            base = str(getattr(get_config(), 'BASE_DIR', None) or
-                       Path(__file__).resolve().parents[2])
-        except Exception:
-            base = str(Path(__file__).resolve().parents[2])
-        output_path = os.path.normpath(os.path.join(base, output_path))
-
-    # If they gave us a DIRECTORY (common — "put the drop file inside this
-    # folder"), append the standard filename for the type.
-    if output_path.endswith('/') or os.path.isdir(output_path):
-        filename_for_type = {
-            'door.sys': 'DOOR.SYS',
-            'door.sys.gap': 'DOOR.SYS',
-            'dorinfo': 'DORINFO1.DEF',
-            'door32.sys': 'DOOR32.SYS',
-            'chain.txt': 'CHAIN.TXT',
-            'sfdoors.dat': 'SFDOORS.DAT',
-            'bbsdev.drp': 'BBSDEV.DRP',
-        }.get(drop_type, 'DOOR.SYS')
-        output_path = os.path.join(output_path.rstrip('/'), filename_for_type)
+    output_path = output_path or resolve_drop_file_path(game, node_number, token_ctx)
+    if not output_path:
+        return None
 
     # Make sure parent dir exists
     parent = os.path.dirname(output_path)

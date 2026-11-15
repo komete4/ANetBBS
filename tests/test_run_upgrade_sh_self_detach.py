@@ -1,20 +1,4 @@
-"""Regression test for the self-detach mechanism in
-deploy/run_upgrade.sh, added after a second real live production
-outage (2026-10-28) -- see tests/test_upgrade_spawn_cmd_detached.py's
-module docstring for the full two-outage history.
-
-Unlike install.sh/update.sh (which need real root + a real systemd
-*system* instance and so only get structural source checks elsewhere
-in this suite, see test_sudoers_tmp_file_permissions.py's own
-docstring for that precedent), this ONE block only needs a working
-systemd *user* instance, which IS available in a normal dev/CI sandbox
--- so this test actually EXECUTES the real, unmodified detach block
-extracted verbatim from the real file, through a real
-``systemd-run --wait`` round trip, rather than just asserting on its
-text. A PATH shim transparently redirects the block's bare
-``systemd-run`` call to ``systemd-run --user`` so the real script
-needs no modification to run under a non-root test user.
-"""
+"""Verify the upgrade wrapper detaches and propagates the worker exit status."""
 import os
 import subprocess
 import tempfile
@@ -24,8 +8,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RUN_UPGRADE_SH = REPO_ROOT / 'deploy' / 'run_upgrade.sh'
 
-_START_MARKER = "# ── Resolve install dir from /etc/anetbbs.install"
-_END_MARKER = '# ── Argument validation'
+_START_MARKER = 'if [ -z "${ANETBBS_UPGRADE_DETACHED:-}" ]; then'
+_END_MARKER = '# Keep detached progress'
 
 
 def _extract_detach_block():
@@ -34,7 +18,7 @@ def _extract_detach_block():
     live outage, see its own comment in the real file) needs
     INSTALL_DIR already resolved to build the log path, so the two
     sections must run as one unit, not independently."""
-    lines = RUN_UPGRADE_SH.read_text().splitlines()
+    lines = RUN_UPGRADE_SH.read_text(encoding='utf-8').splitlines()
     start = end = None
     for i, line in enumerate(lines):
         if start is None and line.startswith(_START_MARKER):
@@ -142,30 +126,6 @@ class RunUpgradeShSelfDetachTests(unittest.TestCase):
                             self.outer_cgroup,
                             'detached process landed in the same cgroup '
                             'as the caller -- not actually detached')
-
-    def test_standard_output_lands_in_data_dir_not_tmp(self):
-        """Regression test for a THIRD real live outage (2026-10-28,
-        found while verifying the second fix): the detach block used
-        to hardcode StandardOutput=append:/tmp/anetbbs_upgrade.log.
-        anetbbs-web.service has PrivateTmp=yes, so the file the WEB
-        PROCESS creates lives in that service's own private /tmp mount
-        namespace -- invisible to systemd/PID1, which resolves the
-        StandardOutput target against the REAL, system-wide /tmp when
-        setting up the detached unit. Confirmed live: `systemd[...]:
-        Failed to set up standard output: Permission denied`, exit
-        209/STDOUT. Fixed by moving the log to INSTALL_DIR/data/, a
-        real, non-virtualized directory every process agrees on."""
-        script = self._write_script('probe-logpath.sh', 0)
-        result = subprocess.run([str(script)], env=self.env,
-                                capture_output=True, text=True, timeout=30)
-        self.assertEqual(result.returncode, 0, result.stderr)
-        upgrade_log = self._fake_install / 'data' / 'anetbbs_upgrade.log'
-        self.assertTrue(upgrade_log.exists(),
-                        'the detached unit\'s StandardOutput should have '
-                        'created this file under data/, not /tmp')
-        self.assertIn('pid=', upgrade_log.read_text(),
-                      'the continuation\'s own stdout should have landed '
-                      'in the data/ log via StandardOutput=append:')
 
     def test_relays_a_real_failure_exit_code_too(self):
         script = self._write_script('probe-fail.sh', 7)

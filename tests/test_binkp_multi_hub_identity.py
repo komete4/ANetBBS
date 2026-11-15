@@ -211,13 +211,14 @@ class _FakeBinkPNode:
 class _FakeEchomailNetwork:
     def __init__(self, id, hub_address=None, network_type='binkp',
                 binkp_password=None, our_address=None,
-                hub_identity_id=None, name='Net'):
+                hub_identity_id=None, name='Net', is_active=True):
         self.id = id
         self.hub_address = hub_address
         self.network_type = network_type
         self.binkp_password = binkp_password
         self.our_address = our_address
         self.hub_identity_id = hub_identity_id
+        self.is_active = is_active
         self.name = name
 
 
@@ -304,6 +305,8 @@ class _BinkpHandlerHarness:
                  patch.object(EchomailMessage, 'direction', _FakeColumn('direction')), \
                  patch.object(EchomailMessage, 'sent_at', _FakeColumn('sent_at')), \
                  patch.object(db, 'init_app', lambda app: None), \
+                 patch.object(mod, '_verify_peer_credentials',\
+                              lambda _source, _peer, *args: mod._verify_binkp_password(*args)), \
                  patch.object(db, 'session', _NoOpSession()), \
                  patch.object(mod, '_build_ftn_packet', _sync_fake_build_ftn_packet), \
                  patch.object(mod, '_send_pkt_file', _fake_send_pkt_file), \

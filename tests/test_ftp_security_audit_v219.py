@@ -10,17 +10,8 @@
    integration at all, unlike web and terminal logins. Fixed with the
    same models via a local _check_ip_and_rate_limit(), its own
    'ftp_login:<ip>' bucket.
-3. Regular users got a flat 'elradfmw' permission over the whole
-   session home dir, so upload_permission='none'/'sysop' areas (meant
-   to be sysop-curated/read-only for regular users) could still be
-   deleted from, renamed within, or have directories created/removed --
-   on_file_received only ever gated STOR. Fixed with a
-   _area_write_allowed() pre-check on DELE/RNFR/RNTO/MKD/RMD.
-4. FTP uploads never went through the ClamAV scan the web upload
-   routes all use -- on_file_received wrote straight to a FileUpload
-   row with zero AV check. Fixed by calling scan_path() before
-   recording the upload, same reject-and-log pattern as the
-   upload_permission check right above it.
+3. Upload permission alone does not grant ownership of existing files.
+4. FTP checks staged files before publication and tracks successful uploads.
 
 See also tests/test_network_join_qwk_packet_id_traversal.py for the
 CRITICAL finding from the same audit (unsanitized packet_id from the
@@ -43,10 +34,7 @@ class FtpSecurityAuditTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._orig_db_uri = cfg_mod.TestingConfig.SQLALCHEMY_DATABASE_URI
-        cls._tmp_db = str(Path(__file__).resolve().parent / '.ftp_security_audit_test.db')
-        if os.path.exists(cls._tmp_db):
-            os.remove(cls._tmp_db)
-        cfg_mod.TestingConfig.SQLALCHEMY_DATABASE_URI = f'sqlite:///{cls._tmp_db}'
+        cfg_mod.TestingConfig.SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
         os.environ['FLASK_ENV'] = 'testing'
 
         from anetbbs.web_app import create_app
@@ -59,10 +47,6 @@ class FtpSecurityAuditTests(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cfg_mod.TestingConfig.SQLALCHEMY_DATABASE_URI = cls._orig_db_uri
-        for suffix in ('', '-wal', '-shm'):
-            path = cls._tmp_db + suffix
-            if os.path.exists(path):
-                os.remove(path)
 
     def setUp(self):
         from anetbbs.features.rate_limit import _buckets
@@ -78,12 +62,23 @@ class FtpSecurityAuditTests(unittest.TestCase):
 
     def _make_handler(self, username, fs_root, qwk_node_id=None):
         from anetbbs.ftp.server import AnetbbsFTPHandler
+        from anetbbs.models import FileArea, User
         h = object.__new__(AnetbbsFTPHandler)
         h.app = self.app
         h.username = username
         h._qwk_node_id = qwk_node_id
         h.respond = MagicMock()
         h.fs = MagicMock(root=fs_root)
+        h.authenticated = True
+        h._rnfr = None
+        with self.app.app_context():
+            user = User.query.filter_by(username=username).first()
+            h._bbs_auth = (user.id, user.auth_version) if user else None
+            mapping = {a.tag: a.id for a in FileArea.query.all()}
+        h._area_mapping = lambda: mapping
+        # This fixture isolates permissions and ownership from OS symlinks.
+        h._area_path_matches = lambda area, name, path: (
+            area.storage_path == os.path.join(fs_root, name))
         return h
 
     # -- 1. is_locked / is_verified gates ---------------------------------
@@ -261,22 +256,28 @@ class FtpSecurityAuditTests(unittest.TestCase):
             handler.respond.assert_called_once()
             self.assertIn('550', handler.respond.call_args[0][0])
 
-    def test_regular_user_allowed_to_delete_in_users_permission_area(self):
-        from anetbbs.models import db, User
+    def test_regular_user_allowed_to_delete_owned_upload(self):
+        from anetbbs.features.file_publish import file_identity
+        from anetbbs.models import db, FileUpload, User
         with tempfile.TemporaryDirectory() as fs_root:
+            name = 'somefile.txt'
             with self.app.app_context():
-                self._make_area('USERWRITE', 'users', fs_root)
-                u = User(username='ftpwriteuser2', email='fw2@example.com',
-                        is_active=True, is_admin=False)
-                u.set_password('x')
-                db.session.add(u)
+                area = self._make_area('USERWRITE', 'users', fs_root)
+                user = User(username='ftpwriteuser2', email='fw2@example.com',
+                            is_active=True, is_admin=False)
+                user.set_password('x')
+                db.session.add(user)
+                db.session.flush()
+                target = self._make_upload_file(fs_root, area.tag, name)
+                db.session.add(FileUpload(
+                    uploader_id=user.id, filename=name, original_filename=name,
+                    file_path=target, file_area_id=area.id,
+                    ftp_file_identity=file_identity(target)))
                 db.session.commit()
 
             handler = self._make_handler('ftpwriteuser2', fs_root=fs_root)
-            target = os.path.join(fs_root, 'USERWRITE', 'somefile.txt')
-
             with patch('pyftpdlib.handlers.FTPHandler.ftp_DELE',
-                      return_value=target) as mock_super:
+                       return_value=target) as mock_super:
                 result = handler.ftp_DELE(target)
             mock_super.assert_called_once_with(target)
             self.assertEqual(result, target)
@@ -333,7 +334,8 @@ class FtpSecurityAuditTests(unittest.TestCase):
                     getattr(handler, method_name)(target)
                 mock_super.assert_not_called()
                 handler.respond.assert_called_once()
-                self.assertIn('550', handler.respond.call_args[0][0])
+                code = '503' if method_name == 'ftp_RNTO' else '550'
+                self.assertIn(code, handler.respond.call_args[0][0])
 
     # -- 4. ClamAV scan on FTP upload --------------------------------------
 
@@ -345,86 +347,55 @@ class FtpSecurityAuditTests(unittest.TestCase):
             f.write(content)
         return path
 
-    def test_infected_upload_removed_and_never_recorded(self):
-        from anetbbs.models import db, User, FileArea, FileUpload
+    def _staged_upload(self, fs_root, tag):
+        from anetbbs.features.file_publish import open_staged_upload
+        from anetbbs.ftp.server import _BoundedUpload
+        from anetbbs.models import db, User
+
+        username = 'user-' + tag.lower()
+        with self.app.app_context():
+            self._make_area(tag, 'users', fs_root)
+            user = User(username=username, email=f'{username}@example.com',
+                        is_active=True, password_hash='x')
+            db.session.add(user)
+            db.session.commit()
+        handler = self._make_handler(username, fs_root=fs_root)
+        target = os.path.join(fs_root, tag, 'example.txt')
+        staged = open_staged_upload(target)
+        staged.write(b'test data')
+        staged.close()
+        upload = _BoundedUpload(handler, staged, target, target,
+                                handler._upload_access(target), False, 1024)
+        handler._staged_upload = upload
+        self.addCleanup(handler._clear_upload)
+        return handler, upload
+
+    def test_scanner_rejection_preserves_private_staging(self):
+        from anetbbs.features.file_publish import UploadRejected
         from anetbbs.features.virus_scan import ScanResult
+
         with tempfile.TemporaryDirectory() as fs_root:
-            with self.app.app_context():
-                self._make_area('AVSCAN1', 'users', fs_root)
-                u = User(username='ftpavuser1', email='fav1@example.com',
-                        is_active=True)
-                u.set_password('x')
-                db.session.add(u)
-                db.session.commit()
-
-            handler = self._make_handler('ftpavuser1', fs_root=fs_root)
-            fpath = self._make_upload_file(fs_root, 'AVSCAN1', 'evil.exe')
-
-            fake_result = ScanResult(infected=True, signature='Test.EICAR',
-                                     message='infected', scanner_available=True)
-            with patch('anetbbs.features.virus_scan.scan_path',
-                      return_value=fake_result):
-                handler.on_file_received(fpath)
-
-            self.assertFalse(os.path.exists(fpath),
-                             'infected file must be removed from disk')
-            with self.app.app_context():
-                self.assertIsNone(
-                    FileUpload.query.filter_by(filename='evil.exe').first(),
-                    'infected upload must never get a FileUpload row')
+            handler, upload = self._staged_upload(fs_root, 'AVSCAN1')
+            result = ScanResult(True, 'Test.Mock', 'mock rejection', True)
+            with patch('anetbbs.features.virus_scan.scan_path', return_value=result):
+                with self.assertRaises(UploadRejected):
+                    handler._publish_upload(upload)
+            self.assertFalse(os.path.exists(upload.dest))
+            handler.on_incomplete_file_received(upload.name)
+            self.assertFalse(os.path.exists(upload.name))
 
     def test_clean_upload_still_recorded(self):
-        """Baseline -- scan_path() reporting clean must not block the
-        existing, working upload-tracking behavior."""
-        from anetbbs.models import db, User, FileUpload
-        from anetbbs.features.virus_scan import ScanResult
+        from anetbbs.models import FileUpload
+
         with tempfile.TemporaryDirectory() as fs_root:
+            handler, upload = self._staged_upload(fs_root, 'AVSCAN2')
+            handler._publish_upload(upload)
+            handler.on_file_received(upload.name)
+            self.assertTrue(os.path.exists(upload.dest))
             with self.app.app_context():
-                self._make_area('AVSCAN2', 'users', fs_root)
-                u = User(username='ftpavuser2', email='fav2@example.com',
-                        is_active=True)
-                u.set_password('x')
-                db.session.add(u)
-                db.session.commit()
-
-            handler = self._make_handler('ftpavuser2', fs_root=fs_root)
-            fpath = self._make_upload_file(fs_root, 'AVSCAN2', 'clean.zip')
-
-            fake_result = ScanResult(infected=False, signature='', message='clean',
-                                     scanner_available=True)
-            with patch('anetbbs.features.virus_scan.scan_path',
-                      return_value=fake_result):
-                handler.on_file_received(fpath)
-
-            self.assertTrue(os.path.exists(fpath))
-            with self.app.app_context():
-                self.assertIsNotNone(
-                    FileUpload.query.filter_by(filename='clean.zip').first())
-
-    def test_scan_crash_fails_open(self):
-        """Same fail-open posture as the web upload routes: a broken
-        scanner must never block a legitimate upload."""
-        from anetbbs.models import db, User, FileUpload
-        with tempfile.TemporaryDirectory() as fs_root:
-            with self.app.app_context():
-                self._make_area('AVSCAN3', 'users', fs_root)
-                u = User(username='ftpavuser3', email='fav3@example.com',
-                        is_active=True)
-                u.set_password('x')
-                db.session.add(u)
-                db.session.commit()
-
-            handler = self._make_handler('ftpavuser3', fs_root=fs_root)
-            fpath = self._make_upload_file(fs_root, 'AVSCAN3', 'ok.zip')
-
-            with patch('anetbbs.features.virus_scan.scan_path',
-                      side_effect=RuntimeError('clamscan exploded')):
-                handler.on_file_received(fpath)
-
-            self.assertTrue(os.path.exists(fpath))
-            with self.app.app_context():
-                self.assertIsNotNone(
-                    FileUpload.query.filter_by(filename='ok.zip').first())
+                entry = FileUpload.query.filter_by(file_path=upload.dest).first()
+                self.assertIsNotNone(entry)
+                self.assertIsNotNone(entry.ftp_file_identity)
 
     # -- QWK node password constant-time compare ---------------------------
 

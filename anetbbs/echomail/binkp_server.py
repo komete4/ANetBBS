@@ -28,17 +28,20 @@ import struct
 import hashlib
 import hmac
 import secrets
+import threading
 import zipfile
+from collections import defaultdict, deque
 from datetime import datetime, timedelta
 
 from .zip_safety import iter_safe_members, ZipBombError
 
 from .binkp import (
     CMD_NUL, CMD_ADR, CMD_PWD, CMD_FILE, CMD_OK, CMD_EOB,
-    CMD_GOT, CMD_ERR, CMD_SKIP, CMD_NAMES,
+    CMD_GOT, CMD_ERR, CMD_SKIP,
     _build_cmd, _build_data,
     _build_ftn_packet, _parse_ftn_packet,
-    _sanitize_inbound_filename, _build_outbound_bundle,
+    _build_outbound_bundle,
+    _format_command_for_log, _usable_binkp_secret,
     resolve_outbound_dir, list_outbound_dir_files, archive_sent_outbound_file,
 )
 
@@ -64,6 +67,38 @@ MAX_INBOUND_FILE_SIZE = int(os.environ.get('BINKP_MAX_FILE_SIZE', 100 * 1024 * 1
 # connections each offering a just-under-the-cap file can't add up to
 # unbounded total memory.
 MAX_CONCURRENT_SESSIONS = int(os.environ.get('BINKP_MAX_CONCURRENT_SESSIONS', 20))
+MAX_SESSIONS_PER_SOURCE = max(1, int(os.environ.get('BINKP_MAX_SESSIONS_PER_SOURCE', 4)))
+MAX_ANONYMOUS_SESSIONS = max(1, MAX_CONCURRENT_SESSIONS // 3)
+ANONYMOUS_TRANSFER_TIMEOUT = 90
+ANONYMOUS_MAX_PACKET_BYTES = 1024 * 1024
+ANONYMOUS_MAX_FILES = 8
+ANONYMOUS_MAX_MESSAGES = 64
+MAX_INBOUND_SESSION_FILES = 10_000
+_anonymous_sessions = 0
+_anonymous_import_lock = threading.Lock()
+def _verify_peer_credentials(source, peer_key, stored, supplied, challenge):
+    """Bound failed guesses across listener processes and restarts."""
+    from sqlalchemy.exc import SQLAlchemyError
+    from ..models import db
+    from ..features.service_rate_limits import count_hit, lock_bucket, rate_window_now
+
+    source_key = f'binkp:source:{source}'
+    identity_key = f'binkp:peer:{peer_key}'
+    try:
+        with db.engine.begin() as conn:
+            now = rate_window_now(conn)
+            if lock_bucket(conn, source_key, now, 300) >= 6:
+                return False
+            if lock_bucket(conn, identity_key, now, 300) >= 60:
+                return False
+            if _verify_binkp_password(stored, supplied, challenge):
+                return True
+            count_hit(conn, source_key)
+            count_hit(conn, identity_key)
+            return False
+    except SQLAlchemyError:
+        logger.error('BinkP: credential rate-limit storage unavailable')
+        return False
 
 # Real gap found in a security/performance audit: MAX_INBOUND_FILE_SIZE
 # above bounds any ONE file offered in a session, but nothing bounded
@@ -356,6 +391,25 @@ def _log_transcript(transcript, line: str):
     transcript.append(f'{ts} {line}')
 
 
+def _extract_crashmail_packets(name, payload):
+    """Recognize only raw packets or bounded ZIP mail bundles."""
+    if _is_fts_packet(payload):
+        yield name, payload
+    elif _is_zip(payload):
+        try:
+            with zipfile.ZipFile(io.BytesIO(payload)) as archive:
+                if len(archive.infolist()) > ANONYMOUS_MAX_FILES:
+                    return
+                for info, packet in iter_safe_members(
+                        archive, max_member=ANONYMOUS_MAX_PACKET_BYTES,
+                        max_total=ANONYMOUS_MAX_PACKET_BYTES):
+                    if _is_fts_packet(packet):
+                        yield info.filename, packet
+        except (OSError, zipfile.BadZipFile, ZipBombError, RuntimeError) as exc:
+            logger.warning('BinkP: could not read crashmail bundle %r: %s',
+                           name, exc)
+
+
 async def _recv_frame(reader: asyncio.StreamReader, transcript=None):
     """Read one BinkP frame. Returns (is_command, data_bytes)."""
     hdr = await reader.readexactly(2)
@@ -366,25 +420,23 @@ async def _recv_frame(reader: asyncio.StreamReader, transcript=None):
     if transcript is not None:
         if is_command:
             cmd = payload[0] if payload else None
-            name = CMD_NAMES.get(cmd, str(cmd)) if cmd is not None else '?'
-            text = payload[1:].decode('latin-1', errors='replace') if payload else ''
-            _log_transcript(transcript, f'<< CMD {name}' + (f': {text}' if text else ''))
+            body = payload[1:].decode('latin-1', errors='replace')
+            _log_transcript(transcript, _format_command_for_log('<<', cmd, body))
         else:
             _log_transcript(transcript, f'<< DATA: {len(payload)} bytes')
     return is_command, payload
 
 
 async def _send_cmd(writer, cmd, text='', transcript=None):
-    name = CMD_NAMES.get(cmd, str(cmd))
-    _log_transcript(transcript, f'>> CMD {name}' + (f': {text}' if text else ''))
+    _log_transcript(transcript, _format_command_for_log('>>', cmd, text))
     writer.write(_build_cmd(cmd, text))
-    await writer.drain()
+    await asyncio.wait_for(writer.drain(), timeout=30)
 
 
 async def _send_data(writer, data, transcript=None):
     _log_transcript(transcript, f'>> DATA: {len(data)} bytes')
     writer.write(_build_data(data))
-    await writer.drain()
+    await asyncio.wait_for(writer.drain(), timeout=30)
 
 
 def _inbound_poll_type(imported_total, sent_count):
@@ -444,9 +496,16 @@ def _verify_binkp_password(stored_password, remote_pwd, challenge_bytes):
     line an answering side is supposed to send."""
     stored = stored_password or ''
     remote = remote_pwd or ''
+    if not _usable_binkp_secret(stored):
+        return False
+    try:
+        stored_bytes = stored.encode('latin-1')
+        remote_bytes = remote.encode('latin-1')
+    except UnicodeEncodeError:
+        return False
     if remote.upper().startswith('CRAM-MD5-'):
         digest = remote[len('CRAM-MD5-'):]
-        expected = hmac.new(stored.encode('latin-1'), challenge_bytes,
+        expected = hmac.new(stored_bytes, challenge_bytes,
                             hashlib.md5).hexdigest()
         # Real gap found in a security/performance audit: a plain ==
         # on hex digests short-circuits on the first mismatched
@@ -454,23 +513,9 @@ def _verify_binkp_password(stored_password, remote_pwd, challenge_bytes):
         # hex digits an attacker's guess got right -- hmac.compare_digest
         # runs in constant time regardless of where the strings first
         # differ.
-        return hmac.compare_digest(digest.lower(), expected.lower())
-    # binkp.py's client (our own outbound-dial side) sends the literal
-    # placeholder "-" for M_PWD when it has no password configured --
-    # a real-world BinkP convention (M_PWD historically couldn't carry
-    # an empty value). Two unsecured links (an ANetBBS install with no
-    # password dialing another with no password configured, e.g. a
-    # sysop testing a leaf link before adding real credentials) never
-    # actually authenticated, because a blank `stored` password only
-    # ever matched a literal empty M_PWD, never binkp.py's own "-"
-    # sentinel for the exact same "no password" state.
-    if not stored and remote in ('', '-'):
-        return True
-    # Same constant-time reasoning as the CRAM-MD5 branch above -- this
-    # is the legacy plaintext-M_PWD path, still a real credential
-    # comparison.
-    return hmac.compare_digest(stored.encode('latin-1', errors='replace'),
-                               remote.encode('latin-1', errors='replace'))
+        return hmac.compare_digest(digest.lower().encode('latin-1'),
+                                   expected.encode('ascii'))
+    return hmac.compare_digest(stored_bytes, remote_bytes)
 
 
 # ---------------------------------------------------------------------------
@@ -478,7 +523,9 @@ def _verify_binkp_password(stored_password, remote_pwd, challenge_bytes):
 # ---------------------------------------------------------------------------
 
 async def _handle_connection(reader, writer, our_address: str, system_name: str):
+    global _anonymous_sessions
     peer = writer.get_extra_info('peername')
+    source = str(peer[0]) if peer else 'unknown'
     logger.info('BinkP inbound from %s', peer)
     session_started_at = datetime.utcnow()
     # Frame-by-frame transcript for this session, saved to
@@ -492,7 +539,7 @@ async def _handle_connection(reader, writer, our_address: str, system_name: str)
     # before it. A sysop diagnosing an inbound stall had nothing to look
     # at, even though that's arguably the more valuable direction to
     # have logs for (it can't be re-run on demand the way a poll can).
-    transcript = []
+    transcript = deque(maxlen=500)
 
     # 1. Send our M_NUL info + M_ADR.  Match Synchronet binkit's
     # preamble (SYS / ZYZ / LOC / NDL / TIME / VER) so peers that key
@@ -647,7 +694,11 @@ async def _handle_connection(reader, writer, our_address: str, system_name: str)
     remote_addr = None
     remote_akas = []
     remote_pwd = None
+    handshake_frames = 0
     while remote_addr is None or remote_pwd is None:
+        handshake_frames += 1
+        if handshake_frames > 128:
+            return
         remaining = handshake_deadline - asyncio.get_event_loop().time()
         if remaining <= 0:
             logger.warning('BinkP %s: handshake timed out (overall deadline)', peer)
@@ -669,13 +720,13 @@ async def _handle_connection(reader, writer, our_address: str, system_name: str)
             # be sent more than once. Many implementations (Mystic, BinkD,
             # Argus) suffix the address with @domain (e.g. "1337:3/207@tqwnet")
             # which has to be stripped for a 5D-style match.
-            remote_akas = list(body.strip().split())
+            remote_akas = body.split(None, 32)[:32]
             if remote_akas and not remote_addr:
                 remote_addr = remote_akas[0]
         elif cmd == CMD_PWD:
             remote_pwd = body.strip()
         elif cmd == CMD_NUL:
-            logger.debug('BinkP %s NUL: %s', peer, body)
+            logger.debug('BinkP %s: %s', peer, _format_command_for_log('<<', cmd, body))
 
     # 3. Look up the caller — may be an upstream hub (EchomailNetwork) or a
     #    downstream node that registered with us as hub (BinkPNode).
@@ -759,10 +810,12 @@ async def _handle_connection(reader, writer, our_address: str, system_name: str)
         # 3a. Check upstream networks first.
         network = (EchomailNetwork.query
                    .filter(EchomailNetwork.hub_address.in_(candidates))
+                   .filter_by(network_type='binkp')
                    .first()) if candidates else None
         if network and network.network_type == 'binkp':
-            if not _verify_binkp_password(network.binkp_password, remote_pwd,
-                                          cram_challenge_bytes):
+            if not network.is_active or not _verify_peer_credentials(
+                    source, f'network:{network.id}', network.binkp_password,
+                    remote_pwd, cram_challenge_bytes):
                 logger.warning('BinkP %s: bad password for upstream %s', peer, remote_addr)
                 await _send_cmd(writer, CMD_ERR, 'bad password', transcript=transcript)
                 writer.close()
@@ -818,11 +871,11 @@ async def _handle_connection(reader, writer, our_address: str, system_name: str)
             # 3b. Check downstream nodes registered with us as hub.
             node = (BinkPNode.query
                     .filter(BinkPNode.ftn_address.in_(candidates))
-                    .filter_by(is_active=True)
                     .first()) if candidates else None
             if node:
-                if not _verify_binkp_password(node.password, remote_pwd,
-                                              cram_challenge_bytes):
+                if not node.is_active or not _verify_peer_credentials(
+                        source, f'node:{node.id}', node.password, remote_pwd,
+                        cram_challenge_bytes):
                     logger.warning('BinkP %s: bad password for downstream node %s',
                                    peer, remote_addr)
                     await _send_cmd(writer, CMD_ERR, 'bad password', transcript=transcript)
@@ -934,10 +987,15 @@ async def _handle_connection(reader, writer, our_address: str, system_name: str)
                            peer, remote_addr, ', '.join(candidates))
                 net_name = f'unknown ({remote_addr})' if remote_addr else 'unknown'
 
-    logger.info('BinkP %s: authenticated as %s (%s)', peer, remote_addr, net_name)
-
-    # 4. M_OK
-    await _send_cmd(writer, CMD_OK, 'secure', transcript=transcript)
+    anonymous = net_id is None and downstream_node_id is None
+    if not anonymous:
+        logger.info('BinkP %s: authenticated as %s (%s)', peer, remote_addr, net_name)
+    if anonymous:
+        if _anonymous_sessions >= MAX_ANONYMOUS_SESSIONS:
+            with app.app_context():
+                _dispose_app_engine()
+            return
+        _anonymous_sessions += 1
 
     # 5. Send queued outbound messages FIRST, then our own M_EOB --
     #    moved ahead of receiving (this used to be step "6", after a
@@ -977,7 +1035,12 @@ async def _handle_connection(reader, writer, our_address: str, system_name: str)
     # which has always saved the transcript on failure via its own
     # try/except/finally.
     try:
-        recv_state = {'name': None, 'size': 0, 'buf': bytearray()}
+        await _send_cmd(writer, CMD_OK, 'non-secure' if anonymous else 'secure',
+                        transcript=transcript)
+        recv_state = {'name': None, 'size': 0, 'buf': bytearray(),
+                      'anonymous': anonymous}
+        if anonymous:
+            recv_state['deadline'] = asyncio.get_running_loop().time() + ANONYMOUS_TRANSFER_TIMEOUT
         inbound_files = []
         sent_count = 0
         with app.app_context():
@@ -1305,7 +1368,18 @@ async def _handle_connection(reader, writer, our_address: str, system_name: str)
             if inbound_files:
                 with app.app_context():
                     inbound_dir = None
+                    local_akas = {
+                        parse_address(address.split('@', 1)[0]) for address in akas
+                    } - {None}
                     for fname, payload in inbound_files:
+                        if anonymous:
+                            with _anonymous_import_lock:
+                                for packet_name, packet in _extract_crashmail_packets(fname, payload):
+                                    imported_total += _import_pkt_payload(
+                                        packet, None, packet_name,
+                                        peer_address=remote_addr,
+                                        origin_ip=source, local_akas=local_akas)
+                            continue
                         _debug_manifest(fname, payload)
                         from .freq import is_req_filename, process_inbound_req
                         if is_req_filename(fname):
@@ -1324,40 +1398,12 @@ async def _handle_connection(reader, writer, our_address: str, system_name: str)
                                     '(claimed address %s), dropping %s',
                                     _freq_source_ip, remote_addr, fname)
                                 continue
-                            # Real Medium finding from a follow-up
-                            # security audit: an anonymous crashmail
-                            # session's remote_addr is a fully
-                            # self-claimed, unvalidated M_ADR (see this
-                            # module's own docstring for why such
-                            # sessions are accepted at all). The
-                            # existing "Low" rating on FREQ reachability
-                            # reasoned only that an anonymous requester
-                            # can never have the matched files delivered
-                            # back TO ITSELF -- it missed that an
-                            # attacker can instead claim a REAL
-                            # third-party peer's public FTN address,
-                            # causing the poller/binkp client (which
-                            # match HatchQueue.peer_address against a
-                            # real configured peer by exact string) to
-                            # deliver files to that uninvolved peer on
-                            # its next legitimate session. Only queue
-                            # FREQ-matched files when this session
-                            # actually authenticated as a known hub
-                            # (net_id) or downstream node
-                            # (downstream_node_id) -- i.e. remote_addr
-                            # was verified against a real configured
-                            # peer during the handshake, not just
-                            # self-claimed in an unauthenticated M_ADR.
-                            if net_id is None and downstream_node_id is None:
-                                logger.info(
-                                    'BinkP: FREQ %s from anonymous/'
-                                    'unrecognized peer (claimed address '
-                                    '%s) ignored -- WaZOO FREQ requires '
-                                    'an authenticated hub or downstream-'
-                                    'node session', fname, remote_addr)
-                                continue
+                            # Scope requests to the identity whose secret
+                            # matched, not an earlier AKA in the banner.
+                            freq_peer = (node.ftn_address if downstream_node_id is not None
+                                         else net_hub_address)
                             try:
-                                queued = process_inbound_req(payload, remote_addr)
+                                queued = process_inbound_req(payload, freq_peer)
                                 files_received += 1
                                 logger.info(
                                     'BinkP: WaZOO FREQ from %s (%s) queued '
@@ -1392,43 +1438,25 @@ async def _handle_connection(reader, writer, our_address: str, system_name: str)
                                     'this hub identity.',
                                     peer, len(extracted), fname)
                                 continue
-                            # net_id is None here also covers the anonymous/
-                            # unrecognized-peer crashmail case (see the
-                            # caller-lookup site's own comment) --
-                            # _import_pkt_payload() accepts network_id=None
-                            # and imports netmail only, skipping any
-                            # echomail content in the packet.
-                            # Only worth capturing the real socket IP for
-                            # the genuinely anonymous case (net_id AND
-                            # downstream_node_id both None) -- a known
-                            # upstream hub/downstream node already has a
-                            # real hub_address/ftn_address to route a
-                            # reply through, so there's nothing for a
-                            # direct-dial reply to add there.
-                            _origin_ip = (peer[0] if peer and net_id is None
-                                         and downstream_node_id is None else None)
                             for inner_name, inner_payload in extracted:
                                 _debug_dump_packet(inner_name, inner_payload)
                                 imported_total += _import_pkt_payload(
                                     inner_payload, net_id, inner_name,
-                                    peer_address=remote_addr,
-                                    origin_ip=_origin_ip)
+                                    peer_address=remote_addr)
                         else:
                             # Non-packet files (TIC manifests, hatched binaries, etc.)
                             # get written to inbound for later processing.
                             # Default landed in /tmp/ which is tmpfs on most distros
                             # — files vanish on service restart. Default to data/
                             # so the sysop can recover from a tossing miss.
-                            inbound_dir = inbound_dir or (
-                                os.environ.get('BINKP_INBOUND_DIR')
-                                or os.path.join(
-                                    app.config.get('DATA_DIR') or 'data',
-                                    'binkp', 'inbound'))
+                            if net_id is None:
+                                continue
+                            from .tic import peer_inbound_dir, stash_inbound_file
+                            inbound_dir = inbound_dir or peer_inbound_dir(
+                                app.config.get('DATA_DIR') or 'data',
+                                net_id, downstream_node_id)
                             try:
-                                safe_name = _sanitize_inbound_filename(fname)
-                                os.makedirs(inbound_dir, exist_ok=True)
-                                with open(os.path.join(inbound_dir, safe_name), 'wb') as f:
-                                    f.write(payload)
+                                safe_name = stash_inbound_file(inbound_dir, fname, payload)
                                 files_received += 1
                                 # Visible-by-default log so the sysop can spot
                                 # mystery files that don't match the regex /
@@ -1447,7 +1475,8 @@ async def _handle_connection(reader, writer, our_address: str, system_name: str)
                     if inbound_dir and os.path.isdir(inbound_dir):
                         try:
                             from .tic import scan_inbound
-                            n = scan_inbound(inbound_dir)
+                            n = scan_inbound(inbound_dir, network_id=net_id,
+                                             node_id=downstream_node_id)
                             if n:
                                 logger.info('Processed %d TIC files from %s',
                                             n, inbound_dir)
@@ -1534,6 +1563,8 @@ async def _handle_connection(reader, writer, our_address: str, system_name: str)
                     'session (net_id=%s)', peer, net_id)
         raise
     finally:
+        if anonymous:
+            _anonymous_sessions -= 1
         # Dispose the engine bound to `app` (see _new_app()'s docstring) --
         # covers every exit path (success, the except above, or an
         # exception raised before either): without this, each connection
@@ -1632,7 +1663,7 @@ async def _finish_session(reader, writer, peer, inbound_files, sent_count, trans
 
     try:
         writer.close()
-        await writer.wait_closed()
+        await asyncio.wait_for(writer.wait_closed(), timeout=5)
     except Exception:
         pass
 
@@ -1676,7 +1707,16 @@ async def _consume_inbound_file_frame(is_cmd, payload, peer, writer, state, file
                 # matters against an anonymous, zero-authentication
                 # peer that just keeps offering more files.
                 prospective_session_total = state.get('session_total', 0) + max(declared_size, 0)
-                if declared_size < 0 or declared_size > MAX_INBOUND_FILE_SIZE:
+                anonymous = state.get('anonymous', False)
+                max_file_size = (ANONYMOUS_MAX_PACKET_BYTES if anonymous
+                                 else MAX_INBOUND_FILE_SIZE)
+                allowed_packet_name = (
+                    parts[0].lower().endswith(('.pkt', '.zip'))
+                    or _looks_like_mail_bundle_ext(parts[0]))
+                max_files = ANONYMOUS_MAX_FILES if anonymous else MAX_INBOUND_SESSION_FILES
+                if (declared_size < 0 or declared_size > max_file_size
+                        or len(files) >= max_files
+                        or (anonymous and not allowed_packet_name)):
                     # Reject without ever allocating a buffer for it --
                     # see MAX_INBOUND_FILE_SIZE's own comment above for
                     # why this matters (unauthenticated peers can reach
@@ -1686,9 +1726,9 @@ async def _consume_inbound_file_frame(is_cmd, payload, peer, writer, state, file
                     # our M_SKIP and sends the data anyway still can't
                     # grow memory unboundedly.
                     logger.warning(
-                        'BinkP %s: refusing oversized/invalid file offer '
+                        'BinkP %s: refusing disallowed/oversized file offer '
                         '%r (declared %s bytes, max %d) -- sending SKIP',
-                        peer, parts[0], parts[1], MAX_INBOUND_FILE_SIZE)
+                        peer, parts[0], parts[1], max_file_size)
                     state['name'] = parts[0]
                     state['size'] = max(declared_size, 0)
                     state['mtime'] = parts[2] if len(parts) >= 3 else '0'
@@ -1816,9 +1856,14 @@ async def _receive_files(reader, writer, peer, state, files, transcript=None):
     # reach the peer while the link is still alive, instead of arriving
     # (or trying to) after it's already gone.
     while True:
+        deadline = state.get('deadline')
+        timeout = 5 if deadline is None else min(
+            5, deadline - asyncio.get_running_loop().time())
+        if timeout <= 0:
+            break
         try:
             is_cmd, payload = await asyncio.wait_for(
-                _recv_frame(reader, transcript=transcript), timeout=5)
+                _recv_frame(reader, transcript=transcript), timeout=timeout)
         except (asyncio.TimeoutError, asyncio.IncompleteReadError, ConnectionResetError):
             break
         if await _consume_inbound_file_frame(is_cmd, payload, peer, writer,
@@ -1883,7 +1928,7 @@ async def _send_pkt_file(reader, writer, filename, payload, peer, state, files,
             logger.warning('Remote rejected %s: cmd=%d body=%s', filename, cmd, body)
             return False
         # Some other frame — log and keep waiting
-        logger.debug('Waiting for M_GOT, got cmd=%d body=%s', cmd, body)
+        logger.debug('Waiting for M_GOT, got %s', _format_command_for_log('<<', cmd, body))
 
 
 async def _send_hatch_items(reader, writer, hatch_items, our_address, peer,
@@ -2018,7 +2063,8 @@ async def _send_outbound_dir_items(reader, writer, outbound_dir, peer,
 
 
 def _import_pkt_payload(pkt_bytes: bytes, network_id: int, filename: str,
-                        peer_address: str = None, origin_ip: str = None) -> int:
+                        peer_address: str = None, origin_ip: str = None,
+                        local_akas=None) -> int:
     """Parse an FTS-0001 .pkt and import each message as inbound. Returns count.
 
     Routes by AREA: kludge:
@@ -2051,12 +2097,27 @@ def _import_pkt_payload(pkt_bytes: bytes, network_id: int, filename: str,
     from ..models import (db, EchomailMessage, EchoArea, NetmailMessage,
                           EchomailNetwork, maybe_tag_ansi_subject)
     from .kludges import find_kludge
-    from .routing import resolve_netmail_recipient
+    from .routing import parse_address, resolve_netmail_recipient
     from .poller import _record_bad_area
 
     network = EchomailNetwork.query.get(network_id) if network_id is not None else None
 
-    messages = _parse_ftn_packet(pkt_bytes)
+    anonymous = network_id is None and origin_ip is not None
+    source_remaining = ANONYMOUS_MAX_MESSAGES
+    recipient_counts = {}
+    if anonymous:
+        recent = NetmailMessage.query.filter(
+            NetmailMessage.network_id.is_(None),
+            NetmailMessage.direction == 'inbound',
+            NetmailMessage.origin_ip.isnot(None),
+            NetmailMessage.received_at >= datetime.utcnow() - timedelta(hours=1))
+        source_remaining = min(1000 - recent.count(), ANONYMOUS_MAX_MESSAGES -
+                               recent.filter_by(origin_ip=origin_ip).count())
+        if source_remaining <= 0:
+            return 0
+        messages = _parse_ftn_packet(pkt_bytes, max_messages=source_remaining)
+    else:
+        messages = _parse_ftn_packet(pkt_bytes)
     imported = 0
     echomail_objects = []       # EchomailMessage ORM objects for post-commit toss
     echomail_notify_pairs = []  # (EchomailMessage, EchoArea) for post-commit reply-notify
@@ -2267,6 +2328,17 @@ def _import_pkt_payload(pkt_bytes: bytes, network_id: int, filename: str,
             # only be found later by string-matching to_name in the web
             # inbox (and its recipient never got notified of new mail).
             to_user = resolve_netmail_recipient(m['to_name'], to_addr, network)
+            if anonymous:
+                if _is_robot_netmail or not to_user:
+                    continue
+                if local_akas is not None and parse_address(to_addr) not in local_akas:
+                    continue
+                if to_user.id not in recipient_counts:
+                    recipient_counts[to_user.id] = recent.filter_by(
+                        to_user_id=to_user.id).count()
+                if recipient_counts[to_user.id] >= 64:
+                    continue
+                recipient_counts[to_user.id] += 1
 
             nm = NetmailMessage(
                 network_id=network_id,
@@ -2366,9 +2438,13 @@ async def _serve():
     # per-file cap in memory -- can be in flight at once, since the
     # file-receive path requires no authentication at all.
     _session_slots = asyncio.Semaphore(MAX_CONCURRENT_SESSIONS)
+    sessions_per_source = defaultdict(int)
 
     async def _wrapper(reader, writer):
-        if _session_slots.locked():
+        peer = writer.get_extra_info('peername')
+        source = str(peer[0]) if peer else 'unknown'
+        if (_session_slots.locked()
+                or sessions_per_source.get(source, 0) >= MAX_SESSIONS_PER_SOURCE):
             # Full -- reject immediately rather than queuing forever
             # behind the semaphore, so a flood of connections can't
             # pile up waiting.
@@ -2380,6 +2456,7 @@ async def _serve():
                 pass
             return
         async with _session_slots:
+            sessions_per_source[source] += 1
             try:
                 await _handle_connection(reader, writer, our_address, system_name)
             except (ConnectionResetError, BrokenPipeError):
@@ -2387,6 +2464,9 @@ async def _serve():
             except Exception:
                 logger.exception('BinkP session crashed')
             finally:
+                sessions_per_source[source] -= 1
+                if not sessions_per_source[source]:
+                    del sessions_per_source[source]
                 try:
                     writer.close()
                 except Exception:

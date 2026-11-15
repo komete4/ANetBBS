@@ -112,9 +112,10 @@ class _FakeNetworkRow:
         self.id = id_
         self.name = name
         self.network_type = 'binkp'
+        self.is_active = True
         self.hub_address = hub_address
         self.our_address = ''
-        self.binkp_password = ''
+        self.binkp_password = 'test-shared-secret'
         self.packet_password = ''
         self.default_crash = False
         self.default_hold = False
@@ -136,11 +137,12 @@ class _NoOpSession:
         pass
 
 
-def _freq_frames(claimed_address, req_filename='000C0003.req', req_payload=b'a.zip'):
+def _freq_frames(claimed_address, req_filename='000C0003.req', req_payload=b'a.zip',
+                 password=''):
     from anetbbs.echomail import binkp_server as mod
     return [
         (True, _cmd_payload(mod.CMD_ADR, claimed_address)),
-        (True, _cmd_payload(mod.CMD_PWD, '')),
+        (True, _cmd_payload(mod.CMD_PWD, password)),
         (True, _cmd_payload(mod.CMD_FILE,
                             f'{req_filename} {len(req_payload)} 1700000000 0')),
         (False, req_payload),
@@ -159,6 +161,8 @@ class FreqRequiresAuthenticatedPeerTests(unittest.TestCase):
         BinkPNode.query = _FakeQuery(rows=())
         try:
             with patch.object(db, 'init_app', lambda app: None), \
+                 patch.object(mod, '_verify_peer_credentials',\
+                              lambda _source, _peer, *args: mod._verify_binkp_password(*args)), \
                  patch.object(db, 'session', _NoOpSession()), \
                  patch.object(mod, '_freq_rate_limited', lambda ip: False), \
                  patch('anetbbs.echomail.freq.process_inbound_req') as spy:
@@ -186,6 +190,8 @@ class FreqRequiresAuthenticatedPeerTests(unittest.TestCase):
         FreqRequest.query = _FakeQuery(rows=())
         try:
             with patch.object(db, 'init_app', lambda app: None), \
+                 patch.object(mod, '_verify_peer_credentials',\
+                              lambda _source, _peer, *args: mod._verify_binkp_password(*args)), \
                  patch.object(db, 'session', _NoOpSession()), \
                  patch.object(mod, '_freq_rate_limited', lambda ip: False), \
                  patch('anetbbs.echomail.tosser.get_pending_netmail_for_network',
@@ -193,7 +199,8 @@ class FreqRequiresAuthenticatedPeerTests(unittest.TestCase):
                  patch('anetbbs.echomail.freq.process_inbound_req',
                        MagicMock(return_value=[1])) as spy:
                 writer = _FakeWriter()
-                reader = _ScriptedReader(_freq_frames(real_hub_address))
+                reader = _ScriptedReader(_freq_frames(
+                    real_hub_address, password=network.binkp_password))
                 asyncio.run(mod._handle_connection(reader, writer, '1:1/1', 'ANetBBS'))
         finally:
             del EchomailNetwork.query

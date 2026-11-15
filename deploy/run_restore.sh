@@ -1,138 +1,78 @@
-#!/usr/bin/env bash
-# Privileged restore helper for ANetBBS pre-update snapshots.
-#
-# Invoked by the admin "Restore" buttons in /admin/backups/:
-#   sudo -n /home/<bbs-user>/anetbbs/deploy/run_restore.sh env  INSTALL_DIR/data/backups/anetbbs-backup-YYYYMMDDHHMMSS
-#   sudo -n /home/<bbs-user>/anetbbs/deploy/run_restore.sh db   INSTALL_DIR/data/backups/anetbbs-backup-YYYYMMDDHHMMSS
-#
-# Restores `.env` or the SQLite production DB from the snapshot,
-# preserving ownership. Refuses to operate on anything outside the
-# expected INSTALL_DIR/data/backups/anetbbs-backup-* path so a
-# malicious caller can't point us at arbitrary disk locations.
-#
-# Backups moved here from /tmp after a real incident: on a Pi where
-# /tmp is a RAM-backed tmpfs (separate from, and much smaller than,
-# the actual disk), backups routinely couldn't fit even with the disk
-# itself nowhere near full. INSTALL_DIR/data/ is real, persistent disk.
-
+#!/bin/bash
+# Backups and destinations are application data. Do their I/O as that user.
 set -eu -o pipefail
-log()  { printf '[restore] %s\n' "$*"; }
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+umask 077
 fail() { printf '[restore] FAIL: %s\n' "$*" >&2; exit 1; }
 
-[ $# -eq 2 ] || fail "usage: $0 <env|db> <backup-dir>"
+[ "$(id -u)" -eq 0 ] && [ "$#" -eq 2 ] || fail "usage: $0 <env|db|delete> <backup-dir>"
+INSTALL_DIR=
+SERVICE_USER=
+. /etc/anetbbs.install
+[ -d "$INSTALL_DIR" ] && [ -n "$SERVICE_USER" ] && [ "$SERVICE_USER" != root ] ||
+    fail "missing or invalid installation information"
+
 KIND="$1"
 BACKUP="$2"
+BACKUP_ROOT="$INSTALL_DIR/data/backups"
+NAME="${BACKUP#"$BACKUP_ROOT/"}"
+[[ "$NAME" =~ ^anetbbs-backup-[0-9]{14}$ ]] || fail "invalid backup directory"
 
-# Resolve install dir from the sentinel update.sh drops. Must happen
-# BEFORE path validation below, since the allowlisted prefix is now
-# anchored to INSTALL_DIR rather than a fixed literal like /tmp was.
-INSTALL_DIR=""
-SERVICE_USER=""
-if [ -r /etc/anetbbs.install ]; then
-    # shellcheck source=/dev/null
-    . /etc/anetbbs.install
+# Stop/start must happen out of the web service's own cgroup.
+if [ "$KIND" = db ] && [ "${ANETBBS_RESTORE_DETACHED:-}" != 1 ]; then
+    exec systemd-run --unit=anetbbs-restore-db --collect --quiet --wait \
+        --setenv=ANETBBS_RESTORE_DETACHED=1 "$0" "$@"
 fi
-[ -n "${INSTALL_DIR:-}" ] || fail "INSTALL_DIR not in /etc/anetbbs.install — re-run update.sh"
-[ -n "${SERVICE_USER:-}" ] || SERVICE_USER=anetbbs
-log "install dir: $INSTALL_DIR  service user: $SERVICE_USER"
-
-# Path validation. INSTALL_DIR itself comes from a root-written sentinel
-# file, not caller input, so anchoring the allowlist to it doesn't
-# weaken this check -- a malicious BACKUP argument still can't point
-# outside INSTALL_DIR/data/backups/ no matter what INSTALL_DIR resolves to.
-case "$BACKUP" in
-    "$INSTALL_DIR"/data/backups/anetbbs-backup-*) ;;
-    *) fail "backup path must be $INSTALL_DIR/data/backups/anetbbs-backup-… (got $BACKUP)" ;;
-esac
-case "$BACKUP" in
-    *..*|*';'*|*'&'*|*'|'*) fail "backup path contains forbidden chars" ;;
-esac
-[ -d "$BACKUP" ] || fail "not a directory: $BACKUP"
-
-# Real gap found in a security/performance audit: SERVICE_USER owns
-# every file/dir under INSTALL_DIR (both install.sh and update.sh
-# chown -R the whole tree to it), including this backups directory and
-# the live .env/DB this script goes on to overwrite -- but this script
-# itself runs as ROOT via a passwordless sudoers grant
-# (deploy/sudoers.anetbbs). The string-pattern check above only
-# validates the literal path text, not that it actually resolves
-# inside the trusted tree -- SERVICE_USER could replace any path
-# component (e.g. the whole backup dir, or a subdirectory inside it)
-# with a symlink pointing elsewhere and the pattern match would still
-# pass, since it never touches the filesystem. Resolving here and
-# re-checking closes that: a directory-level symlink trick now fails
-# this check outright instead of silently being followed once root
-# starts reading/writing through it below.
-REAL_BACKUPS_ROOT="$(realpath "$INSTALL_DIR/data/backups" 2>/dev/null)" \
-    || fail "cannot resolve $INSTALL_DIR/data/backups"
-REAL_BACKUP="$(realpath "$BACKUP" 2>/dev/null)" \
-    || fail "cannot resolve backup path: $BACKUP"
-case "$REAL_BACKUP" in
-    "$REAL_BACKUPS_ROOT"/*) ;;
-    *) fail "resolved backup path escapes the trusted backups directory: $REAL_BACKUP" ;;
-esac
-BACKUP="$REAL_BACKUP"
 
 case "$KIND" in
     delete)
-        # Wipe a backup dir wholesale. Used by /admin/backups/ when the
-        # dir is root-owned (created before update.sh started chowning
-        # backups to the service user). Strict path check is already
-        # above — only accepts INSTALL_DIR/data/backups/anetbbs-backup-*.
-        log "rm -rf $BACKUP"
-        rm -rf "$BACKUP"
-        log "delete: ok"
+        runuser -u "$SERVICE_USER" -- /bin/rm -rf -- "$BACKUP_ROOT/$NAME"
         ;;
-    env)
-        SRC="$BACKUP/.env.bak"
-        DST="$INSTALL_DIR/.env"
-        # Real gap found in a security/performance audit: neither a
-        # real backup's .env.bak nor the live .env is EVER legitimately
-        # a symlink -- both are written directly by cp/heredocs in
-        # install.sh/update.sh. SERVICE_USER owns both paths, so
-        # without this check they could replace .env.bak with a
-        # symlink to an arbitrary file (e.g. /etc/shadow) to have root
-        # read it via the cp below, or replace the live .env with a
-        # symlink to a root-writable file (e.g. a sudoers drop-in) to
-        # have root overwrite it -- a full SERVICE_USER -> root file
-        # read/write primitive via this passwordless-sudo script.
-        [ -L "$SRC" ] && fail "refusing: $SRC is a symlink"
-        [ -L "$DST" ] && fail "refusing: $DST is a symlink"
-        [ -f "$SRC" ] || fail "no .env.bak in $BACKUP"
-        log "copying $SRC -> $DST"
-        # --remove-destination: unlink() the destination PATH itself
-        # (never follows a symlink) before writing, so even a symlink
-        # planted between the check above and this line gets removed
-        # rather than written through -- defense in depth against the
-        # same class of race, not just the already-checked case.
-        cp -f --remove-destination "$SRC" "$DST"
-        chown "$SERVICE_USER":"$SERVICE_USER" "$DST" 2>/dev/null || true
-        chmod 600 "$DST"
-        log "restore env: ok"
+    env|db)
+        RESTART=()
+        if [ "$KIND" = db ]; then
+            # Stop all writers before replacing SQLite and clearing its sidecars.
+            for unit in anetbbs-web anetbbs anetbbs-binkp anetbbs-finger; do
+                if systemctl is-active --quiet "$unit"; then RESTART+=("$unit"); fi
+            done
+            restart_services() {
+                if [ "${#RESTART[@]}" -gt 0 ]; then systemctl start "${RESTART[@]}"; fi
+            }
+            trap restart_services EXIT
+            if [ "${#RESTART[@]}" -gt 0 ]; then systemctl stop "${RESTART[@]}"; fi
+        fi
+        runuser -u "$SERVICE_USER" -- /usr/bin/python3 -I - "$INSTALL_DIR" "$NAME" "$KIND" <<'PY'
+import os
+from pathlib import Path
+import shutil
+import stat
+import sys
+import tempfile
+
+root, name, kind = sys.argv[1:]
+root = Path(root)
+backup = root / 'data' / 'backups' / name
+source, destination = ((backup / '.env.bak', root / '.env') if kind == 'env'
+                       else (backup / 'anetbbs.db.bak', root / 'data' / 'anetbbs.db'))
+if backup.resolve() != backup or destination.parent.resolve() != destination.parent:
+    raise SystemExit('backup and target parent must be inside the installation')
+fd = os.open(source, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+with os.fdopen(fd, 'rb') as src:
+    if not stat.S_ISREG(os.fstat(src.fileno()).st_mode):
+        raise SystemExit('backup source must be a regular file')
+    with tempfile.NamedTemporaryFile(dir=destination.parent, delete=False) as staged:
+        try:
+            shutil.copyfileobj(src, staged)
+            staged.flush()
+            os.fsync(staged.fileno())
+            os.replace(staged.name, destination)
+        finally:
+            Path(staged.name).unlink(missing_ok=True)
+if kind == 'db':
+    for suffix in ('-wal', '-shm', '-journal'):
+        Path(str(destination) + suffix).unlink(missing_ok=True)
+PY
+        printf '[restore] %s restored\n' "$KIND"
         ;;
-    db)
-        SRC="$BACKUP/anetbbs.db.bak"
-        DST="$INSTALL_DIR/data/anetbbs.db"
-        # Same reasoning as the env case above.
-        [ -L "$SRC" ] && fail "refusing: $SRC is a symlink"
-        [ -L "$DST" ] && fail "refusing: $DST is a symlink"
-        [ -f "$SRC" ] || fail "no anetbbs.db.bak in $BACKUP"
-        # Stop the web service so SQLite write handles aren't dangling.
-        log "stopping anetbbs-web before DB swap..."
-        systemctl stop anetbbs-web 2>/dev/null || true
-        log "copying $SRC -> $DST"
-        cp -f --remove-destination "$SRC" "$DST"
-        chown "$SERVICE_USER":"$SERVICE_USER" "$DST" 2>/dev/null || true
-        # Real gap found in a security/performance audit: the DB holds
-        # password hashes, session tokens, and private messages -- see
-        # install.sh's matching fix on the fresh-install path for why
-        # 600 (not 644) is correct here.
-        chmod 600 "$DST"
-        log "starting anetbbs-web back up..."
-        systemctl start anetbbs-web 2>/dev/null || true
-        log "restore db: ok (anetbbs-web restarted)"
-        ;;
-    *)
-        fail "unknown kind: $KIND (use env or db)"
-        ;;
+    *) fail "unknown restore operation" ;;
 esac

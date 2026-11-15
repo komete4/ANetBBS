@@ -13,9 +13,12 @@ Usage from main.py / the systemd unit:
 import asyncio
 import logging
 import os
+from collections import Counter
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
+_MAX_CONNECTIONS = 64
+_MAX_PER_IP = 4
 
 
 def _online_users():
@@ -180,7 +183,7 @@ async def _handle(reader, writer):
     finally:
         try:
             writer.close()
-            await writer.wait_closed()
+            await asyncio.wait_for(writer.wait_closed(), timeout=3)
         except Exception:
             pass
     logger.info('finger query from %s: %r (%d bytes)',
@@ -190,7 +193,23 @@ async def _handle(reader, writer):
 async def serve():
     host = os.environ.get('FINGER_LISTEN_HOST', '0.0.0.0')
     port = int(os.environ.get('FINGER_LISTEN_PORT', '79'))
-    server = await asyncio.start_server(_handle, host=host, port=port)
+    active = Counter()
+
+    async def limited_handle(reader, writer):
+        peer = writer.get_extra_info('peername')
+        ip = peer[0] if peer else ''
+        if sum(active.values()) >= _MAX_CONNECTIONS or active[ip] >= _MAX_PER_IP:
+            writer.close()
+            return
+        active[ip] += 1
+        try:
+            await _handle(reader, writer)
+        finally:
+            active[ip] -= 1
+            if not active[ip]:
+                del active[ip]
+
+    server = await asyncio.start_server(limited_handle, host=host, port=port, limit=1024)
     logger.info('Finger listener on %s:%d', host, port)
     async with server:
         await server.serve_forever()

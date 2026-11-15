@@ -13,13 +13,15 @@ import signal
 import struct
 import termios
 import logging
+import shutil
+import tempfile
 import threading
 from datetime import datetime
 
 from ..models import db, GameSession
-from .dropfile import write_drop_file
-from .node_manager import allocate_node, release_node
-from .node_paths import build_token_context, expand_tokens
+from .dropfile import drop_file_name, generate_door_sys, resolve_drop_file_path, write_drop_file
+from .node_manager import create_game_session, release_node
+from .node_paths import build_token_context, expand_tokens, node_dir, temp_root
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +42,75 @@ DOSEMU2_INSTALL_HINT = (
 # session_id -> DoorSession
 _sessions = {}
 _sessions_lock = threading.Lock()
+
+
+class DoorWorkspaceBusy(OSError):
+    """Another door is using a shared working directory."""
+
+
+class _DoorWorkspace:
+    """Keep shared identity paths serialized until the door process exits."""
+
+    def __init__(self, scratch):
+        self.scratch = scratch
+        self.lock_fds = []
+        self.shared_drop_files = set()
+
+    def lock(self, directories):
+        for directory in sorted({os.path.realpath(d) for d in directories}):
+            os.makedirs(directory, exist_ok=True)
+            path = os.path.join(directory, '.anetbbs-door.lock')
+            fd = os.open(path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError as exc:
+                os.close(fd)
+                raise DoorWorkspaceBusy(directory) from exc
+            except OSError:
+                os.close(fd)
+                raise
+            self.lock_fds.append(fd)
+
+    def publish_drop_file(self, source, path):
+        if os.path.abspath(source) == os.path.abspath(path):
+            return
+        if os.path.basename(path) == '.anetbbs-door.lock':
+            raise ValueError('The configured drop path is reserved for the door workspace lock.')
+        # Replacing the directory entry avoids truncating a pre-existing
+        # symlink or hard link. Generated identity must not survive exit.
+        with tempfile.NamedTemporaryFile(dir=os.path.dirname(path),
+                                         prefix='.anetbbs-drop-', delete=False) as temp:
+            try:
+                with open(source, 'rb') as data:
+                    shutil.copyfileobj(data, temp)
+                temp.close()
+                os.replace(temp.name, path)
+            finally:
+                try:
+                    os.unlink(temp.name)
+                except FileNotFoundError:
+                    pass
+        self.shared_drop_files.add(path)
+
+    def close(self):
+        try:
+            for path in self.shared_drop_files:
+                try:
+                    os.unlink(path)
+                except FileNotFoundError:
+                    pass
+                except OSError:
+                    logger.warning('Could not clean up door drop file %s', path, exc_info=True)
+            self.shared_drop_files.clear()
+            shutil.rmtree(self.scratch, ignore_errors=True)
+        finally:
+            for fd in self.lock_fds:
+                try:
+                    os.close(fd)
+                except OSError:
+                    pass
+            self.lock_fds.clear()
+
 
 class DoorSession:
     """Represents a running door game PTY session."""
@@ -213,11 +284,9 @@ def _check_game_dir_writable(game_dir, slug):
     a door_native game's storage, confirmed live 2026-11-01 -- this
     check turns that same failure class from a silent/cryptic one deep
     inside DOSBox/dosemu into a clear error at launch time instead."""
-    probe = os.path.join(game_dir, f'.anetbbs_write_probe_{os.getpid()}')
     try:
-        with open(probe, 'w') as f:
-            f.write('')
-        os.remove(probe)
+        with tempfile.NamedTemporaryFile(dir=game_dir, prefix='.anetbbs-write-'):
+            pass
     except OSError as exc:
         raise PermissionError(
             f'Game {slug!r}\'s directory ({game_dir!r}) is not writable: '
@@ -452,7 +521,8 @@ def _ensure_mps_compiled(mps_path, cwd):
 
 
 def _build_command(game, node_number, bbs_name='ANetBBS', user=None,
-                   token_ctx=None, bridge_port=None, temp_files_out=None):
+                   token_ctx=None, bridge_port=None, temp_files_out=None,
+                   scratch=None):
     """
     Build the command list for launching a door game.
     Returns a (cmd_list, cwd) tuple. Raises descriptive errors on
@@ -522,7 +592,7 @@ def _build_command(game, node_number, bbs_name='ANetBBS', user=None,
     if game.game_type == 'door_dos':
         return _build_dos_command(game, node_number, cwd, token_ctx=token_ctx,
                                    bridge_port=bridge_port,
-                                   temp_files_out=temp_files_out)
+                                   temp_files_out=temp_files_out, scratch=scratch)
 
     if game.game_type == 'door_dosemu':
         import shutil
@@ -533,7 +603,7 @@ def _build_command(game, node_number, bbs_name='ANetBBS', user=None,
                 f'dosemu2 not found on this server. {DOSEMU2_INSTALL_HINT}'
             )
         return _build_dosemu_command(game, node_number, dosemu,
-                                     token_ctx=token_ctx)
+                                     token_ctx=token_ctx, scratch=scratch)
 
     if game.game_type == 'door_native':
         exe_raw = _xp(game.executable_path or '')
@@ -847,7 +917,7 @@ def _build_command(game, node_number, bbs_name='ANetBBS', user=None,
 
 
 def _build_dos_command(game, node_number, cwd, token_ctx=None,
-                       bridge_port=None, temp_files_out=None):
+                       bridge_port=None, temp_files_out=None, scratch=None):
     """Build a DOSBox invocation using TCP nullmodem (works with VANILLA DOSBox).
 
     Architecture (adapted from binkterm-php's dosbox-bridge):
@@ -1013,12 +1083,11 @@ def _build_dos_command(game, node_number, cwd, token_ctx=None,
     # players. Sysop configures LORDCFG / TWCFG / etc. with `E:\` as the
     # dropfile path; the BBS writes the drop file into the host's
     # <install>/data/temp/nodeN/ which DOSBox sees as E:\.
-    try:
-        from .node_paths import node_dir as _node_dir
-        per_node_host = _node_dir(node_number).rstrip(os.sep) or None
-    except Exception:
-        per_node_host = None
-    mount_e_line = (f'mount e "{per_node_host}"\n' if per_node_host else '')
+    per_node_host = scratch or node_dir(node_number).rstrip(os.sep)
+    mount_e_line = f'mount e "{per_node_host}"\n'
+    if extra:
+        extra = extra.replace(per_node_host + os.sep, 'E:\\')
+        extra = extra.replace(per_node_host, 'E:\\')
 
     # Both vanilla DOSBox and DOSBox-staging support `serial1=nullmodem`.
     # serial1=stdio was removed from staging around 0.80; we rely on the
@@ -1046,14 +1115,6 @@ def _build_dos_command(game, node_number, cwd, token_ctx=None,
         + mount_e_line +
         "set PATH=D:\\FOSSIL;%PATH%\n"
         "BNU /P1\n"   # load FOSSIL on COM1 (= our TCP bridge)
-        # Always copy the freshly-generated drop file from E:\ (per-node scratch,
-        # written by write_drop_file) into C:\ (game dir) so the door reads
-        # current session data.  Without this, a stale C:\DOOR.SYS from a
-        # previous session (possibly with wrong line 15 format) silently poisons
-        # games like LORD that look for DOOR.SYS in their own directory.
-        "IF EXIST E:\\DOOR.SYS COPY E:\\DOOR.SYS C:\\DOOR.SYS >NUL\n"
-        "IF EXIST E:\\DOOR32.SYS COPY E:\\DOOR32.SYS C:\\DOOR32.SYS >NUL\n"
-        "IF EXIST E:\\DORINFO1.DEF COPY E:\\DORINFO1.DEF C:\\DORINFO1.DEF >NUL\n"
         "c:\n"
         f"{exe_name} {extra}\n"
         "exit\n"
@@ -1120,7 +1181,8 @@ def _build_dos_command(game, node_number, cwd, token_ctx=None,
     return base_cmd, game_dir
 
 
-def _build_dosemu_command(game, node_number, dosemu_path, token_ctx=None):
+def _build_dosemu_command(game, node_number, dosemu_path, token_ctx=None,
+                          scratch=None):
     """dosemu2 invocation for BBS doors (FOSSIL/SHARE-based doors like TW2002).
 
     Why dosemu instead of DOSBox? dosemu2 runs FDPP (real FreeDOS) which
@@ -1139,16 +1201,15 @@ def _build_dosemu_command(game, node_number, dosemu_path, token_ctx=None):
     The outer PTY (master_fd/slave_fd) is kept only for terminal resize
     (TIOCSWINSZ) and dosemu2 process-exit detection.
 
-    Returns ``(cmd, game_dir)`` — standard 2-tuple.  pts_path and conf_path
-    are derived from node_number and os.getpid() and embedded in cmd via
-    the ``-f`` option; launch_door_game re-derives them by the same formula.
+    Returns ``(cmd, game_dir)``. The COM1 link and config live in the
+    launch's private scratch directory.
 
-    Drive layout (dosemu2 with FDPP assigns C:–F: to internal FreeDOS drives;
-    user ``-d`` mounts start at G:):
+    Reserve C: for the standard user drive and D:–F: to keep the door's
+    configured drive letters stable across DOSEMU2 installations:
 
       ``G:`` = FOSSIL bundle (``anetbbs/games/dos_runtime/``)
       ``H:`` = game dir (``executable_path``'s dir, or ``working_directory``)
-      ``I:`` = per-node scratch dir (``data/temp/nodeN/``) — optional
+      ``I:`` = private session scratch
 
     In the door's config point the drop-file path at ``I:\\`` (e.g.,
     ``I:\\DOOR32.SYS`` or ``I:\\DOOR.SYS``).
@@ -1189,11 +1250,7 @@ def _build_dosemu_command(game, node_number, dosemu_path, token_ctx=None):
                                'dos_runtime')
 
     # I: = per-node scratch dir (drop file lands here, multi-node safe)
-    try:
-        from .node_paths import node_dir as _node_dir
-        per_node_host = _node_dir(node_number).rstrip(os.sep) or None
-    except Exception:
-        per_node_host = None
+    per_node_host = scratch or node_dir(node_number).rstrip(os.sep)
 
     _slug_lc = (game.slug or '').lower()
     _is_tw2002 = 'tw2002' in _slug_lc or exe_name.lower().startswith('tw2002')
@@ -1226,9 +1283,7 @@ def _build_dosemu_command(game, node_number, dosemu_path, token_ctx=None):
     # under doors/<name>/ is read-only there). The per-node scratch dir
     # (I:) is always writable -- confirmed live with the identical EROFS
     # failure for a door_native game's own storage, root-caused 2026-11-01.
-    # Written into H: only when no per-node dir resolved (test-only edge case).
-    bat_drive = 'I' if per_node_host else 'H'
-    bat_host_dir = per_node_host or game_dir
+    bat_host_dir = per_node_host
     bat_path = os.path.join(bat_host_dir, '_ANET.BAT')
 
     # TW2002-specific setup: TWNODE env var selects the node config entry in
@@ -1248,15 +1303,10 @@ def _build_dosemu_command(game, node_number, dosemu_path, token_ctx=None):
 
     bat_body = (
         '@echo off\r\n'
+        'H:\r\n'
+        'CD \\\r\n'
         + _fossil_load
-        + tw2002_lines +
-        # Generic: copy drop file from per-node scratch (I:\) into game dir
-        # (H:\) so the door finds it in its own working directory.
-        'IF EXIST I:\\DOOR.SYS COPY I:\\DOOR.SYS H:\\DOOR.SYS >NUL\r\n'
-        'IF EXIST I:\\DOOR32.SYS COPY I:\\DOOR32.SYS H:\\DOOR32.SYS >NUL\r\n'
-        'IF EXIST I:\\DORINFO1.DEF COPY I:\\DORINFO1.DEF H:\\DORINFO1.DEF >NUL\r\n'
-        'H:\r\n'                        # switch to game drive
-        'CD \\\r\n'                     # root of game drive
+        + tw2002_lines
         + cmd_str + '\r\n'
         'EXIT\r\n'
     )
@@ -1273,16 +1323,19 @@ def _build_dosemu_command(game, node_number, dosemu_path, token_ctx=None):
     # pts COM1 config: dosemu2 creates an internal PTY pair, holds the master,
     # and symlinks the slave at pts_path.  ANetBBS polls for the symlink then
     # opens it as com1_slave_fd.  DCD=1 is automatic (pseudo=TRUE).
-    from .node_paths import temp_root as _temp_root
-    _tr = _temp_root()
-    os.makedirs(_tr, exist_ok=True)
-    pts_path = os.path.join(_tr, f'anetbbs_com1_n{node_number}_{os.getpid()}')
-    conf_path = os.path.join(_tr, f'anetbbs_dosemu_n{node_number}_{os.getpid()}.conf')
+    pts_path, conf_path = _dosemu_paths(node_number, scratch)
+    # DOSEMU splits hdimage on whitespace. Keep its config tokens simple
+    # even if the sysop installs their game or the BBS under a spaced path.
+    fossil_mount = _dosemu_mount_path(fossil_base, per_node_host, 'fossil')
+    game_mount = _dosemu_mount_path(game_dir, per_node_host, 'game')
     try:
         with open(conf_path, 'w') as _cf:
             _cf.write(f'$_com1 = "pts {pts_path}"\n')
             _cf.write('$_layout = "us"\n')
             _cf.write('$_loglevel = (0)\n')
+            # Defaults and -d append order vary across packages. Pin G/H/I
+            # and keep the FDPP boot and utility drives in group +1.
+            _cf.write(f'$_hdimage = "+0 -3 {fossil_mount} {game_mount} {per_node_host} +1"\n')
     except OSError as exc:
         raise OSError(f'Cannot write dosemu2 conf {conf_path}: {exc}')
 
@@ -1292,12 +1345,7 @@ def _build_dosemu_command(game, node_number, dosemu_path, token_ctx=None):
     _raw_bin = '/usr/libexec/dosemu2/dosemu2.bin'
     if os.path.isfile(_raw_bin):
         _exe = _raw_bin
-        try:
-            _dosemu_dir = os.path.join(os.path.expanduser('~'), '.dosemu')
-            os.makedirs(_dosemu_dir, exist_ok=True)
-            _boot_log = os.path.join(_dosemu_dir, 'boot.log')
-        except OSError:
-            _boot_log = '/tmp/dosemu_boot.log'  # nosec B108 -- transient debug log, safe to lose
+        _boot_log = os.path.join(per_node_host, 'boot.log')
         logger.info('dosemu2: using raw binary %s', _raw_bin)
     else:
         _exe = dosemu_path
@@ -1312,17 +1360,27 @@ def _build_dosemu_command(game, node_number, dosemu_path, token_ctx=None):
         # I/O (that flows via COM1 pts slave), but kept so FreeDOS boot
         # messages appear on the outer PTY for diagnostics.
         '-td',
-        '-f', conf_path,               # pts COM1 config
-        '-d', fossil_base,             # G: = FOSSIL bundle
-        '-d', game_dir,                # H: = game dir
+        '-f', conf_path,
+        '-E', 'I:\\_ANET.BAT',
     ]
-    if per_node_host:
-        cmd.extend(['-d', per_node_host])  # I: = per-node scratch
-    cmd.extend(['-E', f'{bat_drive}:\\_ANET.BAT'])
-    # Return 2-tuple (cmd, game_dir).  pts_path and conf_path are derivable
-    # by any caller that knows node_number and os.getpid() via the same formula
-    # used above.  launch_door_game re-derives them after the fork.
     return cmd, game_dir
+
+
+def _dosemu_mount_path(directory, scratch, alias):
+    directory = os.path.abspath(directory)
+    if re.fullmatch(r'/[A-Za-z0-9_./-]+', directory):
+        return directory
+    path = os.path.join(scratch, f'.mount-{alias}')
+    os.symlink(directory, path, target_is_directory=True)
+    return path
+
+
+def _dosemu_paths(node_number, scratch):
+    if scratch:
+        return os.path.join(scratch, 'com1'), os.path.join(scratch, 'dosemu.conf')
+    root = temp_root()
+    return (os.path.join(root, f'anetbbs_com1_n{node_number}_{os.getpid()}'),
+            os.path.join(root, f'anetbbs_dosemu_n{node_number}_{os.getpid()}.conf'))
 
 
 def _build_mystic_python_command(game, cwd, temp_files_out=None):
@@ -1423,6 +1481,29 @@ def _build_mystic_python_command(game, cwd, temp_files_out=None):
     return [python, tmp.name], cwd
 
 
+def preview_door_command(game, bbs_name='ANetBBS', user=None):
+    """Build a command for validation without leaving files for a future launch."""
+    temp_files = []
+    root = _door_scratch_root(game)
+    os.makedirs(root, exist_ok=True)
+    try:
+        with tempfile.TemporaryDirectory(prefix='door-preview-', dir=root) as scratch:
+            return _build_command(game, 1, bbs_name, user=user,
+                                  temp_files_out=temp_files, scratch=scratch)
+    finally:
+        for path in temp_files:
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
+
+
+def _door_scratch_root(game):
+    # The DOSEMU config grammar also tokenizes its COM1 path. Use a
+    # private mkdtemp directory under a predictable, space-free root.
+    return '/tmp' if game.game_type == 'door_dosemu' else temp_root()  # nosec B108
+
+
 def launch_door_game(game, user, socketio_emit_fn, bbs_name='ANetBBS',
                      minutes_remaining=None, window_size=None):
     """
@@ -1459,32 +1540,17 @@ def launch_door_game(game, user, socketio_emit_fn, bbs_name='ANetBBS',
     Returns:
         GameSession.id on success, or None on failure (e.g., all nodes full)
     """
-    node = allocate_node(game.id, game.max_nodes or 1, -1)
-    if node is None:
+    _uid = (user.get('id') if isinstance(user, dict) else getattr(user, 'id', None)) or 0
+    gs = create_game_session(game.id, game.max_nodes, _uid)
+    if gs is None:
         logger.warning('No free nodes for game %s', game.slug)
         return None
-
-    # Create DB session record. user can be a model (web) or dict (telnet/SSH).
-    _uid = (user.get('id') if isinstance(user, dict) else getattr(user, 'id', None)) or 0
+    node = gs.node_number
     if minutes_remaining is None:
         _is_admin = bool(user.get('is_admin') if isinstance(user, dict)
                         else getattr(user, 'is_admin', False))
         from ..core.time_budget import compute_remaining_minutes
         minutes_remaining = compute_remaining_minutes(_uid, _is_admin)
-    gs = GameSession(
-        game_id=game.id,
-        user_id=_uid,
-        node_number=node,
-        status='active',
-    )
-    db.session.add(gs)
-    db.session.commit()
-
-    # Update node manager with real session id
-    from .node_manager import _active, _lock
-    with _lock:
-        _active[(game.id, node)] = gs.id
-
     # Build the substitution context once. `drop_file_path` gets filled
     # in after we actually write the drop file (so `%f` can resolve to
     # the post-substitution path the game will read).
@@ -1510,135 +1576,107 @@ def launch_door_game(game, user, socketio_emit_fn, bbs_name='ANetBBS',
         sysop_name=sysop,
     )
 
-    # Write drop file (drop_file_path itself gets %-token expanded).
-    drop_path = None
-    try:
-        drop_path = write_drop_file(user, game, node, minutes_remaining,
-                                     bbs_name, token_ctx=token_ctx,
-                                     sysop_name=sysop, window_size=window_size)
-    except Exception as exc:  # pylint: disable=broad-except
-        logger.warning('Drop file error for game %s: %s', game.slug, exc)
-
-    # Now that we know the actual drop file path, plug it into the
-    # context so `%f` resolves correctly inside command_line_args.
-    if drop_path:
-        token_ctx['%f'] = drop_path
-
-    # For door_dos: spin up the TCP nullmodem bridge BEFORE building the
-    # command — DOSBox's config needs the port written into it.
     dos_bridge = None
-    bridge_port = None
-    if game.game_type == 'door_dos':
-        try:
+    workspace = None
+    _door_temp_files = []
+    master_fd = slave_fd = None
+    try:
+        root = _door_scratch_root(game)
+        os.makedirs(root, exist_ok=True)
+        scratch = tempfile.mkdtemp(prefix='door-', dir=root)
+        workspace = _DoorWorkspace(scratch)
+        legacy_ctx = {**token_ctx, '%P': node_dir(node)}
+        configured_path = resolve_drop_file_path(game, node, legacy_ctx)
+        token_ctx['%P'] = scratch + os.sep
+        drop_type = (game.drop_file_type or 'none').lower()
+        emulate_dos = game.game_type in ('door_dos', 'door_dosemu')
+
+        # Legacy settings that refer to the old node directory now follow
+        # this launch's private directory. Explicit other paths keep working.
+        if configured_path:
+            relative = os.path.relpath(configured_path, node_dir(node))
+            if relative == os.curdir:
+                configured_path = os.path.join(scratch, drop_file_name(drop_type))
+            elif relative != os.pardir and not relative.startswith(os.pardir + os.sep):
+                configured_path = os.path.join(scratch, relative)
+        drop_path = None
+        if configured_path or (emulate_dos and drop_type != 'none'):
+            scratch_path = configured_path
+            if not scratch_path or os.path.commonpath([scratch, scratch_path]) != scratch:
+                scratch_path = os.path.join(scratch, drop_file_name(drop_type))
+            drop_path = write_drop_file(
+                user, game, node, minutes_remaining, bbs_name,
+                token_ctx=token_ctx, sysop_name=sysop, window_size=window_size,
+                output_path=scratch_path,
+            )
+            if drop_path:
+                token_ctx['%f'] = drop_path if emulate_dos else (configured_path or drop_path)
+
+        bridge_port = None
+        if game.game_type == 'door_dos':
             from .dos_bridge import DosBridge
             dos_bridge = DosBridge()
             bridge_port = dos_bridge.start()
             dos_bridge.accept_async()
-        except Exception as exc:  # pylint: disable=broad-except
-            logger.error('Failed to start DosBridge for game %s: %s',
-                         game.slug, exc)
-            if dos_bridge:
-                try: dos_bridge.stop()
-                except Exception: pass
-            gs.status = 'crashed'
-            gs.ended_at = datetime.utcnow()
-            db.session.commit()
-            release_node(game.id, node)
-            return None
 
-    # Fork PTY
-    # For door_dosemu: pts_path and conf_path use the same formula as
-    # _build_dosemu_command so we can retrieve them after _build_command
-    # returns its standard 2-tuple.
-    if game.game_type == 'door_dosemu':
-        from .node_paths import temp_root as _temp_root
-        _tr = _temp_root()
-        _dosemu_pts_path = os.path.join(_tr, f'anetbbs_com1_n{node}_{os.getpid()}')
-        _dosemu_conf_path = os.path.join(_tr, f'anetbbs_dosemu_n{node}_{os.getpid()}.conf')
-    else:
-        _dosemu_pts_path = None
-        _dosemu_conf_path = None
-
-    _door_temp_files = []
-    try:
         cmd, cwd = _build_command(game, node, bbs_name, user=user,
-                                  token_ctx=token_ctx,
-                                  bridge_port=bridge_port,
-                                  temp_files_out=_door_temp_files)
+                                  token_ctx=token_ctx, bridge_port=bridge_port,
+                                  temp_files_out=_door_temp_files, scratch=scratch)
+        shared_dirs = []
+        if emulate_dos:
+            shared_dirs.append(cwd)
+        if configured_path and os.path.commonpath([scratch, configured_path]) != scratch:
+            shared_dirs.append(os.path.dirname(configured_path))
+        workspace.lock(shared_dirs)
+        if configured_path and configured_path != drop_path and drop_path:
+            workspace.publish_drop_file(drop_path, configured_path)
+        if emulate_dos and drop_path:
+            canonical_name = drop_file_name(drop_type)
+            if game.game_type != 'door_dosemu' or canonical_name != 'DOOR.SYS':
+                workspace.publish_drop_file(drop_path, os.path.join(cwd, canonical_name))
+            workspace.publish_drop_file(drop_path, os.path.join(scratch, canonical_name))
+        if game.game_type == 'door_dosemu':
+            _dosemu_pts_path, _ = _dosemu_paths(node, scratch)
+            # Preserve the DOSEMU compatibility drop expected by TW2002.
+            compat = os.path.join(scratch, 'DOSEMU.SYS')
+            generate_door_sys(user, node, minutes_remaining, bbs_name,
+                              compat, tw2002_compat=True)
+            workspace.publish_drop_file(compat, os.path.join(cwd, 'DOOR.SYS'))
+            if drop_file_name(drop_type) != 'DOOR.SYS' or not drop_path:
+                workspace.publish_drop_file(compat, os.path.join(scratch, 'DOOR.SYS'))
+            os.unlink(compat)
+        else:
+            _dosemu_pts_path = None
+
         logger.info('Launching game %s (type=%s, node=%d): %s',
                     game.slug, game.game_type, node,
                     ' '.join(str(c) for c in cmd))
-    except Exception as exc:  # pylint: disable=broad-except
-        logger.error('Failed to build command for game %s: %s', game.slug, exc)
-        for _tf in _door_temp_files:
-            try: os.unlink(_tf)
-            except OSError: pass
-        if dos_bridge:
-            try: dos_bridge.stop()
-            except Exception: pass
-        gs.status = 'crashed'
-        gs.ended_at = datetime.utcnow()
-        db.session.commit()
-        release_node(game.id, node)
-        return None
 
-    # door_dosemu: always write DOOR.SYS directly into the game directory
-    # (H:\) in addition to whatever drop_file_path is configured.  The BAT
-    # file copies I:\DOOR.SYS → H:\DOOR.SYS, but if the per-node scratch
-    # dir (I:\) is not mounted or drop_file_path is unconfigured, TW2002
-    # finds no DOOR.SYS and defaults to 0 minutes → "BBS Time Expired".
-    # Writing it here guarantees the file exists in H:\ before dosemu2 forks.
-    if game.game_type == 'door_dosemu':
-        try:
-            from .dropfile import generate_door_sys
-            _dsys_path = os.path.join(cwd, 'DOOR.SYS')
-            generate_door_sys(user, node, minutes_remaining, bbs_name,
-                              _dsys_path, tw2002_compat=True)
-            logger.info('door_dosemu: DOOR.SYS → %s (drop_path=%s, min=%d)',
-                        _dsys_path, drop_path, minutes_remaining)
-        except Exception as _dsys_exc:
-            logger.warning('door_dosemu: DOOR.SYS write to game dir failed: %s',
-                           _dsys_exc)
-
-    com1_rx_r = com1_rx_w = -1  # kept for code-path compatibility
-
-    try:
+        com1_rx_r = com1_rx_w = -1  # kept for code-path compatibility
         master_fd, slave_fd = pty.openpty()
-        # Set initial winsize to 80x25 — the DOS-terminal contract every
-        # BBS door is written for. Synchronet's dorkit + LORD assume 25
-        # rows; without an explicit TIOCSWINSZ the slave PTY defaults
-        # to (0, 0) on some kernels (e.g. Debian 12), making
-        # `console.screen_rows` come out 0 inside the door and breaking
-        # gotoxy positioning. The browser's xterm.js is also pinned at
-        # 80x25 so we match here.
         try:
             winsize = struct.pack('HHHH', 25, 80, 0, 0)
             fcntl.ioctl(slave_fd, termios.TIOCSWINSZ, winsize)
         except OSError as exc:
             logger.warning('PTY initial winsize set failed: %s', exc)
-    except OSError as exc:
-        logger.error('Failed to open PTY for game %s: %s', game.slug, exc)
-        for _tf in _door_temp_files:
-            try: os.unlink(_tf)
-            except OSError: pass
-        gs.status = 'crashed'
-        gs.ended_at = datetime.utcnow()
-        db.session.commit()
-        release_node(game.id, node)
-        return None
-
-    try:
         pid = os.fork()
-    except OSError as exc:
-        logger.error('Failed to fork process for game %s: %s', game.slug, exc)
-        os.close(master_fd)
-        os.close(slave_fd)
-        for _tf in _door_temp_files:
-            try: os.unlink(_tf)
-            except OSError: pass
-        if dos_bridge:
-            try: dos_bridge.stop()
-            except Exception: pass
+    except Exception as exc:
+        logger.warning('Could not launch door %s: %s', game.slug, exc)
+        for fd in (master_fd, slave_fd):
+            if fd is not None:
+                os.close(fd)
+        for path in _door_temp_files:
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
+        if workspace is not None:
+            workspace.close()
+        if dos_bridge is not None:
+            try:
+                dos_bridge.stop()
+            except Exception:
+                logger.warning('Could not stop DOS bridge', exc_info=True)
         gs.status = 'crashed'
         gs.ended_at = datetime.utcnow()
         db.session.commit()
@@ -1795,8 +1833,16 @@ def launch_door_game(game, user, socketio_emit_fn, bbs_name='ANetBBS',
                 os.close(_lfd)
             except OSError:
                 pass
-        os.execvp(cmd[0], cmd)
-        os._exit(1)
+        # Keep the shared-directory locks alive if the launcher dies
+        # while the emulator is still running. The parent holds them too
+        # until waitpid, so an emulator closing inherited fds is harmless
+        # during normal service operation.
+        for fd in workspace.lock_fds:
+            os.set_inheritable(fd, True)
+        try:
+            os.execvp(cmd[0], cmd)
+        finally:
+            os._exit(1)
 
     # Parent
     os.close(slave_fd)
@@ -1914,6 +1960,7 @@ def launch_door_game(game, user, socketio_emit_fn, bbs_name='ANetBBS',
             os.killpg(pid, signal.SIGTERM)
         except (ProcessLookupError, OSError):
             pass
+        workspace.close()
         # Run cleanup. Idempotent — _cleanup_session checks _sessions
         # before doing anything, so it's safe even if the PTY watcher
         # already ran the cleanup path.
@@ -2020,20 +2067,6 @@ def launch_door_game(game, user, socketio_emit_fn, bbs_name='ANetBBS',
             name=f'pty-reader-{gs.id}',
         )
         t.start()
-
-    # door_dosemu: clean up temp conf file after dosemu2 has had time to read
-    # it (it's read at init, before FreeDOS boots, so 3s is more than enough).
-    if _dosemu_conf_path:
-        _conf_to_del = _dosemu_conf_path
-        def _del_conf():
-            import time as _t
-            _t.sleep(3)
-            try:
-                os.unlink(_conf_to_del)
-            except OSError:
-                pass
-        threading.Thread(target=_del_conf, daemon=True,
-                         name=f'conf-cleanup-{gs.id}').start()
 
     return gs.id
 
@@ -2432,29 +2465,21 @@ async def play_door_game_telnet(game, user, session, bbs_name='ANetBBS',
         # therefore immediately orphaned unless cleaned up right here --
         # previously they weren't, doubling the leak rate for every
         # Synchronet-JS game launch attempt from a terminal session.
-        _validate_temp_files = []
         try:
-            _build_command(live_game, 1, bbs_name, user=user,
-                           temp_files_out=_validate_temp_files)
+            preview_door_command(live_game, bbs_name, user=user)
         except Exception as exc:
             await session.write(f"\r\nLaunch failed:\r\n  {exc}\r\n")
             await session.read_line("\r\nPress Enter...")
             return False
-        finally:
-            for _tf in _validate_temp_files:
-                try:
-                    os.unlink(_tf)
-                except OSError:
-                    pass
 
         sid = launch_door_game(live_game, live_user, _emit_to_queue,
                                bbs_name=bbs_name,
                                minutes_remaining=minutes_remaining,
                                window_size=getattr(session, 'window_size', None))
         if sid is None:
-            await session.write("\r\nCould not start the game — no free nodes "
-                                "(check Game.max_nodes in /admin/games/) or "
-                                "launch error (see /var/log via journalctl -u anetbbs-telnet).\r\n")
+            await session.write("\r\nCould not start the game. Its directory may "
+                                "be in use or all nodes occupied. Ask the sysop "
+                                "if the problem persists.\r\n")
             await session.read_line("\r\nPress Enter...")
             return False
 
@@ -2761,19 +2786,11 @@ async def _allocate_external_node(game, user):
     from ..features.db_scope import transient_app_context
     app = _build_transient_app()
     with transient_app_context(app):
-        node = allocate_node(game.id, game.max_nodes or 1, -1)
-        if node is None:
+        _uid = (user.get('id') if isinstance(user, dict) else getattr(user, 'id', None)) or 0
+        gs = create_game_session(game.id, game.max_nodes, _uid)
+        if gs is None:
             return None
-        _uid = (user.get('id') if isinstance(user, dict)
-                else getattr(user, 'id', None)) or 0
-        gs = GameSession(game_id=game.id, user_id=_uid, node_number=node,
-                         status='active')
-        db.session.add(gs)
-        db.session.commit()
-        gs_id = gs.id
-        from .node_manager import _active, _lock as _node_lock
-        with _node_lock:
-            _active[(game.id, node)] = gs_id
+        node, gs_id = gs.node_number, gs.id
     return app, node, gs_id
 
 
@@ -2847,21 +2864,12 @@ def launch_rlogin_session(game, user, emit_fn, bbs_name='ANetBBS'):
         user_template, username, alias, getattr(game, 'rlogin_bbs_tag', None))
 
     # Allocate node
-    node = allocate_node(game.id, game.max_nodes or 1, -1)
-    if node is None:
+    _uid = (user.get('id') if isinstance(user, dict) else getattr(user, 'id', None)) or 0
+    gs = create_game_session(game.id, game.max_nodes, _uid)
+    if gs is None:
         logger.warning('No free nodes for game %s', game.slug)
         return None
-
-    _uid = (user.get('id') if isinstance(user, dict)
-            else getattr(user, 'id', None)) or 0
-    gs = GameSession(game_id=game.id, user_id=_uid, node_number=node,
-                     status='active')
-    db.session.add(gs)
-    db.session.commit()
-
-    from .node_manager import _active, _lock as _node_lock
-    with _node_lock:
-        _active[(game.id, node)] = gs.id
+    node = gs.node_number
 
     # Open rlogin TCP + send handshake
     conn = RloginConnection(host, port, client_user, password, terminal)
@@ -3223,21 +3231,12 @@ def launch_telnet_session(game, user, emit_fn, bbs_name='ANetBBS'):
         host, port = server_addr, 23
 
     # Allocate node
-    node = allocate_node(game.id, game.max_nodes or 1, -1)
-    if node is None:
+    _uid = (user.get('id') if isinstance(user, dict) else getattr(user, 'id', None)) or 0
+    gs = create_game_session(game.id, game.max_nodes, _uid)
+    if gs is None:
         logger.warning('No free nodes for game %s', game.slug)
         return None
-
-    _uid = (user.get('id') if isinstance(user, dict)
-            else getattr(user, 'id', None)) or 0
-    gs = GameSession(game_id=game.id, user_id=_uid, node_number=node,
-                     status='active')
-    db.session.add(gs)
-    db.session.commit()
-
-    from .node_manager import _active, _lock as _node_lock
-    with _node_lock:
-        _active[(game.id, node)] = gs.id
+    node = gs.node_number
 
     # Open telnet TCP — no handshake to send.
     conn = TelnetConnection(host, port)

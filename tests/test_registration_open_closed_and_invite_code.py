@@ -126,13 +126,14 @@ class WebRegistrationOpenClosedTests(unittest.TestCase):
 
 class _FakeTerminalSession:
     """Minimal fake for BBSSession.handle_registration()'s own gate
-    check -- only needs write()/read_line() for the two early-return
-    paths this test exercises (closed, wrong invite code), never
-    reaching the rest of the real registration flow."""
+    check for closed registration and a wrong invite code."""
 
     def __init__(self, responses):
         self._responses = list(responses)
         self.written = []
+
+    def _client_ip(self):
+        return '203.0.113.30'
 
     async def write(self, text):
         self.written.append(text)
@@ -173,7 +174,9 @@ class TerminalRegistrationOpenClosedTests(unittest.TestCase):
         self.app.config['REGISTRATION_OPEN'] = False
         try:
             with __import__('unittest.mock', fromlist=['patch']).patch(
-                    'anetbbs.features.bbs_ui._app', return_value=self.app):
+                    'anetbbs.features.bbs_ui._app', return_value=self.app), \
+                    __import__('unittest.mock', fromlist=['patch']).patch(
+                        'anetbbs.core.session.asyncio.to_thread', self._run_in_process):
                 result = asyncio.run(
                     BBSSession.handle_registration(session))
         finally:
@@ -187,13 +190,21 @@ class TerminalRegistrationOpenClosedTests(unittest.TestCase):
         self.app.config['REGISTRATION_INVITE_CODE'] = 'letmein'
         try:
             with __import__('unittest.mock', fromlist=['patch']).patch(
-                    'anetbbs.features.bbs_ui._app', return_value=self.app):
+                    'anetbbs.features.bbs_ui._app', return_value=self.app), \
+                    __import__('unittest.mock', fromlist=['patch']).patch(
+                        'anetbbs.core.session.asyncio.to_thread', self._run_in_process):
                 result = asyncio.run(
                     BBSSession.handle_registration(session))
         finally:
             self.app.config['REGISTRATION_INVITE_CODE'] = ''
         self.assertFalse(result)
         self.assertIn('Incorrect invite code', session.transcript())
+
+    @staticmethod
+    async def _run_in_process(function):
+        # The test process imports the eventlet web app. The terminal
+        # service runs its asyncio loop in a separate process.
+        return function()
 
 
 if __name__ == '__main__':

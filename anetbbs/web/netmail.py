@@ -80,6 +80,22 @@ def _user_addresses(user):
     return addrs
 
 
+def _local_owner_clause(*, incoming, addresses, allow_name=True):
+    """Use the linked local user, with legacy matching only for unlinked mail."""
+    model = NetmailMessage
+    owner, address, name = ((model.to_user_id, model.to_address, model.to_name)
+                            if incoming else
+                            (model.from_user_id, model.from_address, model.from_name))
+    legacy = []
+    if addresses:
+        legacy.append(address.in_(addresses))
+    if allow_name and current_user.username:
+        legacy.append(db.func.lower(name) == current_user.username.lower())
+    if legacy:
+        return db.or_(owner == current_user.id, db.and_(owner.is_(None), db.or_(*legacy)))
+    return owner == current_user.id
+
+
 @netmail_bp.route('/')
 @login_required
 def inbox():
@@ -97,15 +113,7 @@ def inbox():
         NetmailMessage.deleted_by_recipient.is_(False),
         _not_robot_netmail(NetmailMessage.to_name),
     )
-    name_clauses = [
-        NetmailMessage.to_user_id == current_user.id,
-        NetmailMessage.to_name.ilike(current_user.username),
-    ]
-    if current_user.display_name:
-        name_clauses.append(NetmailMessage.to_name.ilike(current_user.display_name))
-    if addrs:
-        name_clauses.append(NetmailMessage.to_address.in_(addrs))
-    q = q.filter(db.or_(*name_clauses))
+    q = q.filter(_local_owner_clause(incoming=True, addresses=addrs))
     msgs = q.order_by(NetmailMessage.created_at.desc()).limit(200).all()
     return render_template('netmail/list.html',
                            messages=msgs, folder='inbox')
@@ -120,10 +128,7 @@ def drafts():
         NetmailMessage.status == 'draft',
         NetmailMessage.deleted_by_sender.is_(False),
     )
-    name_clauses = [NetmailMessage.from_user_id == current_user.id]
-    if addrs:
-        name_clauses.append(NetmailMessage.from_address.in_(addrs))
-    q = q.filter(db.or_(*name_clauses))
+    q = q.filter(_local_owner_clause(incoming=False, addresses=addrs, allow_name=False))
     # inbox()/sent() both cap at .limit(200) -- this one didn't, found in
     # a full echomail-subsystem audit. Scoped to the current user only so
     # low practical risk, but inconsistent with its siblings.
@@ -140,13 +145,7 @@ def sent():
         NetmailMessage.deleted_by_sender.is_(False),
         _not_robot_netmail(NetmailMessage.from_name),
     )
-    name_clauses = [
-        NetmailMessage.from_user_id == current_user.id,
-        NetmailMessage.from_name.ilike(current_user.username),
-    ]
-    if addrs:
-        name_clauses.append(NetmailMessage.from_address.in_(addrs))
-    q = q.filter(db.or_(*name_clauses))
+    q = q.filter(_local_owner_clause(incoming=False, addresses=addrs))
     msgs = q.order_by(NetmailMessage.created_at.desc()).limit(200).all()
     return render_template('netmail/list.html',
                            messages=msgs, folder='sent')
@@ -314,7 +313,10 @@ def compose(reply_to=None):
         # network), fall back to the AKA the original was addressed to,
         # so the reply comes from the same identity that received it.
         if from_aka:
-            from_address = from_aka
+            source = next((aka for aka in user_akas if aka.address == from_aka), None)
+            if source is None:
+                abort(400, description='Select one of your own FTN source addresses.')
+            from_address = source.address
         elif network:
             aka = find_aka_for_network(current_user, network)
             from_address = aka.address if aka else network.our_address
@@ -540,19 +542,10 @@ def delete(msg_id):
 
 
 def _user_owns(m):
-    """Authorization helper — is `m` visible to the current user?
-
-    Either they're the linked sender/recipient (DB-side foreign key), or the
-    name field matches their username, or the address matches one of their
-    AKAs / a network's our_address."""
-    if m.from_user_id == current_user.id or m.to_user_id == current_user.id:
-        return True
-    addrs = set(_user_addresses(current_user))
-    if m.to_address in addrs or m.from_address in addrs:
-        return True
-    uname = (current_user.username or '').lower()
-    if (m.to_name or '').lower() == uname:
-        return True
-    if (m.from_name or '').lower() == uname:
-        return True
-    return False
+    """Apply the same local-side ownership rules as the folder queries."""
+    return NetmailMessage.query.filter(
+        NetmailMessage.id == m.id,
+        _local_owner_clause(incoming=m.direction == 'inbound',
+                            addresses=_user_addresses(current_user),
+                            allow_name=m.status != 'draft'),
+    ).first() is not None

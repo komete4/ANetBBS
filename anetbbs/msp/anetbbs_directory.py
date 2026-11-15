@@ -18,6 +18,8 @@ from datetime import datetime
 
 import requests
 
+from ..core.text_safety import strip_untrusted_escapes
+
 logger = logging.getLogger(__name__)
 
 _thread = None
@@ -110,18 +112,19 @@ def refresh(app):
             new_ip = (b.get('ip') or '').strip()
             if new_ip:
                 entry.ip_address = new_ip
-            entry.name = (b.get('name') or host)[:160]
-            entry.sysop = (b.get('sysop') or '')[:120] or None
-            entry.location = (b.get('location') or '')[:120] or None
-            entry.software = (b.get('software') or 'ANetBBS')[:40]
-            entry.software_version = (b.get('software_version') or '')[:40] or None
+            clean = strip_untrusted_escapes
+            entry.name = clean(str(b.get('name') or host))[:160] or host
+            entry.sysop = clean(str(b.get('sysop') or ''))[:120] or None
+            entry.location = clean(str(b.get('location') or ''))[:120] or None
+            entry.software = clean(str(b.get('software') or 'ANetBBS'))[:40]
+            entry.software_version = clean(str(b.get('software_version') or ''))[:40] or None
             try:
                 entry.msp_port = int(b.get('msp_port', 18))
                 entry.systat_port = int(b.get('systat_port', 11))
             except (TypeError, ValueError):
                 entry.msp_port = 18
                 entry.systat_port = 11
-            entry.notes = (b.get('notes') or '')[:4000] or None
+            entry.notes = clean(str(b.get('notes') or ''))[:4000] or None
             entry.last_seen_at = datetime.utcnow()
             # Preserve `source` if a row already exists as 'sbbsimsg' — we
             # don't want to clobber Synchronet entries that happen to

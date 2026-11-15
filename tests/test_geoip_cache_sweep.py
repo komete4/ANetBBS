@@ -16,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import anetbbs.web.auth as auth_mod
+import anetbbs.core.registration as auth_mod
 
 
 class GeoipCacheSweepTests(unittest.TestCase):
@@ -68,8 +68,8 @@ class GeoipCacheSweepTests(unittest.TestCase):
 
         # Force the sweep to fire on the very first write by making the
         # RNG deterministic, instead of relying on real 1-in-500 odds.
-        with mock.patch('anetbbs.web.auth.current_app', fake_app), \
-             mock.patch('anetbbs.web.auth.random.randint', return_value=1), \
+        with mock.patch('anetbbs.core.registration.current_app', fake_app), \
+             mock.patch('anetbbs.core.registration.random.randint', return_value=1), \
              mock.patch('urllib.request.urlopen') as mock_urlopen:
             mock_resp = mock.MagicMock()
             mock_resp.read.return_value = b'{"countryCode": "FR"}'

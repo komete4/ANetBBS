@@ -10,11 +10,16 @@ via the ``RSS_POLL_INTERVAL`` env var.
 For an immediate fetch (when sysop adds a new feed or hits "refresh"
 in the admin UI), call :func:`fetch_one_now`.
 """
+from http.client import parse_headers
+from io import BytesIO
 import os
+import subprocess
+import time
 import logging
 import threading
 from datetime import datetime, timedelta
 from html import unescape
+from urllib.parse import urljoin, urlsplit
 import re
 
 logger = logging.getLogger(__name__)
@@ -34,6 +39,104 @@ _HTML_TAG_RE = re.compile(r'<[^>]+>')
 # case for a full poll cycle at num_feeds * _FEED_FETCH_TIMEOUT
 # instead of potentially forever.
 _FEED_FETCH_TIMEOUT = 20
+
+
+_FEED_MAX_BYTES = 5 * 1024 * 1024
+_FEED_MAX_HEADERS = 64 * 1024
+_FEED_MAX_REDIRECTS = 5
+_REDIRECTS = {301, 302, 303, 307, 308}
+
+
+def _curl_feed_response(url, host, port, ip, timeout):
+    """Read a single HTTP response with bounded headers, body and run time."""
+    pinned_ip = f'[{ip}]' if ':' in ip else ip
+    args = [
+        'curl', '--disable', '--silent', '--include', '--noproxy', '*',
+        '--proto', '=http,https', '--max-time', str(timeout),
+        '--max-filesize', str(_FEED_MAX_BYTES),
+        '--user-agent', 'ANetBBS RSS reader (+https://github.com/anetonline/anetbbs)',
+        '--resolve', f'{host}:{port}:{pinned_ip}', '--', url,
+    ]
+    with subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL) as proc:
+        try:
+            remaining = _FEED_MAX_HEADERS
+            while remaining:
+                status_line = proc.stdout.readline(remaining + 1)
+                remaining -= len(status_line)
+                fields = status_line.split(None, 2)
+                if remaining <= 0 or len(fields) < 2 or not fields[0].startswith(b'HTTP/'):
+                    code = proc.wait(timeout=timeout + 1) if not status_line else None
+                    if code == 28:
+                        raise TimeoutError('feed fetch timed out')
+                    if code == 63:
+                        raise ValueError('feed response exceeds the size limit')
+                    raise ValueError('invalid feed HTTP response')
+                status = int(fields[1])
+                lines = []
+                while remaining > 0:
+                    line = proc.stdout.readline(remaining + 1)
+                    remaining -= len(line)
+                    if remaining <= 0 or not line:
+                        raise ValueError('invalid or oversized feed response headers')
+                    if line in (b'\r\n', b'\n'):
+                        break
+                    lines.append(line)
+                if 100 <= status < 200:
+                    continue
+                break
+
+            headers = parse_headers(BytesIO(b''.join(lines)))
+            if status in _REDIRECTS:
+                return status, headers.get('Location'), b''
+            if status != 200:
+                raise ValueError(f'feed returned HTTP {status}')
+            body = proc.stdout.read(_FEED_MAX_BYTES + 1)
+            if len(body) > _FEED_MAX_BYTES:
+                raise ValueError('feed response exceeds the size limit')
+            code = proc.wait(timeout=timeout + 1)
+            if code == 28:
+                raise TimeoutError('feed fetch timed out')
+            if code == 63:
+                raise ValueError('feed response exceeds the size limit')
+            if code:
+                raise ValueError(f'curl exited {code}')
+            return status, None, body
+        finally:
+            if proc.poll() is None:
+                proc.kill()
+
+
+def _fetch_feed(url):
+    """Validate and pin the destination of every hop, including redirects."""
+    from ..core.net_safety import resolve_safe_destination
+
+    deadline = time.monotonic() + _FEED_FETCH_TIMEOUT
+    for _ in range(_FEED_MAX_REDIRECTS + 1):
+        parsed = urlsplit(url or '')
+        host = parsed.hostname
+        if (parsed.scheme not in ('http', 'https') or not host
+                or parsed.username is not None or parsed.password is not None):
+            raise ValueError('feed URL must be an http(s) URL without credentials')
+        host = host.encode('idna').decode('ascii')
+        port = parsed.port or (443 if parsed.scheme == 'https' else 80)
+        _, sockaddr, error = resolve_safe_destination(host, port)
+        if error:
+            raise ValueError(f'refused: {error}')
+        timeout = deadline - time.monotonic()
+        if timeout <= 0:
+            raise TimeoutError('feed fetch timed out')
+        resolve_host = f'[{host}]' if ':' in host else host
+        authority = resolve_host
+        if parsed.port is not None:
+            authority = f'{authority}:{port}'
+        url = parsed._replace(netloc=authority, fragment='').geturl()
+        status, location, body = _curl_feed_response(url, resolve_host, port, sockaddr[0], timeout)
+        if status not in _REDIRECTS:
+            return body
+        if not location:
+            raise ValueError('feed redirect has no Location')
+        url = urljoin(url, location)
+    raise ValueError('feed has too many redirects')
 
 
 def _strip_html(text):
@@ -64,8 +167,6 @@ def _import_one_feed(app, feed_id):
     """Fetch one feed and persist any new items. Returns count of inserted
     items. Updates feed.last_fetched_at and feed.last_error."""
     import feedparser
-    from urllib.parse import urlparse
-    from ..core.net_safety import resolve_safe_destination
     from ..models import db, RssFeed, RssItem
 
     with app.app_context():
@@ -74,94 +175,17 @@ def _import_one_feed(app, feed_id):
             return 0
         url = feed.url
 
-        # Real gap found in a security/performance audit: feedparser.parse()
-        # used to be called directly on the raw feed.url with no scheme/
-        # host validation at all -- feedparser treats a bare path or a
-        # file:// URI as a LOCAL FILE to read, not a network fetch
-        # (confirmed empirically both forms are read straight off disk),
-        # and had no restriction against an http(s) URL targeting an
-        # internal-only address either. Reachable via the feed-URL admin
-        # config field (including an already-compromised admin session).
-        # Same reasoning as web_terminal.py's own SSRF guard (round 1's
-        # Critical fix) -- reused here via the shared core.net_safety
-        # helper extracted this round rather than a second copy.
-        parsed_url = urlparse(url or '')
-        if parsed_url.scheme not in ('http', 'https'):
-            feed.last_error = 'feed URL must be a plain http(s):// URL'
-            feed.last_fetched_at = datetime.utcnow()
-            db.session.commit()
-            logger.warning('RSS fetch refused for %s: non-http(s) URL', feed.name)
-            return 0
-        host = parsed_url.hostname
-        if not host:
-            feed.last_error = 'feed URL has no host'
-            feed.last_fetched_at = datetime.utcnow()
-            db.session.commit()
-            return 0
-        port = parsed_url.port or (443 if parsed_url.scheme == 'https' else 80)
-        _family, _sockaddr, ssrf_err = resolve_safe_destination(host, port)
-        if ssrf_err:
-            feed.last_error = f'refused: {ssrf_err}'
-            feed.last_fetched_at = datetime.utcnow()
-            db.session.commit()
-            logger.warning('RSS fetch refused for %s: %s', feed.name, ssrf_err)
-            return 0
-
-        # Real gap found in a LATER security/performance audit round
-        # (2026-09-02): resolve_safe_destination() above validates the
-        # resolved IP, but the code then used to hand feedparser.parse()
-        # the plain URL string -- feedparser re-resolves the hostname
-        # entirely independently at its own connect time, reopening the
-        # exact DNS-rebinding TOCTOU window resolving-once is supposed
-        # to close (confirmed reachable: the old
-        # test_public_https_url_passes_validation_and_reaches_feedparser
-        # test asserted feedparser.parse() was called with the plain
-        # hostname URL, proving the gap was real, not theoretical).
-        # Fixed the same way the sibling gap in
-        # anetbbs/web/ebooks.py's _gutendex_get() was closed: shell out
-        # to curl with --resolve host:port:ip to pin the fetch to the
-        # already-validated address (still sends the correct Host
-        # header / TLS SNI against the real hostname, unlike rewriting
-        # the URL to a bare IP, which would break both), then hand
-        # feedparser the raw response bytes instead of a URL --
-        # feedparser accepts a byte-string directly and does no further
-        # network I/O in that case, so no separate timeout workaround
-        # is needed for the parse step (curl's own --max-time covers
-        # the only real network call now).
-        import subprocess
-        resolved_ip = _sockaddr[0]
         try:
-            result = subprocess.run(
-                ['curl', '-sL', '--fail', '--max-time', str(_FEED_FETCH_TIMEOUT),
-                 '-A', 'ANetBBS RSS reader (+https://github.com/anetonline/anetbbs)',
-                 '--resolve', f'{host}:{port}:{resolved_ip}',
-                 '--', url],
-                capture_output=True, timeout=_FEED_FETCH_TIMEOUT + 5,
-            )
-        except subprocess.TimeoutExpired:
-            feed.last_error = f'fetch timed out after {_FEED_FETCH_TIMEOUT}s'
-            feed.last_fetched_at = datetime.utcnow()
-            db.session.commit()
-            logger.warning('RSS fetch timed out for %s', feed.name)
-            return 0
-        except Exception as exc:  # pylint: disable=broad-except
+            content = _fetch_feed(url)
+        except (OSError, ValueError, subprocess.SubprocessError) as exc:
             feed.last_error = f'fetch failed: {exc}'
             feed.last_fetched_at = datetime.utcnow()
             db.session.commit()
             logger.warning('RSS fetch failed for %s: %s', feed.name, exc)
             return 0
-        if result.returncode != 0:
-            feed.last_error = (
-                f'fetch failed: curl exited {result.returncode}: '
-                f'{result.stderr.decode(errors="replace")[:200]}')
-            feed.last_fetched_at = datetime.utcnow()
-            db.session.commit()
-            logger.warning('RSS fetch failed for %s: curl exited %s',
-                           feed.name, result.returncode)
-            return 0
 
         try:
-            parsed = feedparser.parse(result.stdout)
+            parsed = feedparser.parse(content)
         except Exception as exc:  # pylint: disable=broad-except
             feed.last_error = f'parse failed: {exc}'
             feed.last_fetched_at = datetime.utcnow()

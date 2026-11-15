@@ -230,6 +230,7 @@ docker volume rm anetbbs_data
 ```bash
 mkdir ~/anetbbs-docker-test && cd ~/anetbbs-docker-test
 cp /path/to/anetbbs-source/docker/compose/docker-compose.yml .
+cp /path/to/anetbbs-source/docker/compose/anetbbs.proxy.conf .
 cp /path/to/anetbbs-source/.env.docker.example .env
 cp /path/to/anetbbs-source/docker/compose/mrc-bridge-config.json.example mrc-bridge-config.json
 ```
@@ -243,7 +244,7 @@ Edit `.env`:
   ANETBBS_IMAGE=anetbbs
   ANETBBS_IMAGE_TAG=local
   ```
-- See the `MRC_BRIDGE_HOST` warning below before you skip past it.
+- Set `PUBLIC_BASE_URL` to the public HTTPS origin when deploying behind a TLS proxy.
 
 ```bash
 docker compose up -d
@@ -322,35 +323,17 @@ container and the real socket, exposing only the specific API
 operations the panel needs (containers list/start/stop/restart,
 images pull) instead of the full Docker API.
 
-## `MRC_BRIDGE_HOST` — a real gotcha
+## Browser and terminal MRC with Compose
 
-Set this in `.env` to **your public domain**, not the compose service
-name (`mrc-bridge`). The browser connects to the MRC bridge's
-WebSocket **directly** — it isn't proxied through Flask — so setting
-this to a Docker-internal service name (unreachable from outside the
-Docker network) will silently break MRC chat for web users even though
-everything looks fine in `docker compose ps`.
+Compose serves browser MRC at `/mrcws` on the same origin as the BBS.
+The Compose proxy checks the signed-in BBS session before forwarding
+the connection. When migrating an existing setup, copy
+`anetbbs.proxy.conf` alongside `docker-compose.yml` and point any
+public reverse proxy to the published port of `web-proxy` (loopback port 5000 by
+default), or to `web-proxy:5000` when it shares the Compose network. Terminal MRC uses the Docker service name on the internal network.
 
-**Single-container mode doesn't need `MRC_BRIDGE_HOST` set at all** —
-there's no nginx in that image, so the web page automatically builds
-the bridge WebSocket URL using your browser's own hostname with the
-bridge's port (`8080` by default) swapped in, instead of assuming an
-nginx proxy exists on the same port as the web app. This only kicks in
-when `ANETBBS_RUNTIME=docker-single` (set by the documented `docker
-run` command above) — leave `MRC_BRIDGE_HOST` unset/default for this
-mode.
-
-One consequence either way (single-container OR compose): because the
-browser talks to the bridge **directly**, on port 8080, the bridge
-itself has no login check of its own — the only place MRC web access
-is gated behind your BBS login is nginx's `auth_request` on a
-traditional install. If port 8080 is reachable from the open internet
-in either Docker mode, anyone who finds that port can join MRC chat
-without ever logging into your BBS. If that matters for your
-deployment, don't publish port 8080 to a public interface (bind it to
-`127.0.0.1` only, or put a real reverse proxy in front of it that adds
-its own auth gate) — this is a pre-existing tradeoff of the "direct
-bridge connection, no nginx" path, not something new to fix.
+The standalone, single-container quick start publishes services directly.
+Use Compose's authenticated WebSocket route for public browser MRC.
 
 ## Why this is safe with SQLite (no Postgres required)
 

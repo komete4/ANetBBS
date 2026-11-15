@@ -8,8 +8,8 @@ from pyftpdlib.ioloop import IOLoop
 from pyftpdlib.servers import FTPServer
 import pytest
 
-from anetbbs.ftp.server import AnetbbsAuthorizer, AnetbbsFTPHandler
-from anetbbs.models import User, db
+from anetbbs.ftp.server import AnetbbsAuthorizer, AnetbbsFTPHandler, SymlinkAwareFS
+from anetbbs.models import FileArea, User, db
 
 
 @pytest.fixture
@@ -20,14 +20,18 @@ def ftp_server(tmp_path):
     db.init_app(app)
     root = tmp_path / 'files'
     root.mkdir()
-    (root / 'public.txt').write_bytes(b'local FTP fixture\n')
+    area_dir = root / 'PUBLIC'
+    area_dir.mkdir()
+    (area_dir / 'public.txt').write_bytes(b'local FTP fixture\n')
     with app.app_context():
         db.create_all()
         user = User(username='ftp-recovery', email='ftp@example.test')
         user.set_password('original-password')
-        db.session.add(user)
+        area = FileArea(tag='PUBLIC', min_access_level=0, storage_path=str(area_dir))
+        db.session.add_all((user, area))
         db.session.commit()
         uid = user.id
+        area_id = area.id
 
     handlers = []
 
@@ -35,10 +39,16 @@ def ftp_server(tmp_path):
         def on_connect(self):
             handlers.append(self)
 
+        def _area_path_matches(self, area, name, path):
+            # This fixture uses a directory in place of a symlink so it
+            # can test authentication on hosts that restrict symlinks.
+            return name == 'PUBLIC' and area.storage_path == str(area_dir)
+
     Handler.app = app
+    Handler.abstracted_fs = SymlinkAwareFS
     Handler.authorizer = AnetbbsAuthorizer(
         app, str(root), str(root), str(root), anon_enabled=True,
-        qwk_root=str(tmp_path / 'qwk'))
+        qwk_root=str(tmp_path / 'qwk'), area_roots={str(root): {'PUBLIC': area_id}})
     loop = IOLoop()
     server = FTPServer(('127.0.0.1', 0), Handler, ioloop=loop)
     server.max_cons = 256
@@ -113,7 +123,7 @@ def _on_loop(state, callback):
     assert not errors
 
 
-@pytest.mark.parametrize('command', ['NOOP', 'RETR public.txt'])
+@pytest.mark.parametrize('command', ['NOOP', 'RETR PUBLIC/public.txt'])
 def test_old_ftp_login_cannot_issue_commands_after_password_change(ftp_server, command):
     client = _login(ftp_server)
     try:
@@ -137,7 +147,7 @@ def test_fresh_login_and_anonymous_download_remain_usable(ftp_server):
         client = _login(ftp_server, username, password)
         try:
             result = []
-            client.retrbinary('RETR public.txt', result.append)
+            client.retrbinary('RETR PUBLIC/public.txt', result.append)
             assert b''.join(result) == b'local FTP fixture\n'
             if username == 'anonymous':
                 assert ftp_server.handlers[-1]._auth_recheck is None
@@ -149,7 +159,7 @@ def test_fresh_login_and_anonymous_download_remain_usable(ftp_server):
 def test_periodic_check_closes_idle_control_and_active_data_channels(ftp_server, passive):
     client = _login(ftp_server)
     client.set_pasv(passive)
-    data = client.transfercmd('STOR waiting.bin')
+    data = client.transfercmd('STOR PUBLIC/waiting.bin')
     data.settimeout(8)
     try:
         handler = ftp_server.handlers[-1]
@@ -166,7 +176,7 @@ def test_periodic_check_closes_idle_control_and_active_data_channels(ftp_server,
 
 def test_rein_and_anonymous_relogin_cannot_unbind_old_active_transfer(ftp_server):
     client = _login(ftp_server)
-    data = client.transfercmd('STOR waiting.bin')
+    data = client.transfercmd('STOR PUBLIC/waiting.bin')
     data.settimeout(3)
     try:
         data.sendall(b'still transferring')

@@ -25,6 +25,11 @@ def auth_check():
     Never reached by users directly — nginx is the only caller."""
     if not getattr(current_user, 'is_authenticated', False):
         abort(401)
+    origin = request.headers.get('Origin')
+    if origin:
+        trusted = current_app.config.get('PUBLIC_BASE_URL', '')
+        if origin.rstrip('/') not in (trusted, request.host_url.rstrip('/')):
+            abort(403)
     return ('', 204)
 
 
@@ -54,7 +59,9 @@ def index():
     legacy_host = current_app.config.get('MRC_BRIDGE_HOST', '')
     legacy_port = current_app.config.get('MRC_BRIDGE_PORT', 8080)
 
-    if legacy_host and legacy_host not in ('localhost', '127.0.0.1', '0.0.0.0'):
+    if _RUNTIME == 'docker-compose':
+        mrc_ws_host_override = ''
+    elif legacy_host and legacy_host not in ('localhost', '127.0.0.1', '0.0.0.0'):
         # Explicit public host configured (the documented docker-compose
         # pattern, direct-to-bridge, no nginx involved for this part).
         mrc_ws_host_override = f"{legacy_host}:{legacy_port}"

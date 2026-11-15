@@ -19,18 +19,22 @@ import io
 import struct
 import zipfile
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import (Blueprint, request, abort, send_file,
                    current_app, jsonify)
+from sqlalchemy.exc import SQLAlchemyError
 
 from ..models import (db, QWKNode, QWKNodeLastSent, EchoArea,
                        EchomailNetwork, EchomailMessage)
 from ..core.activity_log import web_log_activity
-from ..echomail.qwk import _parse_messages_dat, QWK_HEADER_SIZE, QWK_BLOCK_SIZE
+from ..echomail.qwk import (_parse_messages_dat, _read_qwk_member,
+                            _read_capped, MAX_QWK_PACKET_SIZE,
+                            QWK_HEADER_SIZE, QWK_BLOCK_SIZE)
 from ..echomail.qwk_hub_ftp import resolve_hub_id
 from ..echomail.zip_safety import MAX_MEMBER_UNCOMPRESSED, ZipBombError
 from ..features.rate_limit import _check as _rate_limit_check
+from ..features.service_rate_limits import count_hit, lock_bucket, rate_window_now
 
 logger = logging.getLogger(__name__)
 
@@ -283,7 +287,7 @@ def import_rep_packet(node: QWKNode, rep_bytes: bytes) -> int:
                     node.packet_id, inner_name, info.file_size,
                     MAX_MEMBER_UNCOMPRESSED)
                 return 0
-            msg_bytes = zf.read(inner_name)
+            msg_bytes = _read_qwk_member(zf, inner_name)
     except (zipfile.BadZipFile, ZipBombError):
         logger.warning('QWK hub REP from %s: bad zip', node.packet_id)
         return 0
@@ -429,11 +433,16 @@ def upload_rep(packet_id_rep: str):
     node = _auth_node()
 
     # Accept multipart file upload or raw body.
-    if request.files:
-        f = next(iter(request.files.values()))
-        rep_bytes = f.read()
-    else:
-        rep_bytes = request.get_data()
+    if request.content_length and request.content_length > MAX_QWK_PACKET_SIZE:
+        abort(413, description='REP packet exceeds size limit')
+    try:
+        if request.files:
+            stream = next(iter(request.files.values())).stream
+        else:
+            stream = request.stream
+        rep_bytes = _read_capped(stream, MAX_QWK_PACKET_SIZE, 'HTTP REP')
+    except ValueError:
+        abort(413, description='REP packet exceeds size limit')
 
     if not rep_bytes:
         abort(400, description='Empty REP packet')
@@ -482,18 +491,30 @@ def apply_for_node():
     import secrets
     from ..models import QWKNodeRequest
 
-    data = request.get_json(silent=True) or {}
+    source = request.remote_addr or 'unknown'
+    if not _rate_limit_check(f'qwk_hub_apply:{source}', limit=4, window=3600):
+        return jsonify(ok=False, error='Too many applications. Try again later.'), 429
+
+    try:
+        body = _read_capped(request.stream, 4096, 'QWK node application')
+    except ValueError:
+        return jsonify(ok=False, error='Application is too large'), 413
+    try:
+        data = current_app.json.loads(body) if request.is_json else None
+    except (ValueError, UnicodeError):
+        data = None
+    fields = ('bbs_name', 'packet_id', 'sysop_name', 'email', 'bbs_address',
+              'notes', 'applied_by_username')
+    if not isinstance(data, dict) or any(
+            data.get(name) is not None and not isinstance(data[name], str)
+            for name in fields):
+        return jsonify(ok=False, error='Expected a JSON object with text fields'), 400
     bbs_name = (data.get('bbs_name') or '').strip()[:100]
-    packet_id = (data.get('packet_id') or '').strip().upper()[:8]
+    packet_id = (data.get('packet_id') or '').strip().upper()
     if not bbs_name or not packet_id:
         return jsonify(ok=False, error='bbs_name and packet_id are required'), 400
     if not re.match(r'^[A-Z0-9]{2,8}$', packet_id):
         return jsonify(ok=False, error='packet_id must be 2-8 chars, A-Z/0-9 only'), 400
-
-    taken = (QWKNode.query.filter_by(packet_id=packet_id).first() or
-             QWKNodeRequest.query.filter_by(packet_id=packet_id, status='pending').first())
-    if taken:
-        return jsonify(ok=False, error=f'packet_id {packet_id} is already taken'), 409
 
     token = secrets.token_urlsafe(32)
     req = QWKNodeRequest(
@@ -507,8 +528,34 @@ def apply_for_node():
         applied_by_username=(data.get('applied_by_username') or '').strip()[:100] or None,
         request_token=token,
     )
-    db.session.add(req)
-    db.session.commit()
+    try:
+        # Hold the global bucket until the application commits so concurrent
+        # workers cannot reserve the same slot or the same public packet ID.
+        now = rate_window_now(db.session)
+        global_key = 'qwk:apply:global'
+        source_key = f'qwk:apply:source:{source}'
+        lock_bucket(db.session, global_key, now, 3600)
+        if lock_bucket(db.session, source_key, now, 3600) >= 4:
+            return jsonify(ok=False, error='Too many applications. Try again later.'), 429
+        recent = QWKNodeRequest.query.filter(
+            QWKNodeRequest.applied_via == 'api',
+            QWKNodeRequest.created_at >= datetime.utcnow() - timedelta(hours=1))
+        pending = QWKNodeRequest.query.filter_by(applied_via='api', status='pending')
+        if recent.count() >= 24 or pending.count() >= 100:
+            return jsonify(ok=False, error='Applications are at capacity. Try again later.'), 429
+        taken = (QWKNode.query.filter_by(packet_id=packet_id).first() or
+                 QWKNodeRequest.query.filter_by(packet_id=packet_id, status='pending').first())
+        if taken:
+            return jsonify(ok=False, error=f'packet_id {packet_id} is already taken'), 409
+        db.session.add(req)
+        count_hit(db.session, source_key)
+        db.session.commit()
+    except SQLAlchemyError:
+        current_app.logger.error('QWK node application storage unavailable')
+        return jsonify(ok=False, error='Applications are temporarily unavailable.'), 503
+    finally:
+        # Early returns must release the transaction and any held quota lock.
+        db.session.rollback()
     from ..features.notify import notify_admins
     notify_admins(
         'qwk_node_app',

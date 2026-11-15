@@ -336,6 +336,9 @@ GMCP = bytes([201])  # Generic MUD Communication Protocol
 # abandoned.
 _MAX_SB_PAYLOAD_BYTES = 2048
 
+_PRELOGIN_CONNECTIONS = {}
+
+
 class BBSSession:
     def __init__(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter,
                  config: Dict[str, Any], prefill_username: Optional[str] = None,
@@ -1369,14 +1372,15 @@ class BBSSession:
                     auth_revoked = False
                     reason = ''
                     with _app().app_context():
-                        uid = (getattr(self, 'user', None) or {}).get('id')
+                        identity = getattr(self, 'user', None) or {}
+                        uid = identity.get('id')
                         u = User.query.get(uid) if uid else None
-                        if u is not None and (not u.is_active or u.is_locked):
+                        if uid and (u is None or not u.is_active or u.is_locked
+                                    or (not u.is_verified and not u.is_admin)):
                             kicked = True
                             reason = 'your account has been locked or deactivated'
                         elif u is not None and (
-                                getattr(u, 'auth_version', None)
-                                != (getattr(self, 'user', None) or {}).get('auth_version')):
+                                getattr(u, 'auth_version', None) != identity.get('auth_version')):
                             # Password changes/recovery revoke existing terminal
                             # logins too, including SSH-key sessions and doors.
                             # Closing the transport makes door input pumps reach
@@ -2516,12 +2520,25 @@ class BBSSession:
         """Handle new user registration"""
         import re as _re
         from ..features.bbs_ui import _app as _bbs_app
+        from .registration import registration_block_reason, reserve_registration_attempt
+        ip = self._client_ip()
         _cfg = _bbs_app().config
-        if not _cfg.get('REGISTRATION_OPEN', True):
-            await self.write("\r\nNew account registration is currently closed.\r\n")
-            return False
-        if _cfg.get('REGISTRATION_REQUIRE_VERIFIED_EMAIL'):
-            await self.write("\r\nPlease register on the BBS website to verify your email.\r\n")
+
+        def admit_registration():
+            with _bbs_app().app_context():
+                reason = registration_block_reason(ip)
+                if reason:
+                    return reason[1], None
+                if _cfg.get('REGISTRATION_REQUIRE_VERIFIED_EMAIL'):
+                    return 'Please register on the BBS website to verify your email.', None
+                attempt = reserve_registration_attempt(ip, user_agent='Terminal')
+                if attempt is None:
+                    return 'Registration attempt limit reached. Try again later.', None
+                return None, attempt.id
+
+        reason, attempt_id = await asyncio.to_thread(admit_registration)
+        if reason:
+            await self.write(f"\r\n{reason}\r\n")
             return False
         _invite_code = _cfg.get('REGISTRATION_INVITE_CODE', '')
         if _invite_code:
@@ -2583,7 +2600,9 @@ class BBSSession:
                 continue
             break
 
-        result = self.user_manager.create_user(username, password, email)
+        result = self.user_manager.create_user(
+            username, password, email, registration_attempt_id=attempt_id,
+        )
         if result in ('ok', 'ok_pending'):
             await self.write("\r\nRegistration successful!\r\n")
             # _show_ansi_screen has no PETSCII-aware rendering -- it writes
@@ -3825,17 +3844,8 @@ class BBSSession:
         presence = None
         _hb_task = None
         self._session_started_at = datetime.utcnow()
-        # Idle timeout for terminal menus (seconds). IRC/MRC use a different
-        # path so they are unaffected. Defaults to 0 (off) — sysop opts in
-        # by setting IDLE_TIMEOUT_SECONDS in .env. Bullet-proofed against
-        # malformed values.
-        try:
-            raw = os.environ.get('IDLE_TIMEOUT_SECONDS', '').strip()
-            self.idle_timeout = int(raw) if raw else 0
-            if self.idle_timeout < 0:
-                self.idle_timeout = 0
-        except Exception:
-            self.idle_timeout = 0
+        from ..config import Config
+        self.idle_timeout = max(0, Config.IDLE_TIMEOUT_SECONDS)
         # AFK warning + matrix-rain screensaver before the idle timeout
         # above actually disconnects (Jerry's ask, mirroring a real
         # Mystic Pascal AFK script: warn with a countdown, then a
@@ -3855,22 +3865,39 @@ class BBSSession:
         except Exception:
             self.afk_warning_seconds = 0
         try:
-            await self.init_session()
-            await asyncio.sleep(0.1)  # Give time for telnet negotiation
+            async def authenticate():
+                await self.init_session()
+                await asyncio.sleep(0.1)  # Give time for telnet negotiation
 
-            # Bot defense — auto-scanners just connect and dump bytes.
-            # Real users press a key. Skip when an SSH/rlogin client has
-            # already sent valid auth (those went through real protocols)
-            # -- an SSH public-key login (_prefill_authenticated_user) is
-            # the same case, just without _prefill_username also being
-            # set (the SSH server resolves straight to a user dict for
-            # that path rather than a bare username to re-authenticate).
-            if not self._prefill_username and not self._prefill_authenticated_user:
-                if not await self._bot_gate():
-                    return
+                # Bot defense — auto-scanners just connect and dump bytes.
+                # Real users press a key. Skip when an SSH/rlogin client has
+                # already sent valid auth (those went through real protocols)
+                # -- an SSH public-key login (_prefill_authenticated_user) is
+                # the same case, just without _prefill_username also being
+                # set (the SSH server resolves straight to a user dict for
+                # that path rather than a bare username to re-authenticate).
+                if not self._prefill_username and not self._prefill_authenticated_user:
+                    if not await self._bot_gate():
+                        return False
 
-            if not await self.login_screen():
+                if not await self.login_screen():
+                    return False
+
+                return True
+
+            ip = self._client_ip() or ''
+            if sum(_PRELOGIN_CONNECTIONS.values()) >= 128 or _PRELOGIN_CONNECTIONS.get(ip, 0) >= 8:
                 return
+            _PRELOGIN_CONNECTIONS[ip] = _PRELOGIN_CONNECTIONS.get(ip, 0) + 1
+            try:
+                if not await asyncio.wait_for(authenticate(), timeout=300):
+                    return
+            except asyncio.TimeoutError:
+                return
+            finally:
+                _PRELOGIN_CONNECTIONS[ip] -= 1
+                if not _PRELOGIN_CONNECTIONS[ip]:
+                    del _PRELOGIN_CONNECTIONS[ip]
 
             await self._maybe_send_steady_cursor()
 

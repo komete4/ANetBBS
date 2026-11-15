@@ -3,15 +3,12 @@ alongside the existing vX.Y[ab]Z.NN alpha/beta form -- see
 anetbbs/web/upgrades.py's _parse_version() docstring). A stable release
 must parse correctly, must always compare as newer than any alpha/beta
 build of the same major.minor regardless of beta build number, and the
-privileged deploy/run_upgrade.sh wrapper's arg-validation regex plus its
-Python-side self-healing patcher (_patch_wrapper_if_needed) both need
-to accept the new form without weakening the injection-defense the
+privileged deploy/run_upgrade.sh wrapper's validation must accept both forms without weakening the injection-defense the
 original regex existed for.
 """
 import os
 import re
 import sys
-import tempfile
 import unittest
 from pathlib import Path
 
@@ -79,66 +76,6 @@ class VersionParsingTests(unittest.TestCase):
         self.assertTrue(_TARBALL_RE.match('ANetBBS-v1.0.0.tar.gz'))
         self.assertTrue(_TARBALL_RE.match('ANetBBS-v1.0b2.208.tar.gz'))
         self.assertFalse(_TARBALL_RE.match('ANetBBS-v1.0.tar.gz'))
-
-
-class PatchWrapperMigrationTests(unittest.TestCase):
-    """_patch_wrapper_if_needed() self-heals an on-disk run_upgrade.sh
-    that still has an older version regex -- test all 3 generations."""
-
-    def _write_and_patch(self, script_body):
-        from anetbbs.web.upgrades import _patch_wrapper_if_needed
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as f:
-            f.write(script_body)
-            path = f.name
-        try:
-            _patch_wrapper_if_needed(path)
-            with open(path) as f:
-                return f.read()
-        finally:
-            os.unlink(path)
-
-    def test_alpha_only_wrapper_ends_up_on_final_regex(self):
-        body = 'if ! [[ "$VERSION" =~ ^v[0-9]+\\.[0-9]+a[0-9]+\\.[0-9]+$ ]]; then\n'
-        result = self._write_and_patch(body)
-        self.assertIn(r'^v[0-9]+\.[0-9]+([ab][0-9]+\.[0-9]+|\.[0-9]+)$', result)
-        self.assertNotIn(r'^v[0-9]+\.[0-9]+a[0-9]+\.[0-9]+$', result)
-
-    def test_alpha_plus_beta_wrapper_ends_up_on_final_regex(self):
-        body = 'if ! [[ "$VERSION" =~ ^v[0-9]+\\.[0-9]+[ab][0-9]+\\.[0-9]+$ ]]; then\n'
-        result = self._write_and_patch(body)
-        self.assertIn(r'^v[0-9]+\.[0-9]+([ab][0-9]+\.[0-9]+|\.[0-9]+)$', result)
-
-    def test_already_current_wrapper_is_left_alone(self):
-        body = ('if ! [[ "$VERSION" =~ '
-               r'^v[0-9]+\.[0-9]+([ab][0-9]+\.[0-9]+|\.[0-9]+)$'
-               ' ]]; then\n')
-        result = self._write_and_patch(body)
-        self.assertEqual(result, body,
-                         'an already-current wrapper must not be rewritten')
-
-    def test_patched_regex_actually_accepts_stable_version_in_bash(self):
-        """Not just a string check -- prove the resulting regex is
-        valid bash extended-regex syntax and behaves correctly, since
-        this is a real, security-sensitive arg-validation gate."""
-        import subprocess
-        body = 'if ! [[ "$VERSION" =~ ^v[0-9]+\\.[0-9]+a[0-9]+\\.[0-9]+$ ]]; then\n'
-        patched = self._write_and_patch(body)
-        regex_line = patched.strip()
-        for version, should_match in [
-            ('v1.0.0', True), ('v1.0b2.208', True), ('v1.0a3.5', True),
-            ('v1.0', False), ('v1.0.0; rm -rf /', False),
-        ]:
-            script = (
-                f'VERSION="{version}"\n' + regex_line +
-                '\n  echo NO\nelse\n  echo YES\nfi\n'
-            )
-            out = subprocess.run(['bash', '-c', script],
-                                 capture_output=True, text=True)
-            got_match = out.stdout.strip() == 'YES'
-            self.assertEqual(got_match, should_match,
-                             f'{version!r}: expected match={should_match}, '
-                             f'bash said {out.stdout.strip()!r} '
-                             f'(stderr: {out.stderr.strip()!r})')
 
 
 class DeployWrapperTemplateTests(unittest.TestCase):

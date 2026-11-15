@@ -16,6 +16,7 @@ import sys
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -127,17 +128,17 @@ class LaunchDoorGameUsesRealBudgetTests(unittest.TestCase):
         from anetbbs.games import door_runner
 
         fake_game = type('FakeGame', (), {
-            'id': 1, 'slug': 'faketestgame', 'max_nodes': 1,
+            'id': 1, 'slug': 'faketestgame', 'max_nodes': 1, 'game_type': 'door_native',
+            'drop_file_type': 'door.sys', 'drop_file_path': '%PDOOR.SYS',
         })()
         user = {'id': 42, 'is_admin': False}
 
-        with patch('anetbbs.games.door_runner.allocate_node', return_value=1), \
+        with patch('anetbbs.games.door_runner.create_game_session',
+                   return_value=SimpleNamespace(node_number=1)), \
              patch('anetbbs.games.door_runner.db') as mock_db, \
-             patch('anetbbs.games.door_runner.GameSession'), \
+             patch('anetbbs.games.door_runner._build_command', side_effect=ValueError), \
              patch('anetbbs.core.time_budget.compute_remaining_minutes',
                   return_value=123) as mock_compute, \
-             patch('anetbbs.games.door_runner.build_token_context',
-                  return_value={}), \
              patch('anetbbs.games.door_runner.write_drop_file',
                   return_value=None) as mock_write:
             mock_db.session.add = lambda *a, **kw: None
@@ -169,17 +170,17 @@ class LaunchDoorGamePassesWindowSizeTests(unittest.TestCase):
         from anetbbs.games import door_runner
 
         fake_game = type('FakeGame', (), {
-            'id': 1, 'slug': 'faketestgame', 'max_nodes': 1,
+            'id': 1, 'slug': 'faketestgame', 'max_nodes': 1, 'game_type': 'door_native',
+            'drop_file_type': 'door.sys', 'drop_file_path': '%PDOOR.SYS',
         })()
         user = {'id': 42, 'is_admin': False}
 
-        with patch('anetbbs.games.door_runner.allocate_node', return_value=1), \
+        with patch('anetbbs.games.door_runner.create_game_session',
+                   return_value=SimpleNamespace(node_number=1)), \
              patch('anetbbs.games.door_runner.db') as mock_db, \
-             patch('anetbbs.games.door_runner.GameSession'), \
+             patch('anetbbs.games.door_runner._build_command', side_effect=ValueError), \
              patch('anetbbs.core.time_budget.compute_remaining_minutes',
                   return_value=123), \
-             patch('anetbbs.games.door_runner.build_token_context',
-                  return_value={}), \
              patch('anetbbs.games.door_runner.write_drop_file',
                   return_value=None) as mock_write:
             mock_db.session.add = lambda *a, **kw: None

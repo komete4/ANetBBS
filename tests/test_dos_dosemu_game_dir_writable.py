@@ -82,6 +82,33 @@ class DosemuBatLocationTests(unittest.TestCase):
             e_idx = cmd.index('-E')
             self.assertEqual(cmd[e_idx + 1], 'I:\\_ANET.BAT')
 
+    def test_explicit_drive_order_with_game_directory_with_spaces(self):
+        from anetbbs.games.door_runner import _build_dosemu_command
+
+        with tempfile.TemporaryDirectory() as root:
+            game_dir = Path(root) / 'DOS game'
+            game_dir.mkdir()
+            executable = game_dir / 'GAME.EXE'
+            executable.touch()
+            scratch = Path(root) / 'session'
+            scratch.mkdir()
+            game = _make_game(str(executable), game_type='door_dosemu')
+
+            cmd, cwd = _build_dosemu_command(game, 1, '/usr/bin/dosemu',
+                                             scratch=str(scratch))
+            config = Path(cmd[cmd.index('-f') + 1]).read_text()
+            hdimage = next(line for line in config.splitlines()
+                           if line.startswith('$_hdimage'))
+            paths = hdimage.split('"')[1].split()
+            self.assertEqual(paths[:2], ['+0', '-3'])
+            self.assertEqual(Path(paths[3]).resolve(), game_dir.resolve())
+            self.assertEqual(Path(paths[4]), scratch)
+            self.assertEqual(paths[5:], ['+1'])
+            self.assertNotIn('-d', cmd)
+            self.assertEqual(Path(cwd), game_dir)
+            self.assertTrue((scratch / '_ANET.BAT').is_file())
+            self.assertFalse((game_dir / '_ANET.BAT').exists())
+
 
 @unittest.skipIf(_IS_ROOT, 'permission bits do not block root; cannot test EROFS-shaped failure')
 class GameDirWritableCheckTests(unittest.TestCase):

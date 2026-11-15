@@ -84,6 +84,33 @@ def allocate_node(game_id, max_nodes, session_id):
         return None
 
 
+def create_game_session(game_id, max_nodes, user_id):
+    """Reserve a slot and persist its active session before launching a door."""
+    from sqlalchemy.exc import IntegrityError
+    from ..models import db, GameSession
+
+    for node in range(1, (max_nodes or 1) + 1):
+        if GameSession.query.filter_by(game_id=game_id, node_number=node,
+                                       status='active').first() is not None:
+            continue
+        try:
+            with db.session.begin_nested():
+                session = GameSession(game_id=game_id, user_id=user_id,
+                                      node_number=node, status='active')
+                db.session.add(session)
+                db.session.flush()
+        except IntegrityError:
+            if GameSession.query.filter_by(game_id=game_id, node_number=node,
+                                           status='active').first() is None:
+                raise
+            continue
+        db.session.commit()
+        with _lock:
+            _active[(game_id, node)] = session.id
+        return session
+    return None
+
+
 def release_node(game_id, node_number):
     """
     Release a previously allocated node.

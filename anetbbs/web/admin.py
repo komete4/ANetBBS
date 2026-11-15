@@ -1651,10 +1651,8 @@ def tic_rescan():
     worked) had no button, only SSH + a one-off script. Same inbound_dir
     resolution binkp.py/binkp_server.py both already use.
     """
-    from ..echomail.tic import scan_inbound
-    inbound_dir = (os.environ.get('BINKP_INBOUND_DIR')
-                  or os.path.join(current_app.config.get('DATA_DIR', 'data'),
-                                  'binkp', 'inbound'))
+    from ..echomail.tic import inbound_root, scan_inbound
+    inbound_dir = inbound_root(current_app.config.get('DATA_DIR'))
     if not os.path.isdir(inbound_dir):
         flash(f'Inbound directory does not exist: {inbound_dir}', 'danger')
         return redirect(url_for('admin.tic_log'))
@@ -1696,36 +1694,37 @@ def tic_clear_processed():
         days = 30
     days = max(1, days)
 
-    inbound_dir = (os.environ.get('BINKP_INBOUND_DIR')
-                  or os.path.join(current_app.config.get('DATA_DIR', 'data'),
-                                  'binkp', 'inbound'))
-    processed_dir = os.path.join(inbound_dir, 'processed')
-    if not os.path.isdir(processed_dir):
-        flash(f'No processed/ directory found at {processed_dir}', 'info')
+    from ..echomail.tic import inbound_root, iter_peer_inbound_dirs
+    inbound_dir = inbound_root(current_app.config.get('DATA_DIR'))
+    roots = [inbound_dir] + [path for path, _, _ in iter_peer_inbound_dirs(inbound_dir)]
+    processed_dirs = [os.path.join(root, 'processed') for root in roots]
+    processed_dirs = [path for path in processed_dirs if os.path.isdir(path)]
+    if not processed_dirs:
+        flash(f'No processed/ directory found at {inbound_dir}', 'info')
         return redirect(url_for('admin.tic_log'))
 
     cutoff = datetime.utcnow() - timedelta(days=days)
     deleted = 0
     freed_bytes = 0
-    for name in os.listdir(processed_dir):
-        path = os.path.join(processed_dir, name)
-        try:
-            if not os.path.isfile(path):
-                continue
-            mtime = datetime.utcfromtimestamp(os.stat(path).st_mtime)
-            if mtime < cutoff:
-                freed_bytes += os.path.getsize(path)
-                os.remove(path)
-                deleted += 1
-        except OSError as exc:
-            current_app.logger.warning('Failed to remove %s: %s', path, exc)
+    for processed_dir in processed_dirs:
+        for entry in os.scandir(processed_dir):
+            try:
+                if not entry.is_file(follow_symlinks=False):
+                    continue
+                stat = entry.stat(follow_symlinks=False)
+                if datetime.utcfromtimestamp(stat.st_mtime) < cutoff:
+                    os.remove(entry.path)
+                    freed_bytes += stat.st_size
+                    deleted += 1
+            except OSError as exc:
+                current_app.logger.warning('Failed to remove %s: %s', entry.path, exc)
 
     if deleted:
         freed_mb = freed_bytes / (1024 * 1024)
         flash(f'Deleted {deleted} file(s) older than {days} day(s), '
               f'freeing {freed_mb:.1f} MB.', 'success')
     else:
-        flash(f'No files older than {days} day(s) found in {processed_dir}.',
+        flash(f'No files older than {days} day(s) found in {inbound_dir}.',
               'info')
     return redirect(url_for('admin.tic_log'))
 

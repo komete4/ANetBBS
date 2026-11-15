@@ -25,6 +25,7 @@ from datetime import datetime, timedelta
 from flask import (Blueprint, current_app, jsonify, request, abort,
                    render_template_string)
 
+from ..core.text_safety import strip_untrusted_escapes
 from ..models import db, RegistryEntry
 
 registry_bp = Blueprint('registry', __name__)
@@ -119,10 +120,15 @@ def _ratelimit_check(host, source_ip, kind='register'):
 @registry_bp.route('/registry/api/v1/register', methods=['POST'])
 def register():
     _require_hub_mode()
+    from .auth import _password_recovery_origin
+    try:
+        public_origin = _password_recovery_origin()
+    except ValueError:
+        return _problem(503, 'Configure PUBLIC_BASE_URL or BBS_DOMAIN for registry verification')
     data = request.get_json(silent=True) or {}
 
     host = (data.get('host') or '').strip().lower()
-    name = (data.get('name') or '').strip()
+    name = strip_untrusted_escapes(str(data.get('name') or '')).strip()
     contact_email = (data.get('contact_email') or '').strip()
 
     if not host or not _HOST_RE.match(host):
@@ -145,22 +151,22 @@ def register():
     if not (0 < msp_port < 65536 and 0 < systat_port < 65536):
         return _problem(400, 'port out of range')
 
-    sysop = (data.get('sysop') or '')[:120]
-    location = (data.get('location') or '')[:120]
-    software = (data.get('software') or 'ANetBBS')[:40]
-    software_version = (data.get('software_version') or '')[:40]
-    notes = (data.get('notes') or '')[:4000]
+    sysop = strip_untrusted_escapes(str(data.get('sysop') or ''))[:120]
+    location = strip_untrusted_escapes(str(data.get('location') or ''))[:120]
+    software = strip_untrusted_escapes(str(data.get('software') or 'ANetBBS'))[:40]
+    software_version = strip_untrusted_escapes(str(data.get('software_version') or ''))[:40]
+    notes = strip_untrusted_escapes(str(data.get('notes') or ''))[:4000]
 
     entry = RegistryEntry.query.filter(
         RegistryEntry.host.ilike(host)).first()
+    if entry is not None:
+        provided_key = data.get('heartbeat_key')
+        if (not entry.heartbeat_key or not isinstance(provided_key, str)
+                or not provided_key.isascii()
+                or not hmac.compare_digest(provided_key, entry.heartbeat_key)):
+            return _problem(409, 'Existing registration: provide its heartbeat key or contact the hub sysop')
     new_token = secrets.token_urlsafe(24)
-    # Fresh every register call (new row AND re-register alike) — this
-    # is what heartbeat() now requires as proof of "same client that
-    # just registered," independent of email verification. Re-issuing
-    # it on every call also makes a legitimate peer whose stored key
-    # went stale (e.g. this row predates the security fix) self-heal
-    # the moment its registry_client.py falls back to register().
-    new_heartbeat_key = secrets.token_urlsafe(24)
+    new_heartbeat_key = secrets.token_urlsafe(24) if entry is None else entry.heartbeat_key
     now = datetime.utcnow()
     needs_verify_email = False
 
@@ -211,8 +217,7 @@ def register():
 
     db.session.commit()
 
-    verify_url = (f"{request.host_url.rstrip('/')}"
-                 f"/registry/verify/{entry.registration_token}")
+    verify_url = f"{public_origin}/registry/verify/{entry.registration_token}"
 
     # Security fix: the verify_url used to be returned directly in this
     # response — but that defeats the entire point of "email
@@ -298,11 +303,11 @@ def heartbeat():
     # before this fix shipped) can never pass this check — that's
     # deliberate: it forces one self-heal register() call rather than
     # silently granting the old, unauthenticated behavior.
-    provided_key = (data.get('heartbeat_key') or '').strip()
-    if not entry.heartbeat_key or not hmac.compare_digest(
-            provided_key, entry.heartbeat_key):
-        return _problem(401, 'missing or invalid heartbeat_key — '
-                             're-register to obtain a current one')
+    provided_key = data.get('heartbeat_key')
+    if (not entry.heartbeat_key or not isinstance(provided_key, str)
+            or not provided_key.isascii()
+            or not hmac.compare_digest(provided_key, entry.heartbeat_key)):
+        return _problem(401, 'missing or invalid heartbeat key')
 
     entry.last_heartbeat_at = datetime.utcnow()
     # Refresh source_ip on every heartbeat too, not just at initial
@@ -321,11 +326,9 @@ def heartbeat():
         v = data.get(k)
         if v is None:
             continue
-        if k == 'notes':
-            v = str(v)[:4000]
-        else:
-            v = str(v)[:160]
-        setattr(entry, k, v)
+        size = {'name': 160, 'sysop': 120, 'location': 120,
+                'software': 40, 'software_version': 40, 'notes': 4000}[k]
+        setattr(entry, k, strip_untrusted_escapes(str(v))[:size])
     db.session.commit()
     return jsonify({'ok': True, 'is_listed': bool(entry.is_listed)})
 

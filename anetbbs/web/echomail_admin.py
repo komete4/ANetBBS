@@ -28,6 +28,19 @@ from .access_control import require_admin as _admin_required
 # ---------------------------------------------------------------------------
 
 class NetworkForm(FlaskForm):
+    def has_required_binkp_password(self, existing=None):
+        if self.network_type.data != 'binkp' or not self.is_active.data:
+            return True
+        password = self.binkp_password.data or ''
+        if not password.strip():
+            password = existing or ''
+        from ..echomail.binkp import _usable_binkp_secret
+        if _usable_binkp_secret(password):
+            return True
+        self.binkp_password.errors.append(
+            'Active BinkP links require a non-empty shared password using Latin-1 characters.')
+        return False
+
     name = StringField('Network Name', validators=[DataRequired(), Length(max=100)])
     network_type = SelectField('Type', choices=[('binkp', 'BinkP (FidoNet)'), ('qwk', 'QWK (Dove-Net)')],
                                validators=[DataRequired()])
@@ -279,7 +292,7 @@ def networks():
 @_admin_required
 def new_network():
     form = NetworkForm()
-    if form.validate_on_submit():
+    if form.validate_on_submit() and form.has_required_binkp_password():
         network = EchomailNetwork(
             name=form.name.data,
             network_type=form.network_type.data,
@@ -324,7 +337,7 @@ def new_network():
 def edit_network(network_id):
     network = EchomailNetwork.query.get_or_404(network_id)
     form = NetworkForm(obj=network)
-    if form.validate_on_submit():
+    if form.validate_on_submit() and form.has_required_binkp_password(network.binkp_password):
         # PasswordField never round-trips the stored value, so populate_obj
         # would clear any password the user didn't re-type. Preserve the
         # existing values when the field is blank.
@@ -922,7 +935,10 @@ def poll_log_transcript(log_id):
     log = EchomailPollLog.query.get_or_404(log_id)
     if not log.transcript and log.status != 'running':
         abort(404)
-    return render_template('echomail/admin/poll_log_transcript.html', log=log)
+    from ..echomail.transcript import redact_legacy_transcript
+    transcript = redact_legacy_transcript(log.transcript) or ''
+    return render_template('echomail/admin/poll_log_transcript.html',
+                           log=log, transcript=transcript)
 
 
 # ---------------------------------------------------------------------------

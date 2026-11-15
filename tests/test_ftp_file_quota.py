@@ -24,10 +24,7 @@ class FtpFileQuotaTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls._orig_db_uri = cfg_mod.TestingConfig.SQLALCHEMY_DATABASE_URI
-        cls._tmp_db = str(Path(__file__).resolve().parent / '.ftp_quota_test.db')
-        if os.path.exists(cls._tmp_db):
-            os.remove(cls._tmp_db)
-        cfg_mod.TestingConfig.SQLALCHEMY_DATABASE_URI = f'sqlite:///{cls._tmp_db}'
+        cfg_mod.TestingConfig.SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
         os.environ['FLASK_ENV'] = 'testing'
 
         from anetbbs.web_app import create_app
@@ -39,18 +36,21 @@ class FtpFileQuotaTests(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        from anetbbs.models import db
+        with cls.app.app_context():
+            db.engine.dispose()
         cfg_mod.TestingConfig.SQLALCHEMY_DATABASE_URI = cls._orig_db_uri
-        for suffix in ('', '-wal', '-shm'):
-            path = cls._tmp_db + suffix
-            if os.path.exists(path):
-                os.remove(path)
 
     def _make_handler(self, username, qwk_node_id=None):
         from anetbbs.ftp.server import AnetbbsFTPHandler
+        from anetbbs.models import User
         h = object.__new__(AnetbbsFTPHandler)
         h.app = self.app
         h.username = username
         h._qwk_node_id = qwk_node_id
+        with self.app.app_context():
+            user = User.query.filter_by(username=username).first()
+            h._bbs_auth = (user.id, user.auth_version) if user else None
         h.respond = MagicMock()
         return h
 
