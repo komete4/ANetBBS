@@ -741,7 +741,9 @@ def test_admin_dashboard_smtp_and_upgrades_localization(client, make_user, langu
     dashboard = _soup(client.get('/admin/'))
     notes = dashboard.select_one('.markdown-body')
     assert notes is not None
-    expected = 'Revocación de sesiones' if language == 'es' else 'Password-change session revocation'
+    filename = 'RELEASE.es.md' if language == 'es' else 'RELEASE.md'
+    release_path = Path(__file__).resolve().parents[1] / filename
+    expected = release_path.read_text(encoding='utf-8').splitlines()[0].removeprefix('# ')
     assert expected in notes.get_text(' ', strip=True)
 
 

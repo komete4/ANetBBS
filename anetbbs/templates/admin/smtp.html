@@ -119,6 +119,8 @@
         <p><strong>{{ t('admin.smtp.email_verification_flow', 'Email Verification Flow') }}</strong></p>
         <p>{{ t('admin.smtp.when', 'When') }} <em>{{ t('admin.smtp.require_email_verification', 'Require email verification') }}</em> {{ t('admin.smtp.verification_flow_help', 'is on, newly registered users get a verification email. Their account is inactive until they click the link. The link expires in') }} <strong>{{ t('admin.smtp.24_hours', '24 hours') }}</strong>.</p>
         <p>{{ t('admin.smtp.password_reset_help', 'Password reset emails are sent automatically when SMTP is enabled (no separate toggle).') }}</p>
+        <hr>
+        <p>This relay is also used for outbound <a href="{{ url_for('admin.mail_settings') }}">Internet Mail</a> (username@domain) -- no separate relay config needed there.</p>
     </div>
 </div>
 
