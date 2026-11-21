@@ -3582,19 +3582,27 @@ class BBSSession:
             if not uid:
                 return None
             from ..models import (PrivateMessage, InstantMessage,
-                                  Notification)
+                                  Notification, InternetMail, MailConfig, User)
             pm_n = (PrivateMessage.query
                     .filter_by(recipient_id=uid, read_at=None,
                                is_deleted_recipient=False).count())
             im_n = (InstantMessage.query
                     .filter_by(recipient_id=uid, is_read=False).count())
+            mail_n = 0
+            try:
+                mail_user = User.query.get(uid)
+                if mail_user and mail_user.email_enabled and MailConfig.get().enabled:
+                    mail_n = InternetMail.query.filter_by(
+                        user_id=uid, direction='inbound', read_at=None).count()
+            except Exception:
+                mail_n = 0
             try:
                 unread_notifs = (Notification.query
                                   .filter_by(user_id=uid, is_read=False)
                                   .order_by(Notification.id).all())
             except Exception:
                 unread_notifs = []
-            if not (pm_n or im_n or unread_notifs):
+            if not (pm_n or im_n or mail_n or unread_notifs):
                 return None
 
             heading = terminal_label(self, 'terminal.daily.notifications', 'YOU HAVE NEW NOTIFICATIONS')
@@ -3614,6 +3622,10 @@ class BBSSession:
                          if im_n == 1 else
                          terminal_label(self, 'terminal.daily.interbbs_many', 'new InterBBS IMs'))
                 await self.write(f'  \x1b[1;36m{im_n}\x1b[0m {label}\r\n')
+            if mail_n:
+                await self.write(
+                    f'  \x1b[1;36m{mail_n}\x1b[0m new Internet Mail message'
+                    + ('s' if mail_n != 1 else '') + '\r\n')
             # Each Notification's own title/body already carries the
             # "who, and in what area/context" detail (see notify() call
             # sites -- e.g. anetbbs/echomail/notify_reply.py's "Jane
@@ -3630,6 +3642,11 @@ class BBSSession:
             # this user's real terminal.
             from .text_safety import strip_untrusted_escapes
             for n in unread_notifs:
+                # Internet Mail is listed above from its authoritative
+                # mailbox unread state to keep terminal scanning working
+                # even when the user disabled this notification kind.
+                if n.kind == 'internet_mail':
+                    continue
                 title = strip_untrusted_escapes(n.title)
                 line = f'  \x1b[33m-\x1b[0m {title}'
                 if n.body:
@@ -3642,7 +3659,7 @@ class BBSSession:
                 await self.read_line('')
             except Exception:
                 pass
-            return (pm_n, unread_notifs)
+            return (pm_n, mail_n, unread_notifs)
         except Exception:
             return None
 
@@ -3705,13 +3722,15 @@ class BBSSession:
                 return
             if self.term_mode == 'petscii':
                 return
-            pm_n, unread_notifs = result
+            pm_n, mail_n, unread_notifs = result
             has_board = any(n.kind in ('reply', 'mention') for n in unread_notifs)
             has_echo = any(n.kind == 'echomail_reply' for n in unread_notifs)
 
             opts = []
             if pm_n:
                 opts.append(('P', terminal_label(self, 'terminal.daily.scan_private', 'rivate Messages')))
+            if mail_n:
+                opts.append(('M', 'ail'))
             if has_board:
                 opts.append(('B', terminal_label(self, 'terminal.daily.scan_boards', 'oards')))
             if has_echo:
@@ -3731,6 +3750,8 @@ class BBSSession:
             ui = BBSMenuUI(self)
             if resp == 'P' and pm_n:
                 await ui.list_pm_inbox()
+            elif resp == 'M' and mail_n:
+                await ui.list_mail_inbox()
             elif resp == 'B' and has_board:
                 await ui.list_boards()
             elif resp == 'E' and has_echo:
